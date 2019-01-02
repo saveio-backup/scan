@@ -1,0 +1,7 @@
+package: github.com/oniio/oniDNS
+import:
+- package: github.com/urfave/cli
+- package: github.com/ontio/ontology-crypto
+- package: github.com/stretchr/testify
+- package: github.com/itchyny/base58-go
+- package: golang.org/x/crypto
