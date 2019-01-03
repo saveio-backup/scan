@@ -8,7 +8,7 @@ import (
 	"syscall"
 
 	"github.com/oniio/oniDNS/cmd"
-	"github.com/oniio/oniDNS/common/log"
+	"github.com/oniio/oniChain/common/log"
 	"github.com/oniio/oniDNS/config"
 	"github.com/oniio/oniDNS/netserver"
 	"github.com/urfave/cli"
@@ -70,8 +70,8 @@ func initConfig(ctx *cli.Context) error {
 
 func initLog(ctx *cli.Context) {
 	//init log module
-	log.SetLevel(ctx.GlobalUint(cmd.GetFlagName(cmd.LogLevelFlag)))
-	log.SetMaxSize(config.DEFAULT_MAX_LOG_SIZE)
+	//log.SetLevel(ctx.GlobalUint(cmd.GetFlagName(cmd.LogLevelFlag))) //TODO
+	//log.SetMaxSize(config.DEFAULT_MAX_LOG_SIZE) //TODO
 	if ctx.Bool(cmd.GetFlagName(cmd.LogStderrFlag)) {
 		log.InitLog(0, config.DEFAULT_LOG_DIR)
 	} else {

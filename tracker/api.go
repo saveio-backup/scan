@@ -6,7 +6,7 @@ import (
 	"net"
 
 	"github.com/oniio/oniDNS/common"
-	"github.com/oniio/oniDNS/common/log"
+	"github.com/oniio/oniChain/common/log"
 )
 
 // CompleteTorrent complete make torrent

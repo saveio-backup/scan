@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/oniio/oniDNS/common/log"
+	"github.com/oniio/oniChain/common/log"
 	"github.com/oniio/oniDNS/config"
 	"github.com/oniio/oniDNS/dns"
 	"github.com/oniio/oniDNS/tracker"

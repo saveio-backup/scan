@@ -11,7 +11,7 @@ import (
 	"github.com/anacrolix/dht/krpc"
 	"github.com/anacrolix/missinggo"
 	"github.com/oniio/oniDNS/common"
-	"github.com/oniio/oniDNS/common/log"
+	"github.com/oniio/oniChain/common/log"
 	lru "github.com/hashicorp/golang-lru"
 )
 
