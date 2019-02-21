@@ -116,7 +116,7 @@ func (s *Server) Accepted() (err error) {
 		t := s.getTorrent(ar.InfoHash)
 		var pi *peerInfo
 		if t != nil {
-			pi = t.Peers[nodeAddr.String()] //pi==nil说明是初次连接，!=nil，说明之前连接并"start"过。
+			pi = t.Peers[nodeAddr.String()]
 		}
 		switch ar.Event.String() {
 		case "started":
@@ -192,12 +192,12 @@ func (s *Server) onAnnounceStarted(ar *AnnounceRequest, pi *peerInfo) {
 	if ar.Left == 0 {
 		t.Seeders++
 	} else {
-		t.Leechers++ //如果是短线重连的情况呢？
+		t.Leechers++
 	}
 	if t.Peers == nil {
 		t.Peers = make(map[string]*peerInfo, 0)
 	}
-	//资源分享者初次分享，记录它的信息作为种子。
+
 	pi = &peerInfo{
 		ID:       ar.PeerId,
 		Complete: ar.Left == 0,
@@ -221,7 +221,6 @@ func (s *Server) onAnnounceUpdated(ar *AnnounceRequest, pi *peerInfo) {
 	}
 	t := s.getTorrent(ar.InfoHash)
 	if t == nil {
-		log.Info("getTorrent nil in onAnnounceUpdated\n") //FIXME: for test
 		return
 	}
 	if !pi.Complete && ar.Left == 0 {
@@ -248,7 +247,7 @@ func (s *Server) onAnnounceStopped(ar *AnnounceRequest, pi *peerInfo) {
 	if pi.Complete {
 		t.Seeders -= 1
 	} else {
-		t.Leechers -= 1 //FIXME? 把else去掉，complete也应该t.Leechers-=1(complete的情况下，leecher-=1的逻辑已经在upte中）
+		t.Leechers -= 1
 	}
 	delete(t.Peers, pi.NodeAddr.String())
 	bt, err := json.Marshal(t)
