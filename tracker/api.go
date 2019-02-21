@@ -9,7 +9,7 @@ import (
 	"github.com/oniio/oniChain/common/log"
 )
 
-// CompleteTorrent complete make torrent
+// CompleteTorrent Complete make torrent
 func CompleteTorrent(infoHash common.MetaInfoHash, trackerUrl string, nodeIP net.IP, port uint16) error {
 	id := common.PeerID{}
 	rand.Read(id[:])

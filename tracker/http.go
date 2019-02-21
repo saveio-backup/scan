@@ -19,8 +19,8 @@ import (
 type httpResponse struct {
 	FailureReason string `bencode:"failure reason"`
 	Interval      int32  `bencode:"interval"`
-	TrackerId     string `bencode:"tracker id"`
-	Complete      int32  `bencode:"complete"`
+	TrackerId     string `bencode:"tracker ID"`
+	Complete      int32  `bencode:"Complete"`
 	Incomplete    int32  `bencode:"incomplete"`
 	Peers         Peers  `bencode:"peers"`
 	// BEP 7
@@ -70,8 +70,8 @@ func setAnnounceParams(_url *url.URL, ar *AnnounceRequest, opts Announce) {
 
 	q.Set("info_hash", string(ar.InfoHash[:]))
 	q.Set("peer_id", string(ar.PeerId[:]))
-	// AFAICT, port is mandatory, and there's no implied port key.
-	q.Set("port", fmt.Sprintf("%d", ar.Port))
+	// AFAICT, Port is mandatory, and there's no implied Port key.
+	q.Set("Port", fmt.Sprintf("%d", ar.Port))
 	q.Set("uploaded", strconv.FormatInt(ar.Uploaded, 10))
 	q.Set("downloaded", strconv.FormatInt(ar.Downloaded, 10))
 	q.Set("left", strconv.FormatUint(ar.Left, 10))

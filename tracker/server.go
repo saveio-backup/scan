@@ -8,19 +8,19 @@ import (
 	"math/rand"
 	"net"
 
+	"encoding/json"
 	"github.com/anacrolix/dht/krpc"
 	"github.com/anacrolix/missinggo"
-	"github.com/oniio/oniDNS/common"
 	"github.com/oniio/oniChain/common/log"
-	lru "github.com/hashicorp/golang-lru"
+	"github.com/oniio/oniDNS/common"
 )
 
 type peerInfo struct {
-	id       common.PeerID
-	complete bool
-	ip       uint32
-	port     uint16
-	nodeAddr krpc.NodeAddr
+	ID       common.PeerID
+	Complete bool
+	IP       uint32
+	Port     uint16
+	NodeAddr krpc.NodeAddr
 }
 
 type torrent struct {
@@ -32,19 +32,19 @@ type torrent struct {
 type Server struct {
 	pc    net.PacketConn
 	conns map[int64]struct{}
-	t     *lru.ARCCache
+	ls    *LevelDBStore
 }
 
 // NewServer
-func NewServer() *Server {
-	t, err := lru.NewARC(common.MAX_TRACKER_TORRENT_SIZE)
+func NewServer(path string) *Server {
+	nls, err := NewLevelDBStore(path)
 	if err != nil {
 		log.Errorf("init torrent cache err:%s\n", err)
 		return nil
 	}
 	return &Server{
 		conns: make(map[int64]struct{}, 0),
-		t:     t,
+		ls:    nls,
 	}
 }
 
@@ -84,7 +84,7 @@ func (s *Server) Accepted() (err error) {
 		connId := s.newConn()
 		err = s.respond(addr, ResponseHeader{
 			ActionConnect,
-			h.TransactionId,
+			h.TransactionId, //nil?
 		}, ConnectionResponse{
 			connId,
 		})
@@ -102,6 +102,7 @@ func (s *Server) Accepted() (err error) {
 		if err != nil {
 			return
 		}
+		//
 		if len(ar.InfoHash) == 0 {
 			err = fmt.Errorf("no info hash")
 			return
@@ -115,7 +116,7 @@ func (s *Server) Accepted() (err error) {
 		t := s.getTorrent(ar.InfoHash)
 		var pi *peerInfo
 		if t != nil {
-			pi = t.Peers[nodeAddr.String()]
+			pi = t.Peers[nodeAddr.String()] //pi==nil说明是初次连接，!=nil，说明之前连接并"start"过。
 		}
 		switch ar.Event.String() {
 		case "started":
@@ -134,10 +135,10 @@ func (s *Server) Accepted() (err error) {
 			ip := missinggo.AddrIP(addr)
 			pNodeAddrs := make([]krpc.NodeAddr, 0)
 			for _, pi := range t.Peers {
-				if !pi.complete {
+				if !pi.Complete {
 					continue
 				}
-				pNodeAddrs = append(pNodeAddrs, pi.nodeAddr)
+				pNodeAddrs = append(pNodeAddrs, pi.NodeAddr)
 				if ar.NumWant != -1 && len(pNodeAddrs) >= int(ar.NumWant) {
 					break
 				}
@@ -191,22 +192,26 @@ func (s *Server) onAnnounceStarted(ar *AnnounceRequest, pi *peerInfo) {
 	if ar.Left == 0 {
 		t.Seeders++
 	} else {
-		t.Leechers++
+		t.Leechers++ //如果是短线重连的情况呢？
 	}
 	if t.Peers == nil {
 		t.Peers = make(map[string]*peerInfo, 0)
 	}
+	//资源分享者初次分享，记录它的信息作为种子。
 	pi = &peerInfo{
-		id:       ar.PeerId,
-		complete: ar.Left == 0,
-		ip:       ar.IPAddress,
-		port:     ar.Port,
-		nodeAddr: peer,
+		ID:       ar.PeerId,
+		Complete: ar.Left == 0,
+		IP:       ar.IPAddress,
+		Port:     ar.Port,
+		NodeAddr: peer,
 	}
 
 	t.Peers[peer.String()] = pi
-
-	s.t.Add(common.MetaInfoHashToString(ar.InfoHash), t)
+	bt, err := json.Marshal(t)
+	if err != nil {
+		log.Fatalf("json Marshal error:%s", err)
+	}
+	s.ls.Put(ar.InfoHash[:], bt)
 }
 
 func (s *Server) onAnnounceUpdated(ar *AnnounceRequest, pi *peerInfo) {
@@ -216,15 +221,20 @@ func (s *Server) onAnnounceUpdated(ar *AnnounceRequest, pi *peerInfo) {
 	}
 	t := s.getTorrent(ar.InfoHash)
 	if t == nil {
+		log.Info("getTorrent nil in onAnnounceUpdated\n") //FIXME: for test
 		return
 	}
-	if !pi.complete && ar.Left == 0 {
+	if !pi.Complete && ar.Left == 0 {
 		t.Leechers -= 1
 		t.Seeders += 1
-		pi.complete = true
+		pi.Complete = true
 	}
-	t.Peers[pi.nodeAddr.String()] = pi
-	s.t.Add(common.MetaInfoHashToString(ar.InfoHash), t)
+	t.Peers[pi.NodeAddr.String()] = pi
+	bt, err := json.Marshal(t)
+	if err != nil {
+		log.Fatalf("json Marshal error:%s", err)
+	}
+	s.ls.Put(ar.InfoHash[:], bt)
 }
 
 func (s *Server) onAnnounceStopped(ar *AnnounceRequest, pi *peerInfo) {
@@ -235,13 +245,17 @@ func (s *Server) onAnnounceStopped(ar *AnnounceRequest, pi *peerInfo) {
 	if t == nil {
 		return
 	}
-	if pi.complete {
+	if pi.Complete {
 		t.Seeders -= 1
 	} else {
-		t.Leechers -= 1
+		t.Leechers -= 1 //FIXME? 把else去掉，complete也应该t.Leechers-=1(complete的情况下，leecher-=1的逻辑已经在upte中）
 	}
-	delete(t.Peers, pi.nodeAddr.String())
-	s.t.Add(common.MetaInfoHashToString(ar.InfoHash), t)
+	delete(t.Peers, pi.NodeAddr.String())
+	bt, err := json.Marshal(t)
+	if err != nil {
+		log.Fatalf("json Marshal error:%s", err)
+	}
+	s.ls.Put(ar.InfoHash[:], bt)
 }
 
 func (s *Server) onAnnounceCompleted(ar *AnnounceRequest, pi *peerInfo) {
@@ -249,30 +263,30 @@ func (s *Server) onAnnounceCompleted(ar *AnnounceRequest, pi *peerInfo) {
 		s.onAnnounceStarted(ar, nil)
 		return
 	}
-	t := s.getTorrent(ar.InfoHash)
-	if pi.complete {
+	if pi.Complete {
 		s.onAnnounceUpdated(ar, pi)
 		return
 	}
-
+	t := s.getTorrent(ar.InfoHash)
 	t.Seeders += 1
 	t.Leechers -= 1
-	pi.complete = true
-	t.Peers[pi.nodeAddr.String()] = pi
-	s.t.Add(common.MetaInfoHashToString(ar.InfoHash), t)
+	pi.Complete = true
+	t.Peers[pi.NodeAddr.String()] = pi
+	bt, err := json.Marshal(t)
+	if err != nil {
+		log.Fatalf("json Marshal error:%s", err)
+	}
+	s.ls.Put(ar.InfoHash[:], bt)
 }
 
 func (s *Server) getTorrent(infoHash common.MetaInfoHash) *torrent {
-	var t *torrent
-	v, ok := s.t.Get(common.MetaInfoHashToString(infoHash))
-	if v == nil || !ok {
+	var t torrent
+	v, err := s.ls.Get(infoHash[:])
+	json.Unmarshal(v, &t)
+	if v == nil || err != nil {
 		return nil
 	} else {
-		t, ok = v.(*torrent)
-		if !ok {
-			return nil
-		}
-		return t
+		return &t
 	}
 }
 func marshal(parts ...interface{}) (ret []byte, err error) {

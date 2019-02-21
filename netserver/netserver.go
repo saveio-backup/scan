@@ -9,6 +9,9 @@ import (
 	"github.com/oniio/oniDNS/dns"
 	"github.com/oniio/oniDNS/tracker"
 )
+var (
+	TRACKER_DB_PATH="./torrentdb"
+)
 
 type NetServer struct {
 	tsvr *tracker.Server
@@ -17,7 +20,7 @@ type NetServer struct {
 
 func NewNetServer() *NetServer {
 	return &NetServer{
-		tsvr: tracker.NewServer(),
+		tsvr: tracker.NewServer(TRACKER_DB_PATH),
 		dsvr: dns.NewServer(),
 	}
 }

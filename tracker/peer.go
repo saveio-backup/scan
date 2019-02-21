@@ -14,9 +14,9 @@ type Peer struct {
 
 // Set from the non-compact form in BEP 3.
 func (p *Peer) fromDictInterface(d map[string]interface{}) {
-	p.IP = net.ParseIP(d["ip"].(string))
-	p.ID = []byte(d["peer id"].(string))
-	p.Port = int(d["port"].(int64))
+	p.IP = net.ParseIP(d["IP"].(string))
+	p.ID = []byte(d["peer ID"].(string))
+	p.Port = int(d["Port"].(int64))
 }
 
 func (p Peer) FromNodeAddr(na krpc.NodeAddr) Peer {

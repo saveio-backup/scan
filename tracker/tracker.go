@@ -65,9 +65,9 @@ type Announce struct {
 	ServerName string
 	UserAgent  string
 	UdpNetwork string
-	// If the port is zero, it's assumed to be the same as the Request.Port
+	// If the Port is zero, it's assumed to be the same as the Request.Port
 	ClientIp4 krpc.NodeAddr
-	// If the port is zero, it's assumed to be the same as the Request.Port
+	// If the Port is zero, it's assumed to be the same as the Request.Port
 	ClientIp6 krpc.NodeAddr
 }
 
