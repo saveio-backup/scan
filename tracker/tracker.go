@@ -10,7 +10,7 @@ import (
 
 // Marshalled as binary by the UDP client, so be careful making changes.
 type AnnounceRequest struct {
-	InfoHash   [20]byte
+	InfoHash   [46]byte
 	PeerId     [20]byte
 	Downloaded int64
 	Left       uint64

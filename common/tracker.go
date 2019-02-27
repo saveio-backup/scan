@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 )
 
-type MetaInfoHash [20]byte // MetaInfo hash
+type MetaInfoHash [46]byte // MetaInfo hash
 type PeerID [20]byte       // Peer's ID
 
 // tracker

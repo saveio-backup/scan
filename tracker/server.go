@@ -9,6 +9,7 @@ import (
 	"net"
 
 	"encoding/json"
+
 	"github.com/anacrolix/dht/krpc"
 	"github.com/anacrolix/missinggo"
 	"github.com/oniio/oniChain/common/log"
@@ -130,7 +131,17 @@ func (s *Server) Accepted() (err error) {
 		}
 		// update
 		t = s.getTorrent(ar.InfoHash)
-
+		if t == nil || t.Peers == nil {
+			err = s.respond(addr, ResponseHeader{
+				TransactionId: h.TransactionId,
+				Action:        ActionAnnounce,
+			}, AnnounceResponseHeader{
+				Interval: 900,
+				Leechers: 0,
+				Seeders:  0,
+			}, []byte{})
+			return
+		}
 		bm := func() encoding.BinaryMarshaler {
 			ip := missinggo.AddrIP(addr)
 			pNodeAddrs := make([]krpc.NodeAddr, 0)
@@ -138,7 +149,14 @@ func (s *Server) Accepted() (err error) {
 				if !pi.Complete {
 					continue
 				}
-				pNodeAddrs = append(pNodeAddrs, pi.NodeAddr)
+				nodeAddIp := pi.NodeAddr.IP.To4()
+				if nodeAddIp == nil {
+					nodeAddIp = pi.NodeAddr.IP.To16()
+				}
+				pNodeAddrs = append(pNodeAddrs, krpc.NodeAddr{
+					IP:   nodeAddIp,
+					Port: pi.NodeAddr.Port,
+				})
 				if ar.NumWant != -1 && len(pNodeAddrs) >= int(ar.NumWant) {
 					break
 				}

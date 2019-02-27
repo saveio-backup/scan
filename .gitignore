@@ -27,3 +27,5 @@ _testmain.go
 dseeds
 lseeds
 tracker/vendor
+torrentdb/*
+*.log
