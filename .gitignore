@@ -29,3 +29,4 @@ lseeds
 tracker/vendor
 torrentdb/*
 *.log
+.idea
