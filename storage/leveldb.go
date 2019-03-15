@@ -3,7 +3,7 @@
  * Author: LiYong Zhang
  * Create: 2019-02-18 
 */
-package tracker
+package storage
 
 import (
 	"github.com/syndtr/goleveldb/leveldb"
@@ -15,6 +15,7 @@ import (
 	"github.com/oniio/oniChain/core/store/common"
 )
 
+
 //LevelDB store
 type LevelDBStore struct {
 	db    *leveldb.DB // LevelDB instance
@@ -24,6 +25,7 @@ type LevelDBStore struct {
 // used to compute the size of bloom filter bits array .
 // too small will lead to high false positive rate.
 const BITSPERKEY = 10
+
 
 //NewLevelDBStore return LevelDBStore instance
 func NewLevelDBStore(file string) (*LevelDBStore, error) {

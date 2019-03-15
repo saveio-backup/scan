@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package messages;
+
+message SyncMessage {
+    bytes infoHash = 1;
+    bytes torrent = 2;
+}
+
+message Bytes {
+    bytes data = 1;
+}
+
+message Keepalive {
+}
+
+message KeepaliveResponse {
+}
+
+message Disconnect{
+}

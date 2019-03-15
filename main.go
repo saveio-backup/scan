@@ -13,6 +13,9 @@ import (
 	"github.com/oniio/oniDNS/netserver"
 	"github.com/urfave/cli"
 )
+var (
+	TRACKER_DB_PATH="./torrentdb"
+)
 
 func initAPP() *cli.App {
 	app := cli.NewApp()

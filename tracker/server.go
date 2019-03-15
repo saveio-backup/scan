@@ -14,6 +14,7 @@ import (
 	"github.com/anacrolix/missinggo"
 	"github.com/oniio/oniChain/common/log"
 	"github.com/oniio/oniDNS/common"
+	"github.com/oniio/oniDNS/storage"
 )
 
 type peerInfo struct {
@@ -33,19 +34,20 @@ type torrent struct {
 type Server struct {
 	pc    net.PacketConn
 	conns map[int64]struct{}
-	ls    *LevelDBStore
+	ls    *storage.LevelDBStore
+	Net   *Network
 }
 
 // NewServer
 func NewServer(path string) *Server {
-	nls, err := NewLevelDBStore(path)
+	nls, err := storage.NewLevelDBStore(path)
 	if err != nil {
 		log.Errorf("init torrent cache err:%s\n", err)
 		return nil
 	}
 	return &Server{
 		conns: make(map[int64]struct{}, 0),
-		ls:    nls,
+		ls: nls,
 	}
 }
 
@@ -85,7 +87,7 @@ func (s *Server) Accepted() (err error) {
 		connId := s.newConn()
 		err = s.respond(addr, ResponseHeader{
 			ActionConnect,
-			h.TransactionId, //nil?
+			h.TransactionId,
 		}, ConnectionResponse{
 			connId,
 		})
@@ -230,6 +232,7 @@ func (s *Server) onAnnounceStarted(ar *AnnounceRequest, pi *peerInfo) {
 		log.Fatalf("json Marshal error:%s", err)
 	}
 	s.ls.Put(ar.InfoHash[:], bt)
+	s.Net.SyncTorrent(ar.InfoHash[:], bt)
 }
 
 func (s *Server) onAnnounceUpdated(ar *AnnounceRequest, pi *peerInfo) {
@@ -252,6 +255,7 @@ func (s *Server) onAnnounceUpdated(ar *AnnounceRequest, pi *peerInfo) {
 		log.Fatalf("json Marshal error:%s", err)
 	}
 	s.ls.Put(ar.InfoHash[:], bt)
+	s.Net.SyncTorrent(ar.InfoHash[:], bt)
 }
 
 func (s *Server) onAnnounceStopped(ar *AnnounceRequest, pi *peerInfo) {
@@ -273,6 +277,7 @@ func (s *Server) onAnnounceStopped(ar *AnnounceRequest, pi *peerInfo) {
 		log.Fatalf("json Marshal error:%s", err)
 	}
 	s.ls.Put(ar.InfoHash[:], bt)
+	s.Net.SyncTorrent(ar.InfoHash[:], bt)
 }
 
 func (s *Server) onAnnounceCompleted(ar *AnnounceRequest, pi *peerInfo) {
@@ -294,6 +299,7 @@ func (s *Server) onAnnounceCompleted(ar *AnnounceRequest, pi *peerInfo) {
 		log.Fatalf("json Marshal error:%s", err)
 	}
 	s.ls.Put(ar.InfoHash[:], bt)
+	s.Net.SyncTorrent(ar.InfoHash[:], bt)
 }
 
 func (s *Server) getTorrent(infoHash common.MetaInfoHash) *torrent {

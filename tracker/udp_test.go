@@ -21,7 +21,7 @@ var trackers = []string{
 	"udp://tracker.leechers-paradise.org:6969",
 }
 
-// Ensure net.IPs are stored big-endian, to match the way they're read from
+// Ensure Net.IPs are stored big-endian, to match the way they're read from
 // the wire.
 func TestNetIPv4Bytes(t *testing.T) {
 	ip := net.IP([]byte{127, 0, 0, 1})
@@ -87,8 +87,8 @@ func TestConvertInt16ToInt(t *testing.T) {
 func TestAnnounceLocalhost(t *testing.T) {
 	// t.Parallel()
 	// prs := make([]krpc.NodeAddr, 0)
-	// prs = append(prs, krpc.NodeAddr{IP: net.IP{0x0, 0x1, 0x2, 0x3}, Port: 0})
-	// prs = append(prs, krpc.NodeAddr{IP: net.IP{0x0, 0x1, 0x2, 0x3}, Port: 1})
+	// prs = append(prs, krpc.NodeAddr{IP: Net.IP{0x0, 0x1, 0x2, 0x3}, Port: 0})
+	// prs = append(prs, krpc.NodeAddr{IP: Net.IP{0x0, 0x1, 0x2, 0x3}, Port: 1})
 	// srv := Server{
 	// 	t: map[[20]byte]torrent{
 	// 		{0xa3, 0x56, 0x41, 0x43, 0x74, 0x23, 0xe6, 0x26, 0xd9, 0x38, 0x25, 0x4a, 0x6b, 0x80, 0x49, 0x10, 0xa6, 0x67, 0xa, 0xc1}: {
@@ -99,7 +99,7 @@ func TestAnnounceLocalhost(t *testing.T) {
 	// 	},
 	// }
 	// var err error
-	// srv.pc, err = net.ListenPacket("udp", ":0")
+	// srv.pc, err = Net.ListenPacket("udp", ":0")
 	// require.NoError(t, err)
 	// defer srv.pc.Close()
 	// go func() {
@@ -138,7 +138,7 @@ func TestUDPTracker(t *testing.T) {
 		TrackerUrl: trackers[0],
 		Request:    req,
 	}.Do()
-	// Skip any net errors as we don't control the server.
+	// Skip any Net errors as we don't control the server.
 	if _, ok := err.(net.Error); ok {
 		t.Skip(err)
 	}

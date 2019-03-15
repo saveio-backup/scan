@@ -8,6 +8,7 @@ import (
 	"github.com/oniio/oniDNS/config"
 	"github.com/oniio/oniDNS/dns"
 	"github.com/oniio/oniDNS/tracker"
+	"github.com/oniio/oniDNS/storage"
 )
 var (
 	TRACKER_DB_PATH="./torrentdb"
@@ -16,27 +17,32 @@ var (
 type NetServer struct {
 	tsvr *tracker.Server
 	dsvr *dns.Server
+	ls *storage.LevelDBStore
 }
 
 func NewNetServer() *NetServer {
 	return &NetServer{
 		tsvr: tracker.NewServer(TRACKER_DB_PATH),
 		dsvr: dns.NewServer(),
+
 	}
 }
 
 // Start start netserver service
 func (ns *NetServer) Run() error {
 	go ns.startTrackerListening()
+	go ns.startSyncNet()
 	return nil
 }
 
 // startTrackerListening start tracker listen
 func (ns *NetServer) startTrackerListening() error {
 	pc, err := net.ListenPacket("udp", fmt.Sprintf(":%d", config.DefaultConfig.Tracker.UdpPort))
-	defer pc.Close()
 	if err != nil {
 		return err
+	}
+	if pc!=nil{
+		defer pc.Close()
 	}
 	ns.tsvr.SetPacketConn(pc)
 	err = ns.tsvr.Run()
@@ -53,5 +59,15 @@ func (ns *NetServer) startDnsListening() error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func (ns *NetServer)startSyncNet()error{
+	ns.tsvr.Net=new(tracker.Network)
+	err:=ns.tsvr.Net.Start()
+	if err!=nil{
+		return err
+	}
+	
 	return nil
 }

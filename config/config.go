@@ -15,6 +15,7 @@ const (
 const (
 	DEFAULT_TRACKER_PORT = 6369
 	DEFAULT_TRACKER_FEE  = 0
+	DEFAULT_SYN_PORT     = 6699
 
 	DEFAULT_DNS_PORT = 53
 	DEFAULT_DNS_FEE  = 0
@@ -22,8 +23,10 @@ const (
 
 // TrackerConfig config
 type TrackerConfig struct {
-	UdpPort uint   // UDP server port
-	Fee     uint64 // Service fee
+	UdpPort   uint   // UDP server port
+	Fee       uint64 // Service fee
+	SeedLists []string
+	SyncPort  uint //tracker sync msg
 }
 
 // DnsConfig dns config
@@ -44,8 +47,10 @@ func DefSeedsConfig() *CommonConfig {
 		LogLevel:  DEFAULT_LOG_LEVEL,
 		LogStderr: false,
 		Tracker: TrackerConfig{
-			UdpPort: DEFAULT_TRACKER_PORT,
-			Fee:     DEFAULT_TRACKER_FEE,
+			UdpPort:   DEFAULT_TRACKER_PORT,
+			SyncPort:  DEFAULT_SYN_PORT,
+			Fee:       DEFAULT_TRACKER_FEE,
+			SeedLists: nil,
 		},
 		Dns: DnsConfig{
 			UdpPort: DEFAULT_DNS_PORT,
