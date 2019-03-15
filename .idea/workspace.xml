@@ -2,7 +2,10 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="a6328195-22db-4d04-b722-c64bd1da3c1f" name="Default" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" afterPath="" />
+      <change beforePath="$PROJECT_DIR$/.idea/oniDNS.iml" afterPath="" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" afterPath="" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -199,21 +202,6 @@
             <path>
               <item name="oniDNS" type="b2602c69:ProjectViewProjectNode" />
               <item name="oniDNS" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="oniDNS" type="b2602c69:ProjectViewProjectNode" />
-              <item name="oniDNS" type="462c0819:PsiDirectoryNode" />
-              <item name="netserver" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="oniDNS" type="b2602c69:ProjectViewProjectNode" />
-              <item name="oniDNS" type="462c0819:PsiDirectoryNode" />
-              <item name="storage" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="oniDNS" type="b2602c69:ProjectViewProjectNode" />
-              <item name="oniDNS" type="462c0819:PsiDirectoryNode" />
-              <item name="tracker" type="462c0819:PsiDirectoryNode" />
             </path>
           </expand>
           <select />
