@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package messages;
+
+message Registry {
+    string walletAddr = 1;
+    string hostPort = 2;
+}
+
+

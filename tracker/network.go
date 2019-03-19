@@ -18,14 +18,15 @@ import (
 	"github.com/oniio/oniP2p/types/opcode"
 	m "github.com/oniio/oniDNS/tracker/messages"
 	"github.com/oniio/oniDNS/tracker/common"
+	"fmt"
 )
 
 type Network struct {
 	*network.Component
-	n         *network.Network
-	peerAddrs []string
+	n          *network.Network
+	peerAddrs  []string
 	listenAddr string
-	ts         *Server
+	*Server
 }
 
 func (this *Network) Start() error {
@@ -34,6 +35,8 @@ func (this *Network) Start() error {
 	builder.SetKeys(keys)
 	builder.SetAddress(network.FormatAddress("udp", "127.0.0.1", uint16(config.DefaultConfig.Tracker.SyncPort)))
 	opcode.RegisterMessageType(opcode.Opcode(common.SYNC_MSG_OP_CODE), &m.SyncMessage{})
+	opcode.RegisterMessageType(opcode.Opcode(common.SYNC_REGMSG_OP_CODE), &m.Registry{})
+	opcode.RegisterMessageType(opcode.Opcode(common.SYNC_UNREGMSG_OP_CODE), &m.UnRegistry{})
 	peerStateChan := make(chan *keepalive.PeerStateEvent, 10)
 	options := []keepalive.ComponentOption{
 		keepalive.WithKeepaliveInterval(keepalive.DefaultKeepaliveInterval),
@@ -65,7 +68,7 @@ func (this *Network) Start() error {
 	return nil
 }
 
-func (this *Network)NewNetwork()*Network{
+func (this *Network) NewNetwork() *Network {
 	return new(Network)
 
 }
@@ -77,9 +80,29 @@ func (this *Network) ListenAddr() string {
 func (this *Network) Receive(ctx *network.ComponentContext) error {
 	switch msg := ctx.Message().(type) {
 	case *m.SyncMessage:
-		v := msg.Torrent
 		k := msg.InfoHash
-		this.ts.ls.Put(k, v)
+		v := msg.Torrent
+
+		if err:=this.ls.Put(k, v);err!=nil{
+			return fmt.Errorf("[Receive] sync filemessage error:%v",err)
+		}
+
+	case *m.Registry:
+		walletAddr := msg.WalletAddr
+		hostPort:=msg.HostPort
+
+		if err:=RegMsgDB.Put(walletAddr,hostPort);err!=nil{
+			return fmt.Errorf("[Receive] sync regmessage error:%v",err)
+		}
+
+	case *m.UnRegistry:
+		walletAddr:=msg.WalletAddr
+		if err:=RegMsgDB.Delete(walletAddr);err!=nil{
+			return fmt.Errorf("[Receive] sync unregmessage error:%v",err)
+		}
+	default:
+		return fmt.Errorf("[Receive] unknown message type:%v",msg)
+
 	}
 	return nil
 }
@@ -119,4 +142,20 @@ func (this *Network) SyncTorrent(k, v []byte) error {
 	ctx := network.WithSignMessage(context.Background(), true)
 
 	return this.BroadCast(ctx, ms)
+}
+
+func (this *Network) SyncRegMsg(walletAddr, hostPort string) error {
+	rm := &m.Registry{}
+	rm.WalletAddr = walletAddr
+	rm.HostPort = hostPort
+
+	ctx := network.WithSignMessage(context.Background(), true)
+	return this.BroadCast(ctx, rm)
+}
+
+func (this *Network) SyncUnRegMsg(walletAddr string) error {
+	rm := &m.UnRegistry{}
+	rm.WalletAddr = walletAddr
+	ctx := network.WithSignMessage(context.Background(), true)
+	return this.BroadCast(ctx, rm)
 }

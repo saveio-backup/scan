@@ -341,3 +341,4 @@ func (s *Server) newConn() (ret int64) {
 	s.conns[ret] = struct{}{}
 	return
 }
+

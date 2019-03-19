@@ -12,10 +12,12 @@ import (
 	"github.com/oniio/oniDNS/config"
 	"github.com/oniio/oniDNS/netserver"
 	"github.com/urfave/cli"
+	"github.com/oniio/oniDNS/tracker"
 )
 var (
-	TRACKER_DB_PATH="./torrentdb"
+	TRACKER_RegDB_PATH="./regMsgdb"
 )
+
 
 func initAPP() *cli.App {
 	app := cli.NewApp()
@@ -51,12 +53,17 @@ func seed(ctx *cli.Context) {
 		return
 	}
 	svr := netserver.NewNetServer()
+
 	// svr := &dsp.Server{
 	// 	State: &dsp.Info{},
 	// }
 	if err = svr.Run(); err != nil {
 		log.Errorf("run ddns server error:%s", err)
 		return
+	}
+	tracker.RegMsgDB,err=tracker.InitRegMsgDB(TRACKER_RegDB_PATH)
+	if err!=nil{
+		log.Fatalf("InitRegMsgDB error: %v",err)
 	}
 
 	waitToExit()
@@ -82,6 +89,7 @@ func initLog(ctx *cli.Context) {
 	}
 	log.Info("start logging...")
 }
+
 
 func waitToExit() {
 	exit := make(chan bool, 0)
