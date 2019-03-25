@@ -14,7 +14,8 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/util"
 	"github.com/oniio/oniChain/core/store/common"
 )
-
+//global variable TDB
+var TDB *LevelDBStore
 
 //LevelDB store
 type LevelDBStore struct {

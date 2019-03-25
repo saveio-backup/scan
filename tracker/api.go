@@ -6,10 +6,11 @@ import (
 	"net"
 
 	"github.com/oniio/oniDNS/common"
-	cm "github.com/oniio/oniDNS/tracker/common"
 	"github.com/oniio/oniChain/common/log"
 	"github.com/oniio/oniChain/errors"
 	"fmt"
+	"github.com/oniio/oniDNS/storage"
+	"github.com/oniio/oniDNS/messageBus"
 )
 
 // CompleteTorrent Complete make torrent
@@ -63,9 +64,27 @@ func EndPointRegistry(walletAddr,hostPort string )error{
 	if walletAddr==""|| hostPort==""{
 		return errors.NewErr("[EndPointRegistry] walletAddr or hostPort is null")
 	}
-	if err:=RegMsgDB.Put(walletAddr,hostPort);err!=nil{
+	k,v:=common.WHPTobyte(walletAddr,hostPort)
+	if err:=storage.TDB.Put(k,v);err!=nil{
 		return err
 	}
+	messageBus.MsgBus.MsgBox <- &messageBus.RegMsg{WalletAddr:walletAddr,HostPort:hostPort}
+	return nil
+}
+
+func EndPointRegUpdate(walletAddr,hostPort string )error{
+	if walletAddr==""|| hostPort==""{
+		return errors.NewErr("[EndPointRegistry] walletAddr or hostPort is null")
+	}
+	k,v:=common.WHPTobyte(walletAddr,hostPort)
+	exist,err:=storage.TDB.Has(k)
+	if !exist || err!=nil{
+		return errors.NewErr("[EndPointRegUpdate] wallet is not Registed!")
+	}
+	if err:=storage.TDB.Put(k,v);err!=nil{
+		return err
+	}
+	messageBus.MsgBus.MsgBox <- &messageBus.RegMsg{WalletAddr:walletAddr,HostPort:hostPort}
 	return nil
 }
 
@@ -73,20 +92,23 @@ func EndPointUnRegistry(walletAddr string )error{
 	if walletAddr==""{
 		return errors.NewErr("[EndPointUnRegistry] walletAddr is null")
 	}
-	w,_:=cm.WHPTobyte(walletAddr,"")
-	exist,_:=RegMsgDB.Has(w)
+	w,_:=common.WHPTobyte(walletAddr,"")
+	exist,_:=storage.TDB.Has(w)
 	if !exist{
-		return errors.NewErr("[EndPointUnRegistry] wallet is not Registed!")
+		return fmt.Errorf("[EndPointUnRegistry] wallet %s is not Registed!",walletAddr)
 	}
 
-	if err:=RegMsgDB.Delete(walletAddr);err!=nil{
+	if err:=storage.TDB.Delete(w);err!=nil{
 		return err
 	}
+	messageBus.MsgBus.MsgBox <- &messageBus.RegMsg{WalletAddr:walletAddr}
+
 	return nil
 }
 
 func EndPointQuerry(walletAddr string)(string,error){
-	hpBytes,err:=RegMsgDB.Get(walletAddr)
+	w,_:=common.WHPTobyte(walletAddr,"")
+	hpBytes,err:=storage.TDB.Get(w)
 	if err!=nil{
 		return "",err
 	}

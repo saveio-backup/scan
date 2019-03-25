@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package messages;
+package protoMessages;
 
-message SyncMessage {
+message Torrent {
     bytes infoHash = 1;
     bytes torrent = 2;
 }

@@ -1,7 +1,43 @@
 package: github.com/oniio/oniDNS
 import:
+- package: github.com/anacrolix/dht
+  subpackages:
+  - krpc
+- package: github.com/anacrolix/missinggo
+  subpackages:
+  - httptoo
+  - pproffd
+- package: github.com/anacrolix/torrent
+  subpackages:
+  - bencode
+- package: github.com/golang/protobuf
+  subpackages:
+  - proto
+- package: github.com/oniio/oniChain
+  subpackages:
+  - common
+  - common/log
+  - core/store/common
+  - errors
+- package: github.com/oniio/oniP2p
+  subpackages:
+  - crypto/ed25519
+  - network
+  - network/keepalive
+  - network/nat
+  - types/opcode
+- package: github.com/syndtr/goleveldb
+  subpackages:
+  - leveldb
+  - leveldb/errors
+  - leveldb/filter
+  - leveldb/opt
+  - leveldb/storage
+  - leveldb/util
 - package: github.com/urfave/cli
-- package: github.com/ontio/ontology-crypto
+testImport:
+- package: github.com/anacrolix/envpprof
 - package: github.com/stretchr/testify
-- package: github.com/itchyny/base58-go
-- package: golang.org/x/crypto
+  subpackages:
+  - assert
+  - require

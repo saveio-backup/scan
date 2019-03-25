@@ -12,12 +12,13 @@ import (
 	"github.com/oniio/oniDNS/config"
 	"github.com/oniio/oniDNS/netserver"
 	"github.com/urfave/cli"
-	"github.com/oniio/oniDNS/tracker"
-)
-var (
-	TRACKER_RegDB_PATH="./regMsgdb"
+	"github.com/oniio/oniDNS/storage"
+	"github.com/oniio/oniDNS/messageBus"
 )
 
+var (
+	TRACKER_DB_PATH = "./TrackerLevelDB"
+)
 
 func initAPP() *cli.App {
 	app := cli.NewApp()
@@ -54,16 +55,16 @@ func seed(ctx *cli.Context) {
 	}
 	svr := netserver.NewNetServer()
 
-	// svr := &dsp.Server{
-	// 	State: &dsp.Info{},
-	// }
 	if err = svr.Run(); err != nil {
 		log.Errorf("run ddns server error:%s", err)
 		return
 	}
-	tracker.RegMsgDB,err=tracker.InitRegMsgDB(TRACKER_RegDB_PATH)
-	if err!=nil{
-		log.Fatalf("InitRegMsgDB error: %v",err)
+	if err=InitMsgBus();err!=nil{
+		log.Fatalf("InitMsgBus error: %v",err)
+	}
+	storage.TDB, err = InitTrackerDB(TRACKER_DB_PATH)
+	if err != nil {
+		log.Fatalf("InitTrackerDB error: %v", err)
 	}
 
 	waitToExit()
@@ -90,6 +91,19 @@ func initLog(ctx *cli.Context) {
 	log.Info("start logging...")
 }
 
+func InitTrackerDB(path string) (*storage.LevelDBStore, error) {
+	db, err := storage.NewLevelDBStore(path)
+	if err != nil {
+		return nil, err
+	}
+	log.Info("Tracker DB init success")
+	return db, nil
+}
+
+func InitMsgBus() error {
+	messageBus.MsgBus=messageBus.NewMsgBus()
+	return messageBus.MsgBus.Start()
+}
 
 func waitToExit() {
 	exit := make(chan bool, 0)

@@ -15,6 +15,7 @@ import (
 	"github.com/oniio/oniChain/common/log"
 	"github.com/oniio/oniDNS/common"
 	"github.com/oniio/oniDNS/storage"
+	"github.com/oniio/oniDNS/messageBus"
 )
 
 type peerInfo struct {
@@ -34,20 +35,12 @@ type torrent struct {
 type Server struct {
 	pc    net.PacketConn
 	conns map[int64]struct{}
-	ls    *storage.LevelDBStore
-	Net   *Network
 }
 
 // NewServer
-func NewServer(path string) *Server {
-	nls, err := storage.NewLevelDBStore(path)
-	if err != nil {
-		log.Errorf("init torrent cache err:%s\n", err)
-		return nil
-	}
+func NewServer() *Server {
 	return &Server{
 		conns: make(map[int64]struct{}, 0),
-		ls: nls,
 	}
 }
 
@@ -58,6 +51,7 @@ func (s *Server) SetPacketConn(p net.PacketConn) {
 
 // Run tracker server
 func (s *Server) Run() error {
+	log.Info("Tracker is accepting request service in goroutine")
 	for {
 		err := s.Accepted()
 		if err != nil {
@@ -231,8 +225,11 @@ func (s *Server) onAnnounceStarted(ar *AnnounceRequest, pi *peerInfo) {
 	if err != nil {
 		log.Fatalf("json Marshal error:%s", err)
 	}
-	s.ls.Put(ar.InfoHash[:], bt)
-	s.Net.SyncTorrent(ar.InfoHash[:], bt)
+	storage.TDB.Put(ar.InfoHash[:], bt)
+	messageBus.MsgBus.TNTBox <- &messageBus.TorrenMsg{
+		InfoHash:ar.InfoHash[:],
+		BytesTorrent:bt,
+	}
 }
 
 func (s *Server) onAnnounceUpdated(ar *AnnounceRequest, pi *peerInfo) {
@@ -254,8 +251,11 @@ func (s *Server) onAnnounceUpdated(ar *AnnounceRequest, pi *peerInfo) {
 	if err != nil {
 		log.Fatalf("json Marshal error:%s", err)
 	}
-	s.ls.Put(ar.InfoHash[:], bt)
-	s.Net.SyncTorrent(ar.InfoHash[:], bt)
+	storage.TDB.Put(ar.InfoHash[:], bt)
+	messageBus.MsgBus.TNTBox <- &messageBus.TorrenMsg{
+		InfoHash:ar.InfoHash[:],
+		BytesTorrent:bt,
+	}
 }
 
 func (s *Server) onAnnounceStopped(ar *AnnounceRequest, pi *peerInfo) {
@@ -276,8 +276,11 @@ func (s *Server) onAnnounceStopped(ar *AnnounceRequest, pi *peerInfo) {
 	if err != nil {
 		log.Fatalf("json Marshal error:%s", err)
 	}
-	s.ls.Put(ar.InfoHash[:], bt)
-	s.Net.SyncTorrent(ar.InfoHash[:], bt)
+	storage.TDB.Put(ar.InfoHash[:], bt)
+	messageBus.MsgBus.TNTBox <- &messageBus.TorrenMsg{
+		InfoHash:ar.InfoHash[:],
+		BytesTorrent:bt,
+	}
 }
 
 func (s *Server) onAnnounceCompleted(ar *AnnounceRequest, pi *peerInfo) {
@@ -298,13 +301,16 @@ func (s *Server) onAnnounceCompleted(ar *AnnounceRequest, pi *peerInfo) {
 	if err != nil {
 		log.Fatalf("json Marshal error:%s", err)
 	}
-	s.ls.Put(ar.InfoHash[:], bt)
-	s.Net.SyncTorrent(ar.InfoHash[:], bt)
+	storage.TDB.Put(ar.InfoHash[:], bt)
+	messageBus.MsgBus.TNTBox <- &messageBus.TorrenMsg{
+		InfoHash:ar.InfoHash[:],
+		BytesTorrent:bt,
+	}
 }
 
 func (s *Server) getTorrent(infoHash common.MetaInfoHash) *torrent {
 	var t torrent
-	v, err := s.ls.Get(infoHash[:])
+	v, err := storage.TDB.Get(infoHash[:])
 	json.Unmarshal(v, &t)
 	if v == nil || err != nil {
 		return nil
@@ -341,4 +347,3 @@ func (s *Server) newConn() (ret int64) {
 	s.conns[ret] = struct{}{}
 	return
 }
-

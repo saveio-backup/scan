@@ -20,7 +20,7 @@ type NetServer struct {
 
 func NewNetServer() *NetServer {
 	return &NetServer{
-		tsvr: tracker.NewServer(TRACKER_DB_PATH),
+		tsvr: tracker.NewServer(),
 		dsvr: dns.NewServer(),
 
 	}
@@ -29,7 +29,7 @@ func NewNetServer() *NetServer {
 // Start start netserver service
 func (ns *NetServer) Run() error {
 	go ns.startTrackerListening()
-	go ns.startSyncNet()
+	//go ns.startSyncNet()
 	return nil
 }
 
@@ -60,12 +60,12 @@ func (ns *NetServer) startDnsListening() error {
 	return nil
 }
 
-func (ns *NetServer)startSyncNet()error{
-	ns.tsvr.Net=new(tracker.Network)
-	err:=ns.tsvr.Net.Start()
-	if err!=nil{
-		return err
-	}
-	
-	return nil
-}
+//func (ns *NetServer)startSyncNet()error{
+//	ns.tsvr.Net=new(tracker.Network)
+//	err:=ns.tsvr.Net.Start()
+//	if err!=nil{
+//		return err
+//	}
+//
+//	return nil
+//}
