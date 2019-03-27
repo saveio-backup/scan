@@ -235,7 +235,6 @@ func (c *udpAnnounce) request(action Action, args interface{}, options []byte) (
 			err = errors.New(buf.String())
 		}
 		responseBody = buf
-		fmt.Println("resp body",responseBody)
 		return
 	}
 }
