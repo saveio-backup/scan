@@ -62,6 +62,7 @@ func (s *Server) Run() error {
 
 // Accpted request service
 func (s *Server) Accepted() (err error) {
+	log.Info("tracker server is accepting request service")
 	b := make([]byte, 0x10000)
 	n, addr, err := s.pc.ReadFrom(b)
 	if err != nil {

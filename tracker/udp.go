@@ -15,6 +15,7 @@ import (
 	"github.com/anacrolix/dht/krpc"
 	"github.com/anacrolix/missinggo"
 	"github.com/anacrolix/missinggo/pproffd"
+	"github.com/oniio/oniChain/common/log"
 )
 
 type Action int32
@@ -203,6 +204,10 @@ func (c *udpAnnounce) request(action Action, args interface{}, options []byte) (
 	for {
 		var n int
 		n, err = c.socket.Read(b)
+		if err!=nil{
+			log.Error(err)
+			return
+		}
 		if opE, ok := err.(*net.OpError); ok {
 			if opE.Timeout() {
 				c.contiguousTimeouts++
@@ -230,6 +235,7 @@ func (c *udpAnnounce) request(action Action, args interface{}, options []byte) (
 			err = errors.New(buf.String())
 		}
 		responseBody = buf
+		fmt.Println("resp body",responseBody)
 		return
 	}
 }
