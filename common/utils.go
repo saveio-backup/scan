@@ -8,7 +8,11 @@ package common
 import (
 	"bytes"
 	netcomm "github.com/oniio/oniChain/common"
-	)
+	"os"
+	"syscall"
+	"os/signal"
+	"github.com/oniio/oniChain/common/log"
+)
 
 func WHPTobyte(walletAddr,hostPort string)([]byte,[]byte){
 	wAddr,err:=netcomm.AddressFromBase58(walletAddr)
@@ -22,4 +26,18 @@ func WHPTobyte(walletAddr,hostPort string)([]byte,[]byte){
 	key:=bf.Bytes()
 	value:=[]byte(hostPort)
 	return key,value
+}
+
+func WaitToExit() {
+	exit := make(chan bool, 0)
+	sc := make(chan os.Signal, 1)
+	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
+	go func() {
+		for sig := range sc {
+			log.Infof("seeds received exit signal:%v.", sig.String())
+			close(exit)
+			break
+		}
+	}()
+	<-exit
 }

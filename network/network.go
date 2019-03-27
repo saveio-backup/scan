@@ -18,6 +18,7 @@ import (
 	"github.com/oniio/oniP2p/types/opcode"
 	pm "github.com/oniio/oniDNS/messageBus/protoMessages"
 	"github.com/oniio/oniDNS/tracker/common"
+	comm "github.com/oniio/oniDNS/common"
 )
 
 type SyncNetwork struct {
@@ -64,7 +65,7 @@ func (this *SyncNetwork) Start() error {
 		this.Bootstrap(peers...)
 		log.Debug("had bootStraped peers")
 	}
-
+	comm.WaitToExit()
 	return nil
 }
 

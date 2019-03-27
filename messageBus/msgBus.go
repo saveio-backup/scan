@@ -55,7 +55,6 @@ func NewMsgBus() *msgBus {
 func (this *msgBus) Start() error {
 	go this.SyncNetwork.Start()
 	go this.start()
-	log.Info("msgBus start")
 	return nil
 }
 

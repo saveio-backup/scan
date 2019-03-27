@@ -3,9 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
-	"os/signal"
 	"runtime"
-	"syscall"
 
 	"github.com/oniio/oniDNS/cmd"
 	"github.com/oniio/oniChain/common/log"
@@ -14,6 +12,7 @@ import (
 	"github.com/urfave/cli"
 	"github.com/oniio/oniDNS/storage"
 	"github.com/oniio/oniDNS/messageBus"
+	"github.com/oniio/oniDNS/common"
 )
 
 var (
@@ -67,7 +66,7 @@ func seed(ctx *cli.Context) {
 		log.Fatalf("InitTrackerDB error: %v", err)
 	}
 
-	waitToExit()
+	common.WaitToExit()
 }
 
 func initConfig(ctx *cli.Context) error {
@@ -105,16 +104,3 @@ func InitMsgBus() error {
 	return messageBus.MsgBus.Start()
 }
 
-func waitToExit() {
-	exit := make(chan bool, 0)
-	sc := make(chan os.Signal, 1)
-	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
-	go func() {
-		for sig := range sc {
-			log.Infof("seeds received exit signal:%v.", sig.String())
-			close(exit)
-			break
-		}
-	}()
-	<-exit
-}
