@@ -5,14 +5,17 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/oniio/oniDNS/cmd"
+	chain "github.com/oniio/oniChain/bin"
+	chaincmd "github.com/oniio/oniChain/cmd"
+	chainutils "github.com/oniio/oniChain/cmd/utils"
 	"github.com/oniio/oniChain/common/log"
-	"github.com/oniio/oniDNS/config"
-	"github.com/oniio/oniDNS/netserver"
-	"github.com/urfave/cli"
-	"github.com/oniio/oniDNS/storage"
-	"github.com/oniio/oniDNS/messageBus"
+	"github.com/oniio/oniDNS/cmd"
 	"github.com/oniio/oniDNS/common"
+	"github.com/oniio/oniDNS/config"
+	"github.com/oniio/oniDNS/messageBus"
+	"github.com/oniio/oniDNS/netserver"
+	"github.com/oniio/oniDNS/storage"
+	"github.com/urfave/cli"
 )
 
 var (
@@ -21,15 +24,69 @@ var (
 
 func initAPP() *cli.App {
 	app := cli.NewApp()
-	app.Usage = "dasein seeds"
-	app.Action = seed
+	app.Usage = "Save DDNS"
+	app.Action = startDDNS
 	app.Version = config.VERSION
-	app.Copyright = "Copyright in 2018 The Dasein Authors"
-	app.Commands = []cli.Command{}
+	app.Copyright = "Copyright in 2019 The Save Authors"
+	app.Commands = []cli.Command{
+		chaincmd.AccountCommand,
+		chaincmd.InfoCommand,
+		chaincmd.AssetCommand,
+		chaincmd.ContractCommand,
+		chaincmd.ImportCommand,
+		chaincmd.ExportCommand,
+		chaincmd.TxCommond,
+		chaincmd.SigTxCommand,
+		chaincmd.MultiSigAddrCommand,
+		chaincmd.MultiSigTxCommand,
+		chaincmd.SendTxCommand,
+		chaincmd.ShowTxCommand,
+	}
 	app.Flags = []cli.Flag{
 		//common setting
 		cmd.LogStderrFlag,
 		cmd.LogLevelFlag,
+		//common setting
+		chainutils.ConfigFlag,
+		chainutils.DisableEventLogFlag,
+		chainutils.DataDirFlag,
+		//account setting
+		chainutils.WalletFileFlag,
+		chainutils.AccountAddressFlag,
+		chainutils.AccountPassFlag,
+		//consensus setting
+		chainutils.EnableConsensusFlag,
+		chainutils.MaxTxInBlockFlag,
+		//txpool setting
+		chainutils.GasPriceFlag,
+		chainutils.GasLimitFlag,
+		chainutils.TxpoolPreExecDisableFlag,
+		chainutils.DisableSyncVerifyTxFlag,
+		chainutils.DisableBroadcastNetTxFlag,
+		//p2p setting
+		chainutils.ReservedPeersOnlyFlag,
+		chainutils.ReservedPeersFileFlag,
+		chainutils.NetworkIdFlag,
+		chainutils.NodePortFlag,
+		chainutils.ConsensusPortFlag,
+		chainutils.DualPortSupportFlag,
+		chainutils.MaxConnInBoundFlag,
+		chainutils.MaxConnOutBoundFlag,
+		chainutils.MaxConnInBoundForSingleIPFlag,
+		//test mode setting
+		chainutils.EnableTestModeFlag,
+		chainutils.TestModeGenBlockTimeFlag,
+		//rpc setting
+		chainutils.RPCDisabledFlag,
+		chainutils.RPCPortFlag,
+		chainutils.RPCLocalEnableFlag,
+		chainutils.RPCLocalProtFlag,
+		//rest setting
+		chainutils.RestfulEnableFlag,
+		chainutils.RestfulPortFlag,
+		//ws setting
+		chainutils.WsEnabledFlag,
+		chainutils.WsPortFlag,
 	}
 	app.Before = func(context *cli.Context) error {
 		runtime.GOMAXPROCS(runtime.NumCPU())
@@ -44,7 +101,10 @@ func main() {
 		os.Exit(1)
 	}
 }
-func seed(ctx *cli.Context) {
+func startDDNS(ctx *cli.Context) {
+	//chainnode
+	chain.StartOntology(ctx)
+	//seed
 	initLog(ctx)
 
 	err := initConfig(ctx)
@@ -58,8 +118,8 @@ func seed(ctx *cli.Context) {
 		log.Errorf("run ddns server error:%s", err)
 		return
 	}
-	if err=InitMsgBus();err!=nil{
-		log.Fatalf("InitMsgBus error: %v",err)
+	if err = InitMsgBus(); err != nil {
+		log.Fatalf("InitMsgBus error: %v", err)
 	}
 	storage.TDB, err = InitTrackerDB(TRACKER_DB_PATH)
 	if err != nil {
@@ -100,7 +160,6 @@ func InitTrackerDB(path string) (*storage.LevelDBStore, error) {
 }
 
 func InitMsgBus() error {
-	messageBus.MsgBus=messageBus.NewMsgBus()
+	messageBus.MsgBus = messageBus.NewMsgBus()
 	return messageBus.MsgBus.Start()
 }
-
