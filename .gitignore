@@ -9,6 +9,7 @@ _obj
 _test
 test
 TrackerLevelDB
+Chain
 
 
 # Architecture specific extensions/prefixes
@@ -33,3 +34,4 @@ tracker/vendor
 torrentdb/*
 *.log
 .idea
+ddns

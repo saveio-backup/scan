@@ -5,7 +5,7 @@ import (
 	"os"
 	"runtime"
 
-	chain "github.com/oniio/oniChain/bin"
+	chain "github.com/oniio/oniChain/build"
 	chaincmd "github.com/oniio/oniChain/cmd"
 	chainutils "github.com/oniio/oniChain/cmd/utils"
 	"github.com/oniio/oniChain/common/log"
