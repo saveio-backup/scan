@@ -25,4 +25,4 @@ format:
 
 clean:
 	rm -rf *.8 *.o *.out *.6 *exe
-	rm -f *dns
+	rm -f ddns

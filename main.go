@@ -5,10 +5,10 @@ import (
 	"os"
 	"runtime"
 
-	chain "github.com/oniio/oniChain/build"
 	chaincmd "github.com/oniio/oniChain/cmd"
 	chainutils "github.com/oniio/oniChain/cmd/utils"
 	"github.com/oniio/oniChain/common/log"
+	chain "github.com/oniio/oniChain/start"
 	"github.com/oniio/oniDNS/cmd"
 	"github.com/oniio/oniDNS/common"
 	"github.com/oniio/oniDNS/config"
