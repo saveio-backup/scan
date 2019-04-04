@@ -100,7 +100,7 @@ func (s *Server) Accepted() (err error) {
 		if err != nil {
 			return
 		}
-		//
+
 		if len(ar.InfoHash) == 0 {
 			err = fmt.Errorf("no info hash")
 			return
@@ -175,6 +175,130 @@ func (s *Server) Accepted() (err error) {
 			Leechers: t.Leechers,
 			Seeders:  t.Seeders,
 		}, b)
+		return
+	case ActionReg:
+		if _, ok := s.conns[h.ConnectionId]; !ok {
+			s.respond(addr, ResponseHeader{
+				TransactionId: h.TransactionId,
+				Action:        ActionError,
+			}, []byte("not connected"))
+			return
+		}
+		var ar AnnounceRequest
+		err = readBody(r, &ar)
+		if err != nil {
+			return
+		}
+
+		if ar.Wallet == "" {
+			err = fmt.Errorf("no walletAddr")
+			return
+		}
+		ip := make(net.IP, 4)
+		binary.BigEndian.PutUint32(ip, ar.IPAddress)
+		nodeAddr := krpc.NodeAddr{
+			IP:   ip,
+			Port: int(ar.Port),
+		}
+		wb,_:=common.WHPTobyte(ar.Wallet,"")
+		nb,err:=nodeAddr.MarshalBinary()
+		if err!=nil{
+			err=fmt.Errorf("nodeAddr marshal error")
+		}
+		err=storage.TDB.Put(wb,nb)
+		log.Debugf("Tracker client  reg success,wallet:%s,nodeAddr:%s",ar.Wallet,nodeAddr.String())
+		return
+	case ActionUnReg:
+		if _, ok := s.conns[h.ConnectionId]; !ok {
+			s.respond(addr, ResponseHeader{
+				TransactionId: h.TransactionId,
+				Action:        ActionError,
+			}, []byte("not connected"))
+			return
+		}
+		var ar AnnounceRequest
+		err = readBody(r, &ar)
+		if err != nil {
+			return
+		}
+		if ar.Wallet == "" {
+			err = fmt.Errorf("no walletAddr")
+			return
+		}
+
+		wb,_:=common.WHPTobyte(ar.Wallet,"")
+		err=storage.TDB.Delete(wb)
+		log.Debugf("Tracker client  unReg success,wallet:%s",ar.Wallet)
+		return
+
+	case ActionReq:
+		if _, ok := s.conns[h.ConnectionId]; !ok {
+			s.respond(addr, ResponseHeader{
+				TransactionId: h.TransactionId,
+				Action:        ActionError,
+			}, []byte("not connected"))
+			return
+		}
+		var ar AnnounceRequest
+		err = readBody(r, &ar)
+		if err != nil {
+			return
+		}
+
+		if ar.Wallet == "" {
+			err = fmt.Errorf("no walletAddr")
+			return
+		}
+		wb,_:=common.WHPTobyte(ar.Wallet,"")
+		nb,err:=storage.TDB.Get(wb)
+		if err!=nil{
+			return err
+		}
+		s.respond(addr, ResponseHeader{
+			TransactionId: h.TransactionId,
+			Action:        ActionAnnounce,
+		}, AnnounceResponseHeader{
+			Interval: 900,
+			Leechers: 0,
+			Seeders:  0,
+		}, nb)
+
+		log.Debugf("Tracker client  req success,wallet:%s,nodeAddr:%s",ar.Wallet,string(nb))
+		return
+
+	case ActionUpdate:
+		if _, ok := s.conns[h.ConnectionId]; !ok {
+			s.respond(addr, ResponseHeader{
+				TransactionId: h.TransactionId,
+				Action:        ActionError,
+			}, []byte("not connected"))
+			return
+		}
+		var ar AnnounceRequest
+		err = readBody(r, &ar)
+		if err != nil {
+			return
+		}
+
+		if ar.Wallet == "" {
+			err = fmt.Errorf("no walletAddr")
+			return
+		}
+		wb,_:=common.WHPTobyte(ar.Wallet,"")
+		nb,err:=storage.TDB.Get(wb)
+		if err!=nil{
+			return err
+		}
+		s.respond(addr, ResponseHeader{
+			TransactionId: h.TransactionId,
+			Action:        ActionAnnounce,
+		}, AnnounceResponseHeader{
+			Interval: 900,
+			Leechers: 0,
+			Seeders:  0,
+		}, nb)
+
+		log.Debugf("Tracker client  req success,wallet:%s,nodeAddr:%s",ar.Wallet,string(nb))
 		return
 	default:
 		err = fmt.Errorf("unhandled action: %d", h.Action)

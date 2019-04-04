@@ -19,16 +19,18 @@ import (
 	pm "github.com/oniio/oniDNS/messageBus/protoMessages"
 	"github.com/oniio/oniDNS/tracker/common"
 	comm "github.com/oniio/oniDNS/common"
+	"github.com/ontio/ontology-eventbus/actor"
 )
 
-type SyncNetwork struct {
+type Network struct {
 	*network.Component
 	*network.Network
 	peerAddrs  []string
 	listenAddr string
+	pid *actor.PID
 }
 
-func (this *SyncNetwork) Start() error {
+func (this *Network) Start() error {
 	keys := ed25519.RandomKeyPair()
 	builder := network.NewBuilder()
 	builder.SetKeys(keys)
@@ -69,17 +71,16 @@ func (this *SyncNetwork) Start() error {
 	return nil
 }
 
-func (this *SyncNetwork) NewNetwork() *SyncNetwork {
-	return new(SyncNetwork)
+func (this *Network) NewNetwork() *Network {
+	return new(Network)
 
 }
 
-func (this *SyncNetwork) ListenAddr() string {
+func (this *Network) ListenAddr() string {
 	return this.listenAddr
 }
 
-
-func (this *SyncNetwork) GetPeersIfExist() error {
+func (this *Network) GetPeersIfExist() error {
 	this.EachPeer(func(client *network.PeerClient) bool {
 		this.peerAddrs = append(this.peerAddrs, client.Address)
 		return true
@@ -87,12 +88,23 @@ func (this *SyncNetwork) GetPeersIfExist() error {
 	return nil
 }
 
-func (this *SyncNetwork) Connect(addr ...string) error {
+func (this *Network) Connect(addr ...string) error {
 
 	return nil
 }
 
-func (this *SyncNetwork) BroadCast(ctx context.Context, message proto.Message) error {
+func (this *Network) BroadCast(ctx context.Context, message proto.Message) error {
 	this.Broadcast(ctx, message)
 	return nil
+}
+
+// SetPID sets p2p actor
+func (this *Network) SetPID(pid *actor.PID) {
+	this.pid = pid
+	//this.msgRouter.SetPID(pid)
+}
+
+// GetPID returns p2p actor
+func (this *Network) GetPID() *actor.PID {
+	return this.pid
 }

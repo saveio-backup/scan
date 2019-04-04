@@ -19,12 +19,16 @@ import (
 )
 
 type Action int32
-
+type ActionFlag =Action
 const (
 	ActionConnect Action = iota
 	ActionAnnounce
 	ActionScrape
 	ActionError
+	ActionReg
+	ActionUnReg
+	ActionReq
+	ActionUpdate
 
 	connectRequestConnectionId = 0x41727101980
 
@@ -115,7 +119,12 @@ func (c *udpAnnounce) Do(req AnnounceRequest) (res AnnounceResponse, err error) 
 	// Clearly this limits the request URI to 255 bytes. BEP 41 supports
 	// longer but I'm not fussed.
 	options := append([]byte{optionTypeURLData, byte(len(reqURI))}, []byte(reqURI)...)
-	b, err := c.request(ActionAnnounce, req, options)
+	flag:=c.a.flag
+	var b *bytes.Buffer
+	if flag!=0{
+		b,err=c.request(flag,req,options)
+	}
+	b, err = c.request(ActionAnnounce, req, options)
 	if err != nil {
 		return
 	}

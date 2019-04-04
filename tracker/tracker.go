@@ -22,6 +22,7 @@ type AnnounceRequest struct {
 	Key       int32
 	NumWant   int32 // How many peer addresses are desired. -1 for default.
 	Port      uint16
+	Wallet string
 } // 82 bytes
 
 type AnnounceResponse struct {
@@ -69,6 +70,7 @@ type Announce struct {
 	ClientIp4 krpc.NodeAddr
 	// If the Port is zero, it's assumed to be the same as the Request.Port
 	ClientIp6 krpc.NodeAddr
+	flag ActionFlag
 }
 
 // In an FP language with currying, what order what you put these params?

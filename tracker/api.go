@@ -60,6 +60,28 @@ func GetTorrentPeers(infoHash common.MetaInfoHash, trackerUrl string, numWant in
 	return ret.Peers
 }
 
+func RegEndPoint(trackerUrl,walletAddr string,nodeIP net.IP, port uint16)error{
+	id := common.PeerID{}
+	rand.Read(id[:])
+	announce := Announce{
+		TrackerUrl: trackerUrl,
+		Request:AnnounceRequest{
+			IPAddress: binary.BigEndian.Uint32(nodeIP),
+			Port:      port,
+			Wallet:walletAddr,
+		},
+		flag:ActionReg,
+	}
+	ret, err := announce.Do()
+	if err != nil {
+		log.Errorf("GetTorrentPeers failed err:%s\n", err)
+		return err
+	}
+	log.Debugf("interval:%d, leechers:%d, seeders:%d, peers:%v\n", ret.Interval, ret.Leechers, ret.Seeders, ret.Peers)
+	return nil
+}
+
+//local endPointReg
 func EndPointRegistry(walletAddr,hostPort string )error{
 	if walletAddr==""|| hostPort==""{
 		return errors.NewErr("[EndPointRegistry] walletAddr or hostPort is null")
