@@ -97,14 +97,6 @@ func (this *P2PActor)GetLocalPID() *actor.PID{
 	return this.localPID
 }
 
-func (this *P2PActor)SetRemotePIDs(addr,desc string){
-	remotePID:=RemotePid(addr,desc)
-	this.remotePIDs[desc]=remotePID
-}
-
-func (this *P2PActor)GetRemotePID(desc string)*actor.PID{
-	return this.remotePIDs[desc]
-}
 //start local remote actor grpc service
 func RemoteStart(addr string){
 	remote.Start(addr)
