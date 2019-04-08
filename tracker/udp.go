@@ -16,10 +16,12 @@ import (
 	"github.com/anacrolix/missinggo"
 	"github.com/anacrolix/missinggo/pproffd"
 	"github.com/oniio/oniChain/common/log"
+	//"github.com/oniio/oniChain/common"
 )
 
 type Action int32
-type ActionFlag =Action
+type ActionFlag = Action
+
 const (
 	ActionConnect Action = iota
 	ActionAnnounce
@@ -60,9 +62,12 @@ type RequestHeader struct {
 } // 16 bytes
 
 type AnnounceResponseHeader struct {
-	Interval int32
-	Leechers int32
-	Seeders  int32
+	Interval  int32
+	Leechers  int32
+	Seeders   int32
+	IPAddress [4]byte
+	Port      uint16
+	Wallet    [20]byte
 }
 
 func newTransactionId() int32 {
@@ -112,19 +117,20 @@ func (c *udpAnnounce) Do(req AnnounceRequest) (res AnnounceResponse, err error) 
 	reqURI := c.url.RequestURI()
 	if c.ipv6() {
 		// BEP 15
-		req.IPAddress = 0
-	} else if req.IPAddress == 0 && c.a.ClientIp4.IP != nil {
-		req.IPAddress = binary.BigEndian.Uint32(c.a.ClientIp4.IP.To4())
+		req.IPAddress = [4]byte{0x0}
+	} else if req.IPAddress == [4]byte{0x0} && c.a.ClientIp4.IP != nil {
+		req.IPAddress = ipconvert(c.a.ClientIp4.IP.To4())
 	}
 	// Clearly this limits the request URI to 255 bytes. BEP 41 supports
 	// longer but I'm not fussed.
 	options := append([]byte{optionTypeURLData, byte(len(reqURI))}, []byte(reqURI)...)
-	flag:=c.a.flag
+	flag := c.a.flag
 	var b *bytes.Buffer
-	if flag!=0{
-		b,err=c.request(flag,req,options)
+	if flag != 0 {
+		b, err = c.request(flag, req, options)
+	}else{
+		b, err = c.request(ActionAnnounce, req, options)
 	}
-	b, err = c.request(ActionAnnounce, req, options)
 	if err != nil {
 		return
 	}
@@ -140,6 +146,9 @@ func (c *udpAnnounce) Do(req AnnounceRequest) (res AnnounceResponse, err error) 
 	res.Interval = h.Interval
 	res.Leechers = h.Leechers
 	res.Seeders = h.Seeders
+	res.IPAddress = h.IPAddress
+	res.Port = h.Port
+	res.Wallet = h.Wallet
 	nas := func() interface {
 		encoding.BinaryUnmarshaler
 		NodeAddrs() []krpc.NodeAddr
@@ -213,7 +222,7 @@ func (c *udpAnnounce) request(action Action, args interface{}, options []byte) (
 	for {
 		var n int
 		n, err = c.socket.Read(b)
-		if err!=nil{
+		if err != nil {
 			log.Error(err)
 			return
 		}
@@ -271,6 +280,7 @@ func (c *udpAnnounce) dialNetwork() string {
 
 func (c *udpAnnounce) connect() (err error) {
 	if c.connected() {
+		log.Debugf("had connected")
 		return nil
 	}
 	c.connectionId = connectRequestConnectionId
@@ -282,8 +292,10 @@ func (c *udpAnnounce) connect() (err error) {
 		}
 		c.socket, err = net.Dial(c.dialNetwork(), hmp.String())
 		if err != nil {
+			log.Debugf("Net Dial error:%v",err)
 			return
 		}
+		log.Debugf("Net Dial success,socket:%v",c.socket)
 		c.socket = pproffd.WrapNetConn(c.socket)
 	}
 	b, err := c.request(ActionConnect, nil, nil)

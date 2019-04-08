@@ -1,0 +1,48 @@
+/**
+ * Description:
+ * Author: LiYong Zhang
+ * Create: 2019-04-07 
+*/
+package tracker
+
+import (
+	"testing"
+	"net"
+	"github.com/oniio/oniFS/thirdparty/assert"
+	"github.com/oniio/oniChain/common"
+	"github.com/anacrolix/dht/krpc"
+	"fmt"
+	//"github.com/oniio/oniChain/common/log"
+)
+var wallet1Addr = "AYMnqA65pJFKAbbpD8hi5gdNDBmeFBy5hS"
+var wallet2Addr = "AWaE84wqVf1yffjaR6VJ4NptLdqBAm8G9c"
+var trackerUrl="udp://localhost:6369/announce"
+func TestRegEndPoint(t *testing.T) {
+	url := trackerUrl
+	//ip:=net.ParseIP("192.168.1.1")
+	ip:= net.IP{0x0, 0x1, 0x2, 0x3}
+	fmt.Printf("ip:%s\n",ip)
+	fmt.Println(ip)
+	port:=uint16(8848)
+	wb,_:=common.AddressFromBase58(wallet1Addr)
+	err:=RegEndPoint(url,wb,ip,port)
+	assert.Nil(err,t)
+}
+
+func TestUnRegEndPoint(t *testing.T) {
+	url := trackerUrl
+	wb,_:=common.AddressFromBase58(wallet1Addr)
+	err:=UnRegEndPoint(url,wb)
+	assert.Nil(err,t)
+}
+
+func TestReqEndPoint(t *testing.T) {
+	url := trackerUrl
+	wb,_:=common.AddressFromBase58(wallet1Addr)
+	nb,err:=ReqEndPoint(url,wb)
+	assert.Nil(err,t)
+	var nodeAddr krpc.NodeAddr
+	nodeAddr.UnmarshalBinary(nb)
+	fmt.Printf("ip:%s\n",nodeAddr.IP.String())
+	fmt.Printf("port:%d\n",nodeAddr.Port)
+}

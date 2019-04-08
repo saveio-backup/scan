@@ -6,6 +6,7 @@ import (
 	"net/url"
 
 	"github.com/anacrolix/dht/krpc"
+	"github.com/oniio/oniChain/common"
 )
 
 // Marshalled as binary by the UDP client, so be careful making changes.
@@ -18,11 +19,11 @@ type AnnounceRequest struct {
 	// Apparently this is optional. None can be used for announces done at
 	// regular intervals.
 	Event     AnnounceEvent
-	IPAddress uint32
+	IPAddress [4]byte
 	Key       int32
 	NumWant   int32 // How many peer addresses are desired. -1 for default.
 	Port      uint16
-	Wallet string
+	Wallet common.Address
 } // 82 bytes
 
 type AnnounceResponse struct {
@@ -30,6 +31,9 @@ type AnnounceResponse struct {
 	Leechers int32
 	Seeders  int32
 	Peers    []Peer
+	IPAddress [4]byte
+	Port      uint16
+	Wallet [20]byte
 }
 
 type AnnounceEvent int32

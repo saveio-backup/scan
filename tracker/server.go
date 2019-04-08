@@ -13,15 +13,16 @@ import (
 	"github.com/anacrolix/dht/krpc"
 	"github.com/anacrolix/missinggo"
 	"github.com/oniio/oniChain/common/log"
+	Ccomon "github.com/oniio/oniChain/common"
 	"github.com/oniio/oniDNS/common"
-	"github.com/oniio/oniDNS/storage"
 	"github.com/oniio/oniDNS/messageBus"
+	"github.com/oniio/oniDNS/storage"
 )
 
 type peerInfo struct {
 	ID       common.PeerID
 	Complete bool
-	IP       uint32
+	IP       [4]byte
 	Port     uint16
 	NodeAddr krpc.NodeAddr
 }
@@ -105,10 +106,10 @@ func (s *Server) Accepted() (err error) {
 			err = fmt.Errorf("no info hash")
 			return
 		}
-		ip := make(net.IP, 4)
-		binary.BigEndian.PutUint32(ip, ar.IPAddress)
+		//ip := make(net.IP, 4)
+		//binary.BigEndian.PutUint32(ip, ar.IPAddress)
 		nodeAddr := krpc.NodeAddr{
-			IP:   ip,
+			IP:   ar.IPAddress[:],
 			Port: int(ar.Port),
 		}
 		t := s.getTorrent(ar.InfoHash)
@@ -189,25 +190,38 @@ func (s *Server) Accepted() (err error) {
 		if err != nil {
 			return
 		}
-
-		if ar.Wallet == "" {
-			err = fmt.Errorf("no walletAddr")
+		if ar.Wallet == Ccomon.ADDRESS_EMPTY {
+			err = fmt.Errorf("nil walletAddr")
 			return
 		}
-		ip := make(net.IP, 4)
-		binary.BigEndian.PutUint32(ip, ar.IPAddress)
+		//ip := make(net.IP, 4)
+		log.Warnf("ActionReg ip byte:%v\n",ar.IPAddress)
+		//binary.BigEndian.PutUint32(ip, ar.IPAddress)
 		nodeAddr := krpc.NodeAddr{
-			IP:   ip,
+			IP:   ar.IPAddress[:],
 			Port: int(ar.Port),
 		}
-		wb,_:=common.WHPTobyte(ar.Wallet,"")
-		nb,err:=nodeAddr.MarshalBinary()
-		if err!=nil{
-			err=fmt.Errorf("nodeAddr marshal error")
+		log.Warnf("ActionReg nodeAddr :%s\n",nodeAddr.String())
+		nb, err := nodeAddr.MarshalBinary()
+		if err != nil {
+			err = fmt.Errorf("nodeAddr marshal error")
+			return err
 		}
-		err=storage.TDB.Put(wb,nb)
-		log.Debugf("Tracker client  reg success,wallet:%s,nodeAddr:%s",ar.Wallet,nodeAddr.String())
-		return
+		err = storage.TDB.Put(ar.Wallet[:], nb)
+		if err!=nil{
+			return err
+		}
+		ipAddr:=ipconvert(nodeAddr.IP)
+		err = s.respond(addr, ResponseHeader{
+			TransactionId: h.TransactionId,
+			Action:        ActionReg,
+		}, AnnounceResponseHeader{
+			IPAddress: ipAddr,
+			Port:      ar.Port,
+			Wallet:    ar.Wallet,
+		})
+		log.Debugf("Tracker client  reg success,wallet:%s,nodeAddr:%s",Ccomon.ToHexString(ar.Wallet[:]), nodeAddr.String())
+		return err
 	case ActionUnReg:
 		if _, ok := s.conns[h.ConnectionId]; !ok {
 			s.respond(addr, ResponseHeader{
@@ -221,14 +235,24 @@ func (s *Server) Accepted() (err error) {
 		if err != nil {
 			return
 		}
-		if ar.Wallet == "" {
-			err = fmt.Errorf("no walletAddr")
+		if ar.Wallet == Ccomon.ADDRESS_EMPTY {
+			err = fmt.Errorf("nil walletAddr")
 			return
 		}
-
-		wb,_:=common.WHPTobyte(ar.Wallet,"")
-		err=storage.TDB.Delete(wb)
-		log.Debugf("Tracker client  unReg success,wallet:%s",ar.Wallet)
+		var exist bool
+		exist, err = storage.TDB.Has(ar.Wallet[:])
+		if !exist || err != nil {
+			log.Errorf("This wallet:%s is not exist!", ar.Wallet)
+			return
+		}
+		err = storage.TDB.Delete(ar.Wallet[:])
+		s.respond(addr, ResponseHeader{
+			TransactionId: h.TransactionId,
+			Action:        ActionUnReg,
+		}, AnnounceResponseHeader{
+			Wallet: ar.Wallet,
+		})
+		log.Debugf("Tracker client  unReg success,wallet:%s", ar.Wallet)
 		return
 
 	case ActionReq:
@@ -245,26 +269,28 @@ func (s *Server) Accepted() (err error) {
 			return
 		}
 
-		if ar.Wallet == "" {
-			err = fmt.Errorf("no walletAddr")
+		if ar.Wallet == Ccomon.ADDRESS_EMPTY {
+			err = fmt.Errorf("nil walletAddr")
 			return
 		}
-		wb,_:=common.WHPTobyte(ar.Wallet,"")
-		nb,err:=storage.TDB.Get(wb)
-		if err!=nil{
+		nb, err := storage.TDB.Get(ar.Wallet[:])
+		if err != nil {
 			return err
 		}
-		s.respond(addr, ResponseHeader{
+		var nodeAddr krpc.NodeAddr
+		nodeAddr.UnmarshalBinary(nb)
+		ipAddr:=ipconvert(nodeAddr.IP)
+		err=s.respond(addr, ResponseHeader{
 			TransactionId: h.TransactionId,
-			Action:        ActionAnnounce,
+			Action:        ActionReq,
 		}, AnnounceResponseHeader{
-			Interval: 900,
-			Leechers: 0,
-			Seeders:  0,
-		}, nb)
+			Wallet:    ar.Wallet,
+			IPAddress: ipAddr,
+			Port:      uint16(nodeAddr.Port),
+		})
 
-		log.Debugf("Tracker client  req success,wallet:%s,nodeAddr:%s",ar.Wallet,string(nb))
-		return
+		log.Debugf("Tracker client  req success,wallet:%s,nodeAddr:%s", ar.Wallet, string(nb))
+		return err
 
 	case ActionUpdate:
 		if _, ok := s.conns[h.ConnectionId]; !ok {
@@ -280,25 +306,41 @@ func (s *Server) Accepted() (err error) {
 			return
 		}
 
-		if ar.Wallet == "" {
-			err = fmt.Errorf("no walletAddr")
+		if ar.Wallet == Ccomon.ADDRESS_EMPTY {
+			err = fmt.Errorf("nil walletAddr")
 			return
 		}
-		wb,_:=common.WHPTobyte(ar.Wallet,"")
-		nb,err:=storage.TDB.Get(wb)
-		if err!=nil{
+		//ip := make(net.IP, 4)
+		//binary.BigEndian.PutUint32(ip, ar.IPAddress)
+		nodeAddr := krpc.NodeAddr{
+			IP:   ar.IPAddress[:],
+			Port: int(ar.Port),
+		}
+		var exist bool
+		exist,err = storage.TDB.Has(ar.Wallet[:])
+		if !exist || err != nil {
+			log.Errorf("This wallet:%s is not exist!", ar.Wallet)
+			return
+		}
+		var nb []byte
+		nb, err = nodeAddr.MarshalBinary()
+		if err != nil {
 			return err
 		}
+		err = storage.TDB.Put(ar.Wallet[:], nb)
+		if err != nil {
+			return err
+		}
+		ipAddr:=ipconvert(nodeAddr.IP)
+		log.Debugf("Tracker client  update success,wallet:%s,nodeAddr:%s", ar.Wallet, nodeAddr.String())
 		s.respond(addr, ResponseHeader{
 			TransactionId: h.TransactionId,
-			Action:        ActionAnnounce,
+			Action:        ActionUpdate,
 		}, AnnounceResponseHeader{
-			Interval: 900,
-			Leechers: 0,
-			Seeders:  0,
-		}, nb)
-
-		log.Debugf("Tracker client  req success,wallet:%s,nodeAddr:%s",ar.Wallet,string(nb))
+			Wallet:ar.Wallet,
+			IPAddress: ipAddr,
+			Port:  uint16(nodeAddr.Port),
+		})
 		return
 	default:
 		err = fmt.Errorf("unhandled action: %d", h.Action)
@@ -316,10 +358,10 @@ func (s *Server) onAnnounceStarted(ar *AnnounceRequest, pi *peerInfo) {
 		return
 	}
 
-	ip := make(net.IP, 4)
-	binary.BigEndian.PutUint32(ip, ar.IPAddress)
+	//ip := make(net.IP, 4)
+	//binary.BigEndian.PutUint32(ip, ar.IPAddress)
 	peer := krpc.NodeAddr{
-		IP:   ip,
+		IP:   ar.IPAddress[:],
 		Port: int(ar.Port),
 	}
 
@@ -352,8 +394,8 @@ func (s *Server) onAnnounceStarted(ar *AnnounceRequest, pi *peerInfo) {
 	}
 	storage.TDB.Put(ar.InfoHash[:], bt)
 	messageBus.MsgBus.TNTBox <- &messageBus.TorrenMsg{
-		InfoHash:ar.InfoHash[:],
-		BytesTorrent:bt,
+		InfoHash:     ar.InfoHash[:],
+		BytesTorrent: bt,
 	}
 }
 
@@ -378,8 +420,8 @@ func (s *Server) onAnnounceUpdated(ar *AnnounceRequest, pi *peerInfo) {
 	}
 	storage.TDB.Put(ar.InfoHash[:], bt)
 	messageBus.MsgBus.TNTBox <- &messageBus.TorrenMsg{
-		InfoHash:ar.InfoHash[:],
-		BytesTorrent:bt,
+		InfoHash:     ar.InfoHash[:],
+		BytesTorrent: bt,
 	}
 }
 
@@ -403,8 +445,8 @@ func (s *Server) onAnnounceStopped(ar *AnnounceRequest, pi *peerInfo) {
 	}
 	storage.TDB.Put(ar.InfoHash[:], bt)
 	messageBus.MsgBus.TNTBox <- &messageBus.TorrenMsg{
-		InfoHash:ar.InfoHash[:],
-		BytesTorrent:bt,
+		InfoHash:     ar.InfoHash[:],
+		BytesTorrent: bt,
 	}
 }
 
@@ -428,8 +470,8 @@ func (s *Server) onAnnounceCompleted(ar *AnnounceRequest, pi *peerInfo) {
 	}
 	storage.TDB.Put(ar.InfoHash[:], bt)
 	messageBus.MsgBus.TNTBox <- &messageBus.TorrenMsg{
-		InfoHash:ar.InfoHash[:],
-		BytesTorrent:bt,
+		InfoHash:     ar.InfoHash[:],
+		BytesTorrent: bt,
 	}
 }
 
