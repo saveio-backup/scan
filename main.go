@@ -120,12 +120,12 @@ func startDDNS(ctx *cli.Context) {
 		return
 	}
 	p2pSvr, p2pPid, err := initP2P()
-	recv.P2pPid=p2pPid
-	network.DDNSP2P=p2pSvr
 	if err != nil {
 		log.Errorf("initP2PNode error:%s", err)
 		return
 	}
+	recv.P2pPid=p2pPid
+	network.DDNSP2P=p2pSvr
 	storage.TDB, err = initTrackerDB(TRACKER_DB_PATH)
 	if err != nil {
 		log.Fatalf("InitTrackerDB error: %v", err)
@@ -167,14 +167,11 @@ func initTrackerDB(path string) (*storage.LevelDBStore, error) {
 func initP2P()(*network.Network,*actor.PID,error){
 
 	p2p:=network.NewP2P()
-	p2pActor,err:=recv.NewP2PActor(p2p)
-	if err!=nil{
-		return nil,nil,err
-	}
-	p2pPID, err := p2pActor.Start()
+	err:=recv.NewP2PActor(p2p)
 	if err != nil {
 		return nil, nil, fmt.Errorf("p2pActor init error %s", err)
 	}
+	p2pPID:= p2p.GetPID()
 	p2p.SetPID(p2pPID)
 	err=p2p.Start()
 	if err != nil {

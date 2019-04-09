@@ -16,8 +16,10 @@ import (
 	p2pNet "github.com/oniio/oniP2p/network"
 	"context"
 	pm "github.com/oniio/oniDNS/messages/protoMessages"
+	"fmt"
 )
-
+type MessageHandler func(msgData interface{},pid *actor.PID)
+var P2pPid *actor.PID
 type P2PActor struct {
 	net *network.Network
 	props *actor.Props
@@ -25,9 +27,7 @@ type P2PActor struct {
 	localPID *actor.PID
 }
 
-var P2pPid *actor.PID
-
-func NewP2PActor(n *network.Network)(*P2PActor,error){
+func NewP2PActor(n *network.Network)error{
 	var err error
 	p2pActor:= &P2PActor{
 		net:n,
@@ -35,19 +35,18 @@ func NewP2PActor(n *network.Network)(*P2PActor,error){
 	}
 	p2pActor.localPID,err=p2pActor.Start()
 	if err!=nil{
-		return nil,err
+		return err
 	}
-	P2pPid=p2pActor.localPID
-	return p2pActor,nil
+	return nil
 
 }
-
-type MessageHandler func(msgData interface{},pid *actor.PID)
-type LocalMessage struct {}
 
 func (this *P2PActor) Start() (*actor.PID, error) {
 	this.props = actor.FromProducer(func() actor.Actor { return this })
 	localPid, err := actor.SpawnNamed(this.props, "net_server")
+	if err!=nil{
+		return nil,fmt.Errorf("[P2PActor] start error:%v",err)
+	}
 	this.localPID=localPid
 	return localPid, err
 }

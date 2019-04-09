@@ -14,7 +14,8 @@ import (
 	"github.com/oniio/oniP2p/network/nat"
 	"github.com/oniio/oniDNS/config"
 	"context"
-	"github.com/golang/protobuf/proto"
+	//"github.com/golang/protobuf/proto"
+	"github.com/gogo/protobuf/proto"
 	"github.com/oniio/oniP2p/types/opcode"
 	pm "github.com/oniio/oniDNS/messages/protoMessages"
 	"github.com/oniio/oniDNS/tracker/common"
@@ -22,6 +23,8 @@ import (
 	"github.com/ontio/ontology-eventbus/actor"
 	"github.com/oniio/oniDNS/storage"
 	"fmt"
+	"time"
+	"errors"
 )
 
 var DDNSP2P *Network
@@ -141,9 +144,40 @@ func (this *Network) GetPeersIfExist() error {
 	return nil
 }
 
-func (this *Network) Connect(addr ...string) error {
-
+func (this *Network) Connect(tAddr ...string) error {
+	this.Network.Bootstrap(tAddr...)
+	for _, addr := range tAddr {
+		exist := this.Network.ConnectionStateExists(addr)
+		if !exist {
+			return fmt.Errorf("[P2P connect] bootstrap addr:%s error",addr)
+		}
+	}
 	return nil
+}
+
+// Send send msg to peer asyncnously
+// peer can be addr(string) or client(*network.peerClient)
+func (this *Network) Send(msg proto.Message, peer interface{}) error {
+	client, err := this.loadClient(peer)
+	if err != nil {
+		return err
+	}
+	return client.Tell(context.Background(), msg)
+}
+
+// Request. send msg to peer and wait for response synchronously
+func (this *Network) Request(msg proto.Message, peer interface{},timeout uint64) (proto.Message, error) {
+	client, err := this.loadClient(peer)
+	if err != nil {
+		return nil, err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
+	defer cancel()
+	res, err := client.Request(ctx, msg)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
 }
 
 func (this *Network) BroadCast(ctx context.Context, message proto.Message) error {
@@ -160,4 +194,23 @@ func (this *Network) SetPID(pid *actor.PID) {
 // GetPID returns p2p actor
 func (this *Network) GetPID() *actor.PID {
 	return this.pid
+}
+
+func (this *Network) loadClient(peer interface{}) (*network.PeerClient, error) {
+	addr, ok := peer.(string)
+	if ok {
+		client, err := this.Network.Client(addr)
+		if err != nil {
+			return nil, err
+		}
+		if client == nil {
+			return nil, errors.New("client is nil")
+		}
+		return client, nil
+	}
+	client, ok := peer.(*network.PeerClient)
+	if !ok || client == nil {
+		return nil, errors.New("invalid peer type")
+	}
+	return client, nil
 }
