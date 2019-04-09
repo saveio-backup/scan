@@ -10,8 +10,9 @@ import (
 	"github.com/oniio/oniChain/errors"
 	"fmt"
 	"github.com/oniio/oniDNS/storage"
-	"github.com/oniio/oniDNS/messageBus"
 	"github.com/anacrolix/dht/krpc"
+	"github.com/oniio/oniDNS/network/actor/recv"
+	pm "github.com/oniio/oniDNS/messages/protoMessages"
 )
 
 // CompleteTorrent Complete make torrent
@@ -152,7 +153,6 @@ func UpdateEndPoint(trackerUrl string,walletAddr [20]byte,nodeIP net.IP, port ui
 	return nil
 }
 
-
 // ---------Local DDNS client relative action------------
 //local endPointReg
 func EndPointRegistry(walletAddr,hostPort string )error{
@@ -163,7 +163,12 @@ func EndPointRegistry(walletAddr,hostPort string )error{
 	if err:=storage.TDB.Put(k,v);err!=nil{
 		return err
 	}
-	messageBus.MsgBus.MsgBox <- &messageBus.RegMsg{WalletAddr:walletAddr,HostPort:hostPort}
+	//messageBus.MsgBus.MsgBox <- &messageBus.RegMsg{WalletAddr:walletAddr,HostPort:hostPort}
+	m:=&pm.Registry{
+		WalletAddr:walletAddr,
+		HostPort:hostPort,
+	}
+	recv.P2pPid.Tell(m)
 	return nil
 }
 //local endPointUpdate
@@ -179,7 +184,12 @@ func EndPointRegUpdate(walletAddr,hostPort string )error{
 	if err:=storage.TDB.Put(k,v);err!=nil{
 		return err
 	}
-	messageBus.MsgBus.MsgBox <- &messageBus.RegMsg{WalletAddr:walletAddr,HostPort:hostPort}
+	//messageBus.MsgBus.MsgBox <- &messageBus.RegMsg{WalletAddr:walletAddr,HostPort:hostPort}
+	m:=&pm.Registry{
+		WalletAddr:walletAddr,
+		HostPort:hostPort,
+	}
+	recv.P2pPid.Tell(m)
 	return nil
 }
 //local endPointUnReg
@@ -196,8 +206,11 @@ func EndPointUnRegistry(walletAddr string )error{
 	if err:=storage.TDB.Delete(w);err!=nil{
 		return err
 	}
-	messageBus.MsgBus.MsgBox <- &messageBus.RegMsg{WalletAddr:walletAddr}
-
+	//messageBus.MsgBus.MsgBox <- &messageBus.RegMsg{WalletAddr:walletAddr}
+	m:=&pm.UnRegistry{
+		WalletAddr:walletAddr,
+	}
+	recv.P2pPid.Tell(m)
 	return nil
 }
 //local endPointQuery

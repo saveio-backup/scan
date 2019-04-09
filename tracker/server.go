@@ -15,8 +15,9 @@ import (
 	"github.com/oniio/oniChain/common/log"
 	Ccomon "github.com/oniio/oniChain/common"
 	"github.com/oniio/oniDNS/common"
-	"github.com/oniio/oniDNS/messageBus"
 	"github.com/oniio/oniDNS/storage"
+	"github.com/ontio/ontology-eventbus/actor"
+	pm "github.com/oniio/oniDNS/messages/protoMessages"
 )
 
 type peerInfo struct {
@@ -36,6 +37,7 @@ type torrent struct {
 type Server struct {
 	pc    net.PacketConn
 	conns map[int64]struct{}
+	p2p *actor.PID
 }
 
 // NewServer
@@ -208,6 +210,11 @@ func (s *Server) Accepted() (err error) {
 			return err
 		}
 		err = storage.TDB.Put(ar.Wallet[:], nb)
+		m := &pm.Registry{
+			WalletAddr: ar.Wallet.ToHexString(),
+			HostPort:  nodeAddr.String(),
+		}
+		s.p2p.Tell(m)
 		if err!=nil{
 			return err
 		}
@@ -246,6 +253,10 @@ func (s *Server) Accepted() (err error) {
 			return
 		}
 		err = storage.TDB.Delete(ar.Wallet[:])
+		m := &pm.UnRegistry{
+			WalletAddr: ar.Wallet.ToHexString(),
+		}
+		s.p2p.Tell(m)
 		s.respond(addr, ResponseHeader{
 			TransactionId: h.TransactionId,
 			Action:        ActionUnReg,
@@ -331,6 +342,11 @@ func (s *Server) Accepted() (err error) {
 		if err != nil {
 			return err
 		}
+		m := &pm.Registry{
+			WalletAddr: ar.Wallet.ToHexString(),
+			HostPort:  nodeAddr.String(),
+		}
+		s.p2p.Tell(m)
 		ipAddr:=ipconvert(nodeAddr.IP)
 		log.Debugf("Tracker client  update success,wallet:%s,nodeAddr:%s", ar.Wallet, nodeAddr.String())
 		s.respond(addr, ResponseHeader{
@@ -393,10 +409,11 @@ func (s *Server) onAnnounceStarted(ar *AnnounceRequest, pi *peerInfo) {
 		log.Fatalf("json Marshal error:%s", err)
 	}
 	storage.TDB.Put(ar.InfoHash[:], bt)
-	messageBus.MsgBus.TNTBox <- &messageBus.TorrenMsg{
-		InfoHash:     ar.InfoHash[:],
-		BytesTorrent: bt,
+	m := &pm.Torrent{
+		InfoHash: ar.InfoHash[:],
+		Torrent:  bt,
 	}
+	s.p2p.Tell(m)
 }
 
 func (s *Server) onAnnounceUpdated(ar *AnnounceRequest, pi *peerInfo) {
@@ -419,10 +436,11 @@ func (s *Server) onAnnounceUpdated(ar *AnnounceRequest, pi *peerInfo) {
 		log.Fatalf("json Marshal error:%s", err)
 	}
 	storage.TDB.Put(ar.InfoHash[:], bt)
-	messageBus.MsgBus.TNTBox <- &messageBus.TorrenMsg{
-		InfoHash:     ar.InfoHash[:],
-		BytesTorrent: bt,
+	m := &pm.Torrent{
+		InfoHash: ar.InfoHash[:],
+		Torrent:  bt,
 	}
+	s.p2p.Tell(m)
 }
 
 func (s *Server) onAnnounceStopped(ar *AnnounceRequest, pi *peerInfo) {
@@ -444,10 +462,15 @@ func (s *Server) onAnnounceStopped(ar *AnnounceRequest, pi *peerInfo) {
 		log.Fatalf("json Marshal error:%s", err)
 	}
 	storage.TDB.Put(ar.InfoHash[:], bt)
-	messageBus.MsgBus.TNTBox <- &messageBus.TorrenMsg{
-		InfoHash:     ar.InfoHash[:],
-		BytesTorrent: bt,
+	m := &pm.Torrent{
+		InfoHash: ar.InfoHash[:],
+		Torrent:  bt,
 	}
+	s.p2p.Tell(m)
+	//messageBus.MsgBus.TNTBox <- &messageBus.TorrenMsg{
+	//	InfoHash:     ar.InfoHash[:],
+	//	BytesTorrent: bt,
+	//}
 }
 
 func (s *Server) onAnnounceCompleted(ar *AnnounceRequest, pi *peerInfo) {
@@ -469,10 +492,15 @@ func (s *Server) onAnnounceCompleted(ar *AnnounceRequest, pi *peerInfo) {
 		log.Fatalf("json Marshal error:%s", err)
 	}
 	storage.TDB.Put(ar.InfoHash[:], bt)
-	messageBus.MsgBus.TNTBox <- &messageBus.TorrenMsg{
-		InfoHash:     ar.InfoHash[:],
-		BytesTorrent: bt,
+	m := &pm.Torrent{
+		InfoHash: ar.InfoHash[:],
+		Torrent:  bt,
 	}
+	s.p2p.Tell(m)
+	//messageBus.MsgBus.TNTBox <- &messageBus.TorrenMsg{
+	//	InfoHash:     ar.InfoHash[:],
+	//	BytesTorrent: bt,
+	//}
 }
 
 func (s *Server) getTorrent(infoHash common.MetaInfoHash) *torrent {
@@ -513,4 +541,14 @@ func (s *Server) newConn() (ret int64) {
 	}
 	s.conns[ret] = struct{}{}
 	return
+}
+
+// SetPID sets p2p actor
+func (this *Server) SetPID(pid *actor.PID) {
+	this.p2p = pid
+}
+
+// GetPID return msgBus actor
+func (this *Server) GetPID() *actor.PID {
+	return this.p2p
 }

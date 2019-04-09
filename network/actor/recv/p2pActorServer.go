@@ -9,30 +9,37 @@ import (
 	"github.com/oniio/oniDNS/network"
 	"github.com/ontio/ontology-eventbus/actor"
 	"github.com/oniio/oniChain/common/log"
-	"sync"
 	"github.com/ontio/ontology-eventbus/remote"
 	"github.com/gogo/protobuf/proto"
-	pm "github.com/oniio/oniDNS/messageBus/protoMessages"
 	"reflect"
 	"github.com/oniio/oniDNS/network/actor/messages"
 	p2pNet "github.com/oniio/oniP2p/network"
 	"context"
+	pm "github.com/oniio/oniDNS/messages/protoMessages"
 )
 
 type P2PActor struct {
 	net *network.Network
 	props *actor.Props
-	wg *sync.WaitGroup
 	msgHandlers map[string]MessageHandler
 	localPID *actor.PID
 }
 
-func NewP2PActor(n *network.Network,wg *sync.WaitGroup)*P2PActor{
-	return &P2PActor{
+var P2pPid *actor.PID
+
+func NewP2PActor(n *network.Network)(*P2PActor,error){
+	var err error
+	p2pActor:= &P2PActor{
 		net:n,
-		wg:wg,
 		msgHandlers:make(map[string]MessageHandler),
 	}
+	p2pActor.localPID,err=p2pActor.Start()
+	if err!=nil{
+		return nil,err
+	}
+	P2pPid=p2pActor.localPID
+	return p2pActor,nil
+
 }
 
 type MessageHandler func(msgData interface{},pid *actor.PID)

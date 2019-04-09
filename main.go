@@ -12,10 +12,12 @@ import (
 	"github.com/oniio/oniDNS/cmd"
 	"github.com/oniio/oniDNS/common"
 	"github.com/oniio/oniDNS/config"
-	"github.com/oniio/oniDNS/messageBus"
 	"github.com/oniio/oniDNS/netserver"
 	"github.com/oniio/oniDNS/storage"
 	"github.com/urfave/cli"
+	"github.com/oniio/oniDNS/network"
+	"github.com/ontio/ontology-eventbus/actor"
+	"github.com/oniio/oniDNS/network/actor/recv"
 )
 
 var (
@@ -113,15 +115,18 @@ func startDDNS(ctx *cli.Context) {
 		return
 	}
 	svr := netserver.NewNetServer()
-
 	if err = svr.Run(); err != nil {
 		log.Errorf("run ddns server error:%s", err)
 		return
 	}
-	if err = InitMsgBus(); err != nil {
-		log.Fatalf("InitMsgBus error: %v", err)
+	p2pSvr, p2pPid, err := initP2P()
+	recv.P2pPid=p2pPid
+	network.DDNSP2P=p2pSvr
+	if err != nil {
+		log.Errorf("initP2PNode error:%s", err)
+		return
 	}
-	storage.TDB, err = InitTrackerDB(TRACKER_DB_PATH)
+	storage.TDB, err = initTrackerDB(TRACKER_DB_PATH)
 	if err != nil {
 		log.Fatalf("InitTrackerDB error: %v", err)
 	}
@@ -150,7 +155,7 @@ func initLog(ctx *cli.Context) {
 	log.Info("start logging...")
 }
 
-func InitTrackerDB(path string) (*storage.LevelDBStore, error) {
+func initTrackerDB(path string) (*storage.LevelDBStore, error) {
 	db, err := storage.NewLevelDBStore(path)
 	if err != nil {
 		return nil, err
@@ -159,7 +164,22 @@ func InitTrackerDB(path string) (*storage.LevelDBStore, error) {
 	return db, nil
 }
 
-func InitMsgBus() error {
-	messageBus.MsgBus = messageBus.NewMsgBus()
-	return messageBus.MsgBus.Start()
+func initP2P()(*network.Network,*actor.PID,error){
+
+	p2p:=network.NewP2P()
+	p2pActor,err:=recv.NewP2PActor(p2p)
+	if err!=nil{
+		return nil,nil,err
+	}
+	p2pPID, err := p2pActor.Start()
+	if err != nil {
+		return nil, nil, fmt.Errorf("p2pActor init error %s", err)
+	}
+	p2p.SetPID(p2pPID)
+	err=p2p.Start()
+	if err != nil {
+		return nil, nil, fmt.Errorf("p2p service start error %s", err)
+	}
+	return p2p,p2pPID,nil
 }
+

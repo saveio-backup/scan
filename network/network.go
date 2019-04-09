@@ -16,11 +16,15 @@ import (
 	"context"
 	"github.com/golang/protobuf/proto"
 	"github.com/oniio/oniP2p/types/opcode"
-	pm "github.com/oniio/oniDNS/messageBus/protoMessages"
+	pm "github.com/oniio/oniDNS/messages/protoMessages"
 	"github.com/oniio/oniDNS/tracker/common"
 	comm "github.com/oniio/oniDNS/common"
 	"github.com/ontio/ontology-eventbus/actor"
+	"github.com/oniio/oniDNS/storage"
+	"fmt"
 )
+
+var DDNSP2P *Network
 
 type Network struct {
 	*network.Component
@@ -28,6 +32,14 @@ type Network struct {
 	peerAddrs  []string
 	listenAddr string
 	pid *actor.PID
+}
+
+func NewP2P()*Network{
+	n:=&Network{
+		Network:new(network.Network),
+	}
+	return n
+
 }
 
 func (this *Network) Start() error {
@@ -68,6 +80,47 @@ func (this *Network) Start() error {
 		log.Debug("had bootStraped peers")
 	}
 	comm.WaitToExit()
+	return nil
+}
+
+//P2P network msg receive. torrent msg, reg msg, unReg msg
+func (this *Network) Receive(ctx *network.ComponentContext) error {
+	log.Info("msgBus is accepting for syncNet messages ")
+	for {
+		switch msg := ctx.Message().(type) {
+		case *pm.Torrent:
+			if msg.InfoHash == nil || msg.Torrent == nil {
+				log.Errorf("[MSB Receive] receive from peer:%s, nil Torrent message",ctx.Sender().Address)
+				break
+			}
+			k := msg.InfoHash
+			v := msg.Torrent
+
+			if err := storage.TDB.Put(k, v); err != nil {
+				log.Errorf("[MSB Receive] sync filemessage error:%v", err)
+			}
+
+		case *pm.Registry:
+			if msg.WalletAddr == "" || msg.HostPort == "" {
+				log.Errorf("[MSB Receive] receive from peer:%s, nil Reg message", ctx.Sender().Address)
+				break
+			}
+			k, v := comm.WHPTobyte(msg.WalletAddr, msg.HostPort)
+
+			if err := storage.TDB.Put(k, v); err != nil {
+				log.Errorf("[MSB Receive] sync regmessage error:%v", err)
+			}
+
+		case *pm.UnRegistry:
+			k, _ := comm.WHPTobyte(msg.WalletAddr, "")
+			if err := storage.TDB.Delete(k); err != nil {
+				return fmt.Errorf("[MSB Receive] sync unregmessage error:%v", err)
+			}
+		default:
+			log.Errorf("[MSB Receive] unknown message type:%s", msg.String())
+
+		}
+	}
 	return nil
 }
 
