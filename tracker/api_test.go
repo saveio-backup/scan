@@ -20,10 +20,10 @@ var trackerUrl="udp://localhost:6369/announce"
 func TestRegEndPoint(t *testing.T) {
 	url := trackerUrl
 	//ip:=net.ParseIP("192.168.1.1")
-	ip:= net.IP{0x0, 0x1, 0x2, 0x3}
+	ip:= net.IP{0x11, 0x1, 0x2, 0x3}
 	fmt.Printf("ip:%s\n",ip)
 	fmt.Println(ip)
-	port:=uint16(8848)
+	port:=uint16(8840)
 	wb,_:=common.AddressFromBase58(wallet1Addr)
 	err:=RegEndPoint(url,wb,ip,port)
 	assert.Nil(err,t)
@@ -45,4 +45,16 @@ func TestReqEndPoint(t *testing.T) {
 	nodeAddr.UnmarshalBinary(nb)
 	fmt.Printf("ip:%s\n",nodeAddr.IP.String())
 	fmt.Printf("port:%d\n",nodeAddr.Port)
+}
+
+func TestUpdateEndPoint(t *testing.T) {
+	url := trackerUrl
+	//ip:=net.ParseIP("192.168.1.1")
+	ip:= net.IP{0x11, 0x11, 0x12, 0x3}
+	fmt.Printf("ip:%s\n",ip)
+	fmt.Println(ip)
+	port:=uint16(8840)
+	wb,_:=common.AddressFromBase58(wallet2Addr)
+	err:=UpdateEndPoint(url,wb,ip,port)
+	assert.Nil(err,t)
 }

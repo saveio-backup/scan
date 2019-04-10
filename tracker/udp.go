@@ -115,12 +115,13 @@ func (c *udpAnnounce) Do(req AnnounceRequest) (res AnnounceResponse, err error) 
 		return
 	}
 	reqURI := c.url.RequestURI()
-	if c.ipv6() {
-		// BEP 15
-		req.IPAddress = [4]byte{0x0}
-	} else if req.IPAddress == [4]byte{0x0} && c.a.ClientIp4.IP != nil {
-		req.IPAddress = ipconvert(c.a.ClientIp4.IP.To4())
-	}
+	//if c.ipv6() {
+	//	// BEP 15
+	//	req.IPAddress = [4]byte{0x0}
+	//} else if req.IPAddress == [4]byte{0x0} && c.a.ClientIp4.IP != nil {
+	//	log.Warnf("in c.ipv6 elif,req.ip:%v",req.IPAddress)
+	//	req.IPAddress = ipconvert(c.a.ClientIp4.IP.To4())
+	//}
 	// Clearly this limits the request URI to 255 bytes. BEP 41 supports
 	// longer but I'm not fussed.
 	options := append([]byte{optionTypeURLData, byte(len(reqURI))}, []byte(reqURI)...)
@@ -238,6 +239,7 @@ func (c *udpAnnounce) request(action Action, args interface{}, options []byte) (
 		buf := bytes.NewBuffer(b[:n])
 		var h ResponseHeader
 		err = binary.Read(buf, binary.BigEndian, &h)
+		log.Warnf("in client read ip:%v",h)
 		switch err {
 		case io.ErrUnexpectedEOF:
 			continue

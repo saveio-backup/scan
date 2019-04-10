@@ -65,7 +65,6 @@ func (s *Server) Run() error {
 
 // Accpted request service
 func (s *Server) Accepted() (err error) {
-	log.Info("tracker server is accepting request service")
 	b := make([]byte, 0x10000)
 	n, addr, err := s.pc.ReadFrom(b)
 	if err != nil {
@@ -197,13 +196,11 @@ func (s *Server) Accepted() (err error) {
 			return
 		}
 		//ip := make(net.IP, 4)
-		log.Warnf("ActionReg ip byte:%v\n",ar.IPAddress)
 		//binary.BigEndian.PutUint32(ip, ar.IPAddress)
 		nodeAddr := krpc.NodeAddr{
 			IP:   ar.IPAddress[:],
 			Port: int(ar.Port),
 		}
-		log.Warnf("ActionReg nodeAddr :%s\n",nodeAddr.String())
 		nb, err := nodeAddr.MarshalBinary()
 		if err != nil {
 			err = fmt.Errorf("nodeAddr marshal error")
