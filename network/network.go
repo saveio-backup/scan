@@ -63,6 +63,8 @@ func (this *Network) Start() error {
 	builder.AddComponentWithPriority(-9998, new(nat.StunComponent))
 	net, err := builder.Build()
 	this.Network = net
+	common.ListeningCh=make(chan struct{})
+	close(common.ListeningCh)
 	if err != nil {
 		log.Fatal(err)
 		return err
@@ -214,3 +216,12 @@ func (this *Network) loadClient(peer interface{}) (*network.PeerClient, error) {
 	}
 	return client, nil
 }
+
+func (this *Network)ConnState(address string)(*network.ConnState,bool){
+	return this.ConnectionState(address)
+}
+
+func (this *Network)ConnStateExists(address string)(*network.ConnState,bool){
+	return this.ConnStateExists(address)
+}
+

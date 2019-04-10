@@ -27,7 +27,7 @@ type P2PActor struct {
 	localPID *actor.PID
 }
 
-func NewP2PActor(n *network.Network)error{
+func NewP2PActor(n *network.Network)(*actor.PID,error){
 	var err error
 	p2pActor:= &P2PActor{
 		net:n,
@@ -35,9 +35,9 @@ func NewP2PActor(n *network.Network)error{
 	}
 	p2pActor.localPID,err=p2pActor.Start()
 	if err!=nil{
-		return err
+		return nil,err
 	}
-	return nil
+	return p2pActor.localPID,nil
 
 }
 
@@ -66,8 +66,10 @@ func (this *P2PActor) Receive(ctx actor.Context) {
 	case *messages.Ping:
 		ctx.Sender().Tell(&messages.Pong{})
 	case *pm.Registry:
+		log.Debugf("tracker client registry or update msg:%s",msg.String())
 		go this.Broadcast(msg)
 	case *pm.UnRegistry:
+		log.Debugf("tracker client unRegistry msg:%s",msg.String())
 		go this.Broadcast(msg)
 	case *pm.Torrent:
 		go this.Broadcast(msg)

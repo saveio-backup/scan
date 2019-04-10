@@ -8,7 +8,7 @@ import (
 	chaincmd "github.com/oniio/oniChain/cmd"
 	chainutils "github.com/oniio/oniChain/cmd/utils"
 	"github.com/oniio/oniChain/common/log"
-	chain "github.com/oniio/oniChain/start"
+	//chain "github.com/oniio/oniChain/start"
 	"github.com/oniio/oniDNS/cmd"
 	"github.com/oniio/oniDNS/common"
 	"github.com/oniio/oniDNS/config"
@@ -18,6 +18,7 @@ import (
 	"github.com/oniio/oniDNS/network"
 	"github.com/ontio/ontology-eventbus/actor"
 	"github.com/oniio/oniDNS/network/actor/recv"
+	tcomm "github.com/oniio/oniDNS/tracker/common"
 )
 
 var (
@@ -105,7 +106,7 @@ func main() {
 }
 func startDDNS(ctx *cli.Context) {
 	//chainnode
-	chain.StartOntology(ctx)
+	//chain.StartOntology(ctx)
 	//seed
 	initLog(ctx)
 
@@ -114,14 +115,15 @@ func startDDNS(ctx *cli.Context) {
 		log.Errorf("initConfig error:%s", err)
 		return
 	}
-	svr := netserver.NewNetServer()
-	if err = svr.Run(); err != nil {
-		log.Errorf("run ddns server error:%s", err)
-		return
-	}
 	p2pSvr, p2pPid, err := initP2P()
 	if err != nil {
 		log.Errorf("initP2PNode error:%s", err)
+		return
+	}
+	svr := netserver.NewNetServer()
+	svr.Tsvr.SetPID(p2pPid)
+	if err = svr.Run(); err != nil {
+		log.Errorf("run ddns server error:%s", err)
 		return
 	}
 	recv.P2pPid=p2pPid
@@ -156,6 +158,7 @@ func initLog(ctx *cli.Context) {
 }
 
 func initTrackerDB(path string) (*storage.LevelDBStore, error) {
+	log.Info("Tracker DB is init...")
 	db, err := storage.NewLevelDBStore(path)
 	if err != nil {
 		return nil, err
@@ -165,18 +168,21 @@ func initTrackerDB(path string) (*storage.LevelDBStore, error) {
 }
 
 func initP2P()(*network.Network,*actor.PID,error){
-
+	log.Info("P2P is init...")
 	p2p:=network.NewP2P()
-	err:=recv.NewP2PActor(p2p)
+	go p2p.Start()
+	pid,err:=recv.NewP2PActor(p2p)
 	if err != nil {
 		return nil, nil, fmt.Errorf("p2pActor init error %s", err)
 	}
-	p2pPID:= p2p.GetPID()
-	p2p.SetPID(p2pPID)
-	err=p2p.Start()
-	if err != nil {
-		return nil, nil, fmt.Errorf("p2p service start error %s", err)
-	}
-	return p2p,p2pPID,nil
+	p2p.SetPID(pid)
+	log.Infof("PID:%v",pid)
+	log.Info("p2p init success")
+	return p2p,pid,nil
 }
+
+func BlockUntilComplete() {
+	<-tcomm.ListeningCh
+}
+
 

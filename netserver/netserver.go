@@ -14,13 +14,13 @@ var (
 )
 
 type NetServer struct {
-	tsvr *tracker.Server
+	Tsvr *tracker.Server
 	dsvr *dns.Server
 }
 
 func NewNetServer() *NetServer {
 	return &NetServer{
-		tsvr: tracker.NewServer(),
+		Tsvr: tracker.NewServer(),
 		dsvr: dns.NewServer(),
 
 	}
@@ -42,8 +42,8 @@ func (ns *NetServer) startTrackerListening() error {
 	if pc!=nil{
 		defer pc.Close()
 	}
-	ns.tsvr.SetPacketConn(pc)
-	err = ns.tsvr.Run()
+	ns.Tsvr.SetPacketConn(pc)
+	err = ns.Tsvr.Run()
 	if err != nil {
 		log.Errorf("start tracker service err:%s", err)
 	}
@@ -61,8 +61,8 @@ func (ns *NetServer) startDnsListening() error {
 }
 
 //func (ns *NetServer)startSyncNet()error{
-//	ns.tsvr.Net=new(tracker.Network)
-//	err:=ns.tsvr.Net.Start()
+//	ns.Tsvr.Net=new(tracker.Network)
+//	err:=ns.Tsvr.Net.Start()
 //	if err!=nil{
 //		return err
 //	}
