@@ -1,53 +1,56 @@
 /**
  * Description:
  * Author: LiYong Zhang
- * Create: 2019-03-31 
-*/
+ * Create: 2019-03-31
+ */
 package recv
 
 import (
-	"github.com/oniio/oniDNS/network"
-	"github.com/ontio/ontology-eventbus/actor"
-	"github.com/oniio/oniChain/common/log"
-	"github.com/ontio/ontology-eventbus/remote"
-	"github.com/gogo/protobuf/proto"
+	"context"
+	"fmt"
 	"reflect"
+
+	"github.com/gogo/protobuf/proto"
+	"github.com/oniio/oniChain/common/log"
+	pm "github.com/oniio/oniDNS/messages/protoMessages"
+	"github.com/oniio/oniDNS/network"
 	"github.com/oniio/oniDNS/network/actor/messages"
 	p2pNet "github.com/oniio/oniP2p/network"
-	"context"
-	pm "github.com/oniio/oniDNS/messages/protoMessages"
-	"fmt"
+	"github.com/ontio/ontology-eventbus/actor"
 )
-type MessageHandler func(msgData interface{},pid *actor.PID)
+
+type MessageHandler func(msgData interface{}, pid *actor.PID)
+
 var P2pPid *actor.PID
+
 type P2PActor struct {
-	net *network.Network
-	props *actor.Props
+	net         *network.Network
+	props       *actor.Props
 	msgHandlers map[string]MessageHandler
-	localPID *actor.PID
+	localPID    *actor.PID
 }
 
-func NewP2PActor(n *network.Network)(*actor.PID,error){
+func NewP2PActor(n *network.Network) (*actor.PID, error) {
 	var err error
-	p2pActor:= &P2PActor{
-		net:n,
-		msgHandlers:make(map[string]MessageHandler),
+	p2pActor := &P2PActor{
+		net:         n,
+		msgHandlers: make(map[string]MessageHandler),
 	}
-	p2pActor.localPID,err=p2pActor.Start()
-	if err!=nil{
-		return nil,err
+	p2pActor.localPID, err = p2pActor.Start()
+	if err != nil {
+		return nil, err
 	}
-	return p2pActor.localPID,nil
+	return p2pActor.localPID, nil
 
 }
 
 func (this *P2PActor) Start() (*actor.PID, error) {
 	this.props = actor.FromProducer(func() actor.Actor { return this })
-	localPid, err := actor.SpawnNamed(this.props, "net_server")
-	if err!=nil{
-		return nil,fmt.Errorf("[P2PActor] start error:%v",err)
+	localPid, err := actor.SpawnNamed(this.props, "dns_net_server")
+	if err != nil {
+		return nil, fmt.Errorf("[P2PActor] start error:%v", err)
 	}
-	this.localPID=localPid
+	this.localPID = localPid
 	return localPid, err
 }
 
@@ -66,54 +69,41 @@ func (this *P2PActor) Receive(ctx actor.Context) {
 	case *messages.Ping:
 		ctx.Sender().Tell(&messages.Pong{})
 	case *pm.Registry:
-		log.Debugf("tracker client registry or update msg:%s",msg.String())
+		log.Debugf("tracker client registry or update msg:%s", msg.String())
 		go this.Broadcast(msg)
 	case *pm.UnRegistry:
-		log.Debugf("tracker client unRegistry msg:%s",msg.String())
+		log.Debugf("tracker client unRegistry msg:%s", msg.String())
 		go this.Broadcast(msg)
 	case *pm.Torrent:
 		go this.Broadcast(msg)
 	case *messages.UserDefineMsg:
-		t:=reflect.TypeOf(msg)
-		this.msgHandlers[t.Name()](msg,this.localPID)
-		
+		t := reflect.TypeOf(msg)
+		this.msgHandlers[t.Name()](msg, this.localPID)
+
 	default:
 		log.Error("[P2PActor] receive unknown message type!")
 	}
 
 }
 
-func (this *P2PActor)Broadcast(message proto.Message){
+func (this *P2PActor) Broadcast(message proto.Message) {
 	ctx := p2pNet.WithSignMessage(context.Background(), true)
-	this.net.Broadcast(ctx,message)
+	this.net.Broadcast(ctx, message)
 
 }
 
-func (this *P2PActor)RegMsgHandler(msgName string,handler MessageHandler){
-	this.msgHandlers[msgName]=handler
+func (this *P2PActor) RegMsgHandler(msgName string, handler MessageHandler) {
+	this.msgHandlers[msgName] = handler
 }
 
-func (this *P2PActor)UnRegMsgHandler(msgName string,handler MessageHandler){
-	delete(this.msgHandlers,msgName)
+func (this *P2PActor) UnRegMsgHandler(msgName string, handler MessageHandler) {
+	delete(this.msgHandlers, msgName)
 }
 
-func (this *P2PActor)SetLocalPID(pid *actor.PID){
-	this.localPID=pid
+func (this *P2PActor) SetLocalPID(pid *actor.PID) {
+	this.localPID = pid
 }
 
-func (this *P2PActor)GetLocalPID() *actor.PID{
+func (this *P2PActor) GetLocalPID() *actor.PID {
 	return this.localPID
-}
-
-//start local remote actor grpc service
-func RemoteStart(addr string){
-	remote.Start(addr)
-}
-
-//return remote actor grpc service pid
-func RemotePid(addr,desc string)*actor.PID{
-	if desc==""{
-		desc="remote"
-	}
-	return actor.NewPID(addr,desc)
 }
