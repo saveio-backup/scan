@@ -6,7 +6,6 @@ import (
 	"runtime"
 
 	chaincmd "github.com/oniio/oniChain/cmd"
-	"github.com/oniio/oniChain/cmd/utils"
 	chainutils "github.com/oniio/oniChain/cmd/utils"
 	"github.com/oniio/oniChain/common/log"
 
@@ -22,10 +21,13 @@ import (
 	"github.com/ontio/ontology-eventbus/actor"
 	alog "github.com/ontio/ontology-eventbus/log"
 	"github.com/urfave/cli"
-)
-
-var (
-	TRACKER_DB_PATH = "./TrackerLevelDB"
+	//"github.com/oniio/oniChain-go-sdk/wallet"
+	"github.com/oniio/oniDNS/tracker"
+	"github.com/oniio/oniDNS/cmd/utils"
+	"github.com/oniio/oniDNS/http/localrpc"
+	"time"
+	"github.com/oniio/oniDNS/http/restful"
+	"github.com/oniio/oniChain/http/jsonrpc"
 )
 
 func initAPP() *cli.App {
@@ -47,11 +49,13 @@ func initAPP() *cli.App {
 		chaincmd.MultiSigTxCommand,
 		chaincmd.SendTxCommand,
 		chaincmd.ShowTxCommand,
+		cmd.EndPointCommand,
 	}
 	app.Flags = []cli.Flag{
 		//common setting
-		cmd.LogStderrFlag,
-		cmd.LogLevelFlag,
+		utils.LogStderrFlag,
+		utils.LogLevelFlag,
+		utils.HostFlag,
 		//common setting
 		chainutils.ConfigFlag,
 		chainutils.DisableEventLogFlag,
@@ -114,32 +118,63 @@ func startDDNS(ctx *cli.Context) {
 		log.Error("Chain init error")
 		return
 	}
-		//seed
-		initLog(ctx)
-
-		err = initConfig(ctx)
-		if err != nil {
-			log.Errorf("initConfig error:%s", err)
-			return
-		}
-		p2pSvr, p2pPid, err := initP2P()
-		if err != nil {
-			log.Errorf("initP2PNode error:%s", err)
-			return
-		}
-		svr := netserver.NewNetServer()
-		svr.Tsvr.SetPID(p2pPid)
-		if err = svr.Run(); err != nil {
-			log.Errorf("run ddns server error:%s", err)
-			return
-		}
-		recv.P2pPid = p2pPid
-		network.DDNSP2P = p2pSvr
-		storage.TDB, err = initTrackerDB(TRACKER_DB_PATH)
-		if err != nil {
-			log.Fatalf("InitTrackerDB error: %v", err)
-		}
+	startTracker(ctx)
 	common.WaitToExit()
+}
+
+func startTracker(ctx *cli.Context){
+	initLog(ctx)
+	err := initConfig(ctx)
+	if err != nil {
+		log.Errorf("initConfig error:%s", err)
+		return
+		}
+	p2pSvr, p2pPid, err := initP2P()
+	if err != nil {
+		log.Errorf("initP2PNode error:%s", err)
+		return
+		}
+
+	svr := netserver.NewNetServer()
+	svr.Tsvr.SetPID(p2pPid)
+	if err = svr.Run(); err != nil {
+		log.Errorf("run ddns server error:%s", err)
+		return
+	}
+	recv.P2pPid = p2pPid
+	network.DDNSP2P = p2pSvr
+	storage.TDB, err = initTrackerDB(config.TRACKER_DB_PATH)
+	if err != nil {
+		log.Fatalf("InitTrackerDB error: %v", err)
+	}
+
+	svr.Tsvr.SetPID(p2pPid)
+	if err = svr.Run(); err != nil {
+		log.Errorf("run ddns server error:%s", err)
+		return
+	}
+	err = initLocalRpc(ctx)
+	if err != nil {
+		log.Errorf("initLocalRpc error:%s", err)
+		return
+	}
+	initRestful(ctx)
+	//host:=p2pSvr.ExternalAddr
+	//w, err := wallet.OpenWallet(config.WALLET_FILE)
+	//acc,err:=w.GetDefaultAccount([]byte(config.WALLET_PWD))
+	//wAddr:=acc.Address
+	//ws:=wAddr.ToHexString()
+	ws:=config.Wallet1Addr
+	if err != nil {
+		log.Errorf("open wallet err:%s\n", err)
+		return
+	}
+	//TODO: to check if had registerd in contract
+	//temp test
+	if err=tracker.EndPointRegistry(ws,config.Host);err!=nil{
+		log.Errorf("DDNS node EndPointRegistry error:%v",err)
+	}
+	log.Info("Tracker start success")
 }
 
 func initConfig(ctx *cli.Context) error {
@@ -147,13 +182,13 @@ func initConfig(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	log.Infof("Config init success")
+	log.Info("Config init success")
 	return nil
 }
 
 func initLog(ctx *cli.Context) {
 	//init log module
-	if ctx.Bool(cmd.GetFlagName(cmd.LogStderrFlag)) {
+	if ctx.Bool(utils.GetFlagName(utils.LogStderrFlag)) {
 		logLevel := ctx.GlobalInt(utils.GetFlagName(utils.LogLevelFlag))
 		log.InitLog(logLevel, log.Stdout)
 	} else {
@@ -161,8 +196,11 @@ func initLog(ctx *cli.Context) {
 		alog.InitLog(log.PATH)
 		log.InitLog(logLevel, log.PATH, log.Stdout)
 	}
+	//log.SetLevel(ctx.GlobalUint(cmd.GetFlagName(cmd.LogLevelFlag))) //TODO
+	//log.SetMaxSize(config.DEFAULT_MAX_LOG_SIZE) //TODO
 	log.Info("start logging...")
 }
+
 
 func initTrackerDB(path string) (*storage.LevelDBStore, error) {
 	log.Info("Tracker DB is init...")
@@ -179,6 +217,7 @@ func initP2P() (*network.Network, *actor.PID, error) {
 	p2p := network.NewP2P()
 	go p2p.Start()
 	pid, err := recv.NewP2PActor(p2p)
+	BlockUntilComplete()
 	if err != nil {
 		return nil, nil, fmt.Errorf("p2pActor init error %s", err)
 	}
@@ -186,6 +225,65 @@ func initP2P() (*network.Network, *actor.PID, error) {
 	log.Infof("PID:%v", pid)
 	log.Info("p2p init success")
 	return p2p, pid, nil
+}
+
+func initRpc(ctx *cli.Context) error {
+	if !config.DefaultConfig.Rpc.EnableHttpJsonRpc {
+		return nil
+	}
+	var err error
+	exitCh := make(chan interface{}, 0)
+	go func() {
+		err = jsonrpc.StartRPCServer()
+		close(exitCh)
+	}()
+
+	flag := false
+	select {
+	case <-exitCh:
+		if !flag {
+			return err
+		}
+	case <-time.After(time.Millisecond * 5):
+		flag = true
+	}
+	log.Infof("Rpc init success")
+	return nil
+}
+
+func initLocalRpc(ctx *cli.Context) error {
+	log.Infof("localRpc start to init...")
+	//if !ctx.GlobalBool(utils.GetFlagName(utils.RPCLocalEnableFlag)) {
+	//	return nil
+	//}
+	var err error
+	exitCh := make(chan interface{}, 0)
+	go func() {
+		err = localrpc.StartLocalServer()
+		close(exitCh)
+	}()
+
+	flag := false
+	select {
+	case <-exitCh:
+		if !flag {
+			return err
+		}
+	case <-time.After(time.Millisecond * 5):
+		flag = true
+	}
+
+	log.Infof("Local rpc init success")
+	return nil
+}
+
+func initRestful(ctx *cli.Context) {
+	if !config.DefaultConfig.Restful.EnableHttpRestful {
+		return
+	}
+	go restful.StartServer()
+
+	log.Infof("Restful init success")
 }
 
 func BlockUntilComplete() {

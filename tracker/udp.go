@@ -239,7 +239,6 @@ func (c *udpAnnounce) request(action Action, args interface{}, options []byte) (
 		buf := bytes.NewBuffer(b[:n])
 		var h ResponseHeader
 		err = binary.Read(buf, binary.BigEndian, &h)
-		log.Warnf("in client read ip:%v",h)
 		switch err {
 		case io.ErrUnexpectedEOF:
 			continue

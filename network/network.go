@@ -63,8 +63,7 @@ func (this *Network) Start() error {
 	builder.AddComponentWithPriority(-9998, new(nat.StunComponent))
 	net, err := builder.Build()
 	this.Network = net
-	common.ListeningCh=make(chan struct{})
-	close(common.ListeningCh)
+	this.CompletNet()
 	if err != nil {
 		log.Fatal(err)
 		return err
@@ -225,3 +224,27 @@ func (this *Network)ConnStateExists(address string)(*network.ConnState,bool){
 	return this.ConnStateExists(address)
 }
 
+func (this *Network)CompletNet(){
+	//common.ListeningCh=make(chan struct{})
+	close(common.ListeningCh)
+}
+
+func (this *Network)PeerStateChange(fn func(*keepalive.PeerStateEvent)){
+	ka,reg:=this.Network.Component(keepalive.ComponentID)
+	if !reg{
+		log.Error("keepalive component do not reg")
+		return
+	}
+	peerStateChan:=ka.(*keepalive.Component).GetPeerStateChan()
+	stopCh:=ka.(*keepalive.Component).GetStopChan()
+	for{
+		select {
+		case event:=<-peerStateChan:
+			fn(event)
+
+		case <-stopCh:
+			return
+
+		}
+	}
+}

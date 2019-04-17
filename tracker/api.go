@@ -156,10 +156,12 @@ func UpdateEndPoint(trackerUrl string,walletAddr [20]byte,nodeIP net.IP, port ui
 // ---------Local DDNS client relative action------------
 //local endPointReg
 func EndPointRegistry(walletAddr,hostPort string )error{
+	log.Debugf("w:%s,h:%s\n",walletAddr,hostPort)
 	if walletAddr==""|| hostPort==""{
 		return errors.NewErr("[EndPointRegistry] walletAddr or hostPort is null")
 	}
 	k,v:=common.WHPTobyte(walletAddr,hostPort)
+	fmt.Printf("storageDb:%v",storage.TDB)
 	if err:=storage.TDB.Put(k,v);err!=nil{
 		return err
 	}

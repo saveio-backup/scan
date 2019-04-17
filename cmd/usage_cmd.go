@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"fmt"
 	"encoding/json"
+	"github.com/oniio/oniDNS/cmd/utils"
 )
 
 // AppHelpTemplate is the test template for the default, global app help topic.
@@ -61,12 +62,13 @@ type flagGroup struct {
 	Flags []cli.Flag
 }
 
+//TODO:
 var AppHelpFlagGroups = []flagGroup{
 	{
 		Name: "Seeds",
 		Flags: []cli.Flag{
-			LogStderrFlag,
-			LogLevelFlag,
+			utils.LogStderrFlag,
+			utils.LogLevelFlag,
 		},
 	},
 	{

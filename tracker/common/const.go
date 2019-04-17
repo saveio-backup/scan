@@ -10,4 +10,4 @@ const (
 	SYNC_REGMSG_OP_CODE = 3001
 	SYNC_UNREGMSG_OP_CODE = 3002
 )
-var ListeningCh chan struct{}
+var ListeningCh =make(chan struct{})
