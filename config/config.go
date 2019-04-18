@@ -31,9 +31,9 @@ const (
 	DEFAULT_HOST         = "127.0.0.1:6699"
 	DEFAULT_DNS_PORT     = 53
 	DEFAULT_DNS_FEE      = 0
-	DEFAULT_RPC_PORT                        = uint(20336)
-	DEFAULT_RPC_LOCAL_PORT                  = uint(20337)
-	DEFAULT_REST_PORT                       = uint(20334)
+	DEFAULT_RPC_PORT                        = uint(20338)
+	DEFAULT_RPC_LOCAL_PORT                  = uint(20339)
+	DEFAULT_REST_PORT                       = uint(20335)
 
 )
 

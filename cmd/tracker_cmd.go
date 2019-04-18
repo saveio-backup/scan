@@ -8,8 +8,6 @@ import (
 	"github.com/urfave/cli"
 	"github.com/oniio/oniDNS/cmd/common"
 	"github.com/oniio/oniDNS/cmd/utils"
-	httpComm "github.com/oniio/oniDNS/http/base/common"
-	"encoding/json"
 )
 
 var EndPointCommand=cli.Command{
@@ -59,27 +57,23 @@ func regEndPoint(ctx *cli.Context)error{
 	a:=acc.Address
 	wAddr:=a.ToHexString()
 	host:=ctx.String(utils.GetFlagName(utils.HostFlag))
-	endPoint:=httpComm.EndPointRsp{
-		Wallet:wAddr,
-		Host:host,
-	}
-	em,err:=json.Marshal(endPoint)
-	if err!=nil{
-		PrintErrorMsg("regEndPoint json.Marshal error:%s\n",err)
-	}
-	sigdata,err:=utils.Sign(em,acc)
+	//endPoint:=httpComm.EndPointRsp{
+	//	Wallet:wAddr,
+	//	Host:host,
+	//}
+	//em,err:=json.Marshal(endPoint)
+	//if err!=nil{
+	//	PrintErrorMsg("regEndPoint json.Marshal error:%s\n",err)
+	//}
+	//sigdata,err:=utils.Sign(em,acc)
 	if err!=nil{
 		PrintErrorMsg("regEndPoint utils.Sign error:%s\n",err)
 	}
-	//if err=tracker.EndPointRegistry(wAddr,host);err!=nil{
-	//	PrintErrorMsg("regEndPoint EndPointRegistry error:%s\n",err)
-	//	return err
-	//}
-	err=utils.RegEndPoint(wAddr,host,sigdata,acc)
+	err=utils.RegEndPoint(wAddr,host)
 	if err!=nil{
 		return err
+		PrintErrorMsg("Register wallet:%s,host:%s",wAddr,host)
 	}
-	PrintErrorMsg("Register wallet:%s,host:%s",wAddr,host)
 	return nil
 }
 

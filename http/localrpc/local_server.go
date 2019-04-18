@@ -31,14 +31,15 @@ import (
 
 const (
 	LOCAL_HOST string = "127.0.0.1"
-	LOCAL_DIR  string = "/local"
+	//LOCAL_DIR  string = "/local"
+	LOCAL_DIR  string = "/"
 )
 
 func StartLocalServer() error {
-	log.Debug()
+	log.Info("start local Server")
 	http.HandleFunc(LOCAL_DIR, rpc.Handle)
 	rpc.HandleFunc("setdebuginfo", rpc.SetDebugInfo)
-	rpc.HandleFunc("regendpoint",rpc.EndPointReg)
+	//rpc.HandleFunc("regendpoint",rpc.EndPointReg)
 
 	// TODO: only listen to local host
 	err := http.ListenAndServe(":"+strconv.Itoa(int(cfg.DefaultConfig.Rpc.HttpLocalPort)), nil)

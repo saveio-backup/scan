@@ -10,13 +10,12 @@ import (
 	//"github.com/oniio/oniDNS/http/base/common"
 	//"encoding/json"
 	"github.com/oniio/oniChain/common/log"
-	"github.com/oniio/oniChain/account"
 	httpComm "github.com/oniio/oniDNS/http/base/common"
 	"encoding/json"
 )
 
-func RegEndPoint(waddr,host string,sigData []byte,a *account.Account)error{
-	result, ontErr := sendRpcRequest("regendpoint", []interface{}{waddr,host,sigData,a})
+func RegEndPoint(waddr,host string)error{
+	result, ontErr := sendRpcRequest("regendpoint", []interface{}{waddr,host})
 	if ontErr != nil {
 		switch ontErr.ErrorCode {
 		case ERROR_INVALID_PARAMS:
@@ -31,6 +30,6 @@ func RegEndPoint(waddr,host string,sigData []byte,a *account.Account)error{
 		return fmt.Errorf("json.Unmarshal error:%s", err)
 	}
 	log.Infof("DDNS endpoint registed success wallet:%s,host%s",endPoint.Wallet,endPoint.Host)
-	log.Debugf("RegEndPoint result :%s",result)
+	log.Infof("RegEndPoint result :%s",result)
 	return nil
 }

@@ -24,12 +24,7 @@ import (
 
 	"github.com/oniio/oniChain/common/log"
 	berr "github.com/oniio/oniDNS/http/base/error"
-	"github.com/oniio/oniDNS/tracker"
 	"github.com/oniio/oniChain/account"
-	httpComm "github.com/oniio/oniDNS/http/base/common"
-	"encoding/json"
-	"github.com/oniio/oniChain/core/signature"
-	"fmt"
 )
 
 const (
@@ -69,50 +64,3 @@ func SetDebugInfo(params []interface{}) map[string]interface{} {
 	return responsePack(berr.SUCCESS, true)
 }
 
-func EndPointReg(params []interface{}) map[string]interface{}{
-	log.Debugf("in endreg:%v\n",params)
-	fmt.Println("in endreg")
-	switch (params[0]).(type) {
-	case string:
-		wAddr=params[0].(string)
-	default:
-		return responsePack(berr.INVALID_PARAMS, "")
-	}
-	switch (params[1]).(type) {
-	case string:
-		host=params[1].(string)
-	default:
-		return responsePack(berr.INVALID_PARAMS, "")
-	}
-	log.Debugf("EndPointReg wallet:%s,host:%s",wAddr,host)
-	endPoint:=httpComm.EndPointRsp{
-		Wallet:wAddr,
-		Host:host,
-	}
-	em,err:=json.Marshal(endPoint)
-	if err!=nil{
-		return responsePack(berr.JSON_MARSHAL_ERROR,"")
-	}
-	switch (params[2]).(type) {
-	case []byte:
-		sigData=params[2].([]byte)
-	default:
-		return responsePack(berr.INVALID_PARAMS, "")
-	}
-	switch (params[3]).(type) {
-	case *account.Account:
-		acc=params[3].(*account.Account)
-	default:
-		return responsePack(berr.INVALID_PARAMS, "")
-	}
-	if err:= signature.Verify(acc.PublicKey,em,sigData);err!=nil{
-		return responsePack(berr.SIG_VERIFY_ERROR,"")
-	}
-	if err=tracker.EndPointRegistry(wAddr,host);err!=nil{
-		//PrintErrorMsg("regEndPoint EndPointRegistry error:%s\n",err)
-		log.Errorf("regEndPoint EndPointRegistry error:%s\n",err)
-		return responsePack(berr.INTERNAL_ERROR,"")
-	}
-	//return responsePack(berr.SUCCESS,true)
-	return responseSuccess(&endPoint)
-}

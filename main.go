@@ -27,7 +27,7 @@ import (
 	"github.com/oniio/oniDNS/http/localrpc"
 	"time"
 	"github.com/oniio/oniDNS/http/restful"
-	"github.com/oniio/oniChain/http/jsonrpc"
+	"github.com/oniio/oniDNS/http/jsonrpc"
 )
 
 func initAPP() *cli.App {
@@ -153,9 +153,9 @@ func startTracker(ctx *cli.Context){
 		log.Errorf("run ddns server error:%s", err)
 		return
 	}
-	err = initLocalRpc(ctx)
+	err = initRpc(ctx)
 	if err != nil {
-		log.Errorf("initLocalRpc error:%s", err)
+		log.Errorf("initRpc error:%s", err)
 		return
 	}
 	initRestful(ctx)
