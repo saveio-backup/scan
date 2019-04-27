@@ -24,7 +24,6 @@ var EndPointCommand = cli.Command{
 			Usage:     "Reg wallet address and host",
 			ArgsUsage: "[sub-command options]",
 			Flags: []cli.Flag{
-				utils.WalletFlag,
 				utils.HostFlag,
 			},
 		},
@@ -77,12 +76,7 @@ func regEndPoint(ctx *cli.Context) error {
 		PrintErrorMsg("regEndPoint GetDefaultAccount error:%s\n", err)
 		return err
 	}
-	a := acc.Address
-	if ctx.IsSet(utils.GetFlagName(utils.WalletFlag)) {
-		wAddr = ctx.String(utils.GetFlagName(utils.WalletFlag))
-	} else {
-		wAddr = a.ToBase58()
-	}
+	wAddr = acc.Address.ToBase58()
 	host := ctx.String(utils.GetFlagName(utils.HostFlag))
 	if err != nil {
 		PrintErrorMsg("regEndPoint utils.Sign error:%s\n", err)
