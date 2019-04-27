@@ -5,12 +5,13 @@ import (
 	"net"
 
 	"github.com/oniio/oniChain/common/log"
-	"github.com/oniio/oniDNS/config"
+	"github.com/oniio/oniDNS/common/config"
 	"github.com/oniio/oniDNS/dns"
 	"github.com/oniio/oniDNS/tracker"
 )
+
 var (
-	TRACKER_DB_PATH="./torrentdb"
+	TRACKER_DB_PATH = "./torrentdb"
 )
 
 type NetServer struct {
@@ -22,7 +23,6 @@ func NewNetServer() *NetServer {
 	return &NetServer{
 		Tsvr: tracker.NewServer(),
 		dsvr: dns.NewServer(),
-
 	}
 }
 
@@ -35,11 +35,11 @@ func (ns *NetServer) Run() error {
 
 // startTrackerListening start tracker listen
 func (ns *NetServer) startTrackerListening() error {
-	pc, err := net.ListenPacket("udp", fmt.Sprintf(":%d", config.DefaultConfig.Tracker.UdpPort))
+	pc, err := net.ListenPacket("udp", fmt.Sprintf(":%d", config.DefaultConfig.TrackerConfig.UdpPort))
 	if err != nil {
 		return err
 	}
-	if pc!=nil{
+	if pc != nil {
 		defer pc.Close()
 	}
 	ns.Tsvr.SetPacketConn(pc)
@@ -51,6 +51,7 @@ func (ns *NetServer) startTrackerListening() error {
 }
 
 // startDnsListening start dns listen
+/*
 func (ns *NetServer) startDnsListening() error {
 	pc, err := net.ListenPacket("udp", fmt.Sprintf(":%d", config.DefaultConfig.Dns.UdpPort))
 	defer pc.Close()
@@ -59,13 +60,4 @@ func (ns *NetServer) startDnsListening() error {
 	}
 	return nil
 }
-
-//func (ns *NetServer)startSyncNet()error{
-//	ns.Tsvr.Net=new(tracker.Network)
-//	err:=ns.Tsvr.Net.Start()
-//	if err!=nil{
-//		return err
-//	}
-//
-//	return nil
-//}
+*/

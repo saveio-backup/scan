@@ -11,23 +11,27 @@ import (
 
 	chain "github.com/oniio/oniChain/start"
 	"github.com/oniio/oniDNS/cmd"
+	//ccom "github.com/oniio/oniDNS/cmd/common"
+	ccom "github.com/oniio/oniDNS/cmd/common"
+	"github.com/oniio/oniDNS/cmd/utils"
 	"github.com/oniio/oniDNS/common"
-	"github.com/oniio/oniDNS/config"
+	"github.com/oniio/oniDNS/common/config"
+	"github.com/oniio/oniDNS/http/jsonrpc"
+	"github.com/oniio/oniDNS/http/localrpc"
+	"github.com/oniio/oniDNS/http/restful"
 	"github.com/oniio/oniDNS/netserver"
 	"github.com/oniio/oniDNS/network"
 	"github.com/oniio/oniDNS/network/actor/recv"
 	"github.com/oniio/oniDNS/storage"
 	tcomm "github.com/oniio/oniDNS/tracker/common"
 	"github.com/ontio/ontology-eventbus/actor"
-	alog "github.com/ontio/ontology-eventbus/log"
 	"github.com/urfave/cli"
-	//"github.com/oniio/oniChain-go-sdk/wallet"
-	"github.com/oniio/oniDNS/tracker"
-	"github.com/oniio/oniDNS/cmd/utils"
-	"github.com/oniio/oniDNS/http/localrpc"
 	"time"
-	"github.com/oniio/oniDNS/http/restful"
-	"github.com/oniio/oniDNS/http/jsonrpc"
+	//"github.com/oniio/oniChain-go-sdk/wallet"
+	//"github.com/oniio/oniChain-go-sdk/wallet"
+	//"github.com/oniio/oniDNS/tracker"
+	"github.com/oniio/oniChain/errors"
+	"github.com/oniio/oniDNS/tracker"
 )
 
 func initAPP() *cli.App {
@@ -55,7 +59,38 @@ func initAPP() *cli.App {
 		//common setting
 		utils.LogStderrFlag,
 		utils.LogLevelFlag,
+		utils.RpcServerFlag,
+		utils.ConfPathFlag,
+		utils.DbDirFlag,
+		//p2p setting
+		utils.NetworkIDFlag,
+		utils.PortFlag,
+		utils.SeedListFlag,
+		//tracker command setting
+		utils.TrackerServerPortFlag,
+		utils.TrackerFee,
+		utils.WalletFlag,
+		//utils.WalletSetFlag,
+		//utils.WalletFileFlag,
 		utils.HostFlag,
+		//ddns command setting
+		utils.DnsIpFlag,
+		utils.DnsPortFlag,
+		utils.DnsAllFlag,
+		//channel command setting
+		utils.PartnerAddressFlag,
+		utils.TargetAddressFlag,
+		utils.TotalDepositFlag,
+		utils.AmountFlag,
+		utils.PaymentIDFlag,
+		// RPC settings
+		//utils.RPCDisabledFlag,
+		//utils.RPCPortFlag,
+		//utils.RPCLocalEnableFlag,
+		//utils.RPCLocalProtFlag,
+		//Restful setting
+		//utils.RestfulEnableFlag,
+		//utils.RestfulPortFlag,
 		//common setting
 		chainutils.ConfigFlag,
 		chainutils.DisableEventLogFlag,
@@ -95,15 +130,18 @@ func initAPP() *cli.App {
 		chainutils.RestfulEnableFlag,
 		chainutils.RestfulPortFlag,
 		//ws setting
-		chainutils.WsEnabledFlag,
-		chainutils.WsPortFlag,
+		//chainutils.WsEnabledFlag,
+		//chainutils.WsPortFlag,
 	}
 	app.Before = func(context *cli.Context) error {
 		runtime.GOMAXPROCS(runtime.NumCPU())
+		cmd.Init(context)
 		return nil
 	}
 	return app
 }
+
+var wAddr string
 
 func main() {
 	if err := initAPP().Run(os.Args); err != nil {
@@ -113,27 +151,23 @@ func main() {
 }
 func startDDNS(ctx *cli.Context) {
 	//chainnode
-	err := startChain(ctx)
-	if err != nil {
-		log.Error("Chain init error")
-		return
-	}
+	//err := startChain(ctx)
+	//if err != nil {
+	//	log.Error("Chain init error")
+	//	return
+	//}
 	startTracker(ctx)
 	common.WaitToExit()
 }
 
-func startTracker(ctx *cli.Context){
+func startTracker(ctx *cli.Context) {
 	initLog(ctx)
-	err := initConfig(ctx)
-	if err != nil {
-		log.Errorf("initConfig error:%s", err)
-		return
-		}
+	cmd.SetDDNSConfig(ctx)
 	p2pSvr, p2pPid, err := initP2P()
 	if err != nil {
 		log.Errorf("initP2PNode error:%s", err)
 		return
-		}
+	}
 
 	svr := netserver.NewNetServer()
 	svr.Tsvr.SetPID(p2pPid)
@@ -143,7 +177,7 @@ func startTracker(ctx *cli.Context){
 	}
 	recv.P2pPid = p2pPid
 	network.DDNSP2P = p2pSvr
-	storage.TDB, err = initTrackerDB(config.TRACKER_DB_PATH)
+	storage.TDB, err = initTrackerDB(config.DEFAULT_DB_PATH)
 	if err != nil {
 		log.Fatalf("InitTrackerDB error: %v", err)
 	}
@@ -159,48 +193,15 @@ func startTracker(ctx *cli.Context){
 		return
 	}
 	initRestful(ctx)
-	//host:=p2pSvr.ExternalAddr
-	//w, err := wallet.OpenWallet(config.WALLET_FILE)
-	//acc,err:=w.GetDefaultAccount([]byte(config.WALLET_PWD))
-	//wAddr:=acc.Address
-	//ws:=wAddr.ToHexString()
-	ws:=config.Wallet1Addr
-	if err != nil {
-		log.Errorf("open wallet err:%s\n", err)
-		return
-	}
-	//TODO: to check if had registerd in contract
-	//temp test
-	if err=tracker.EndPointRegistry(ws,config.Host);err!=nil{
-		log.Errorf("DDNS node EndPointRegistry error:%v",err)
-	}
+	initEndPointReg(ctx, p2pSvr)
 	log.Info("Tracker start success")
-}
-
-func initConfig(ctx *cli.Context) error {
-	_, err := cmd.SetSeedsConfig(ctx)
-	if err != nil {
-		return err
-	}
-	log.Info("Config init success")
-	return nil
 }
 
 func initLog(ctx *cli.Context) {
 	//init log module
-	if ctx.Bool(utils.GetFlagName(utils.LogStderrFlag)) {
-		logLevel := ctx.GlobalInt(utils.GetFlagName(utils.LogLevelFlag))
-		log.InitLog(logLevel, log.Stdout)
-	} else {
-		logLevel := ctx.GlobalInt(utils.GetFlagName(utils.LogLevelFlag))
-		alog.InitLog(log.PATH)
-		log.InitLog(logLevel, log.PATH, log.Stdout)
-	}
-	//log.SetLevel(ctx.GlobalUint(cmd.GetFlagName(cmd.LogLevelFlag))) //TODO
-	//log.SetMaxSize(config.DEFAULT_MAX_LOG_SIZE) //TODO
+	cmd.SetLogConfig(ctx)
 	log.Info("start logging...")
 }
-
 
 func initTrackerDB(path string) (*storage.LevelDBStore, error) {
 	log.Info("Tracker DB is init...")
@@ -228,7 +229,7 @@ func initP2P() (*network.Network, *actor.PID, error) {
 }
 
 func initRpc(ctx *cli.Context) error {
-	if !config.DefaultConfig.Rpc.EnableHttpJsonRpc {
+	if !config.DefaultConfig.RpcConfig.EnableHttpJsonRpc {
 		return nil
 	}
 	var err error
@@ -278,7 +279,7 @@ func initLocalRpc(ctx *cli.Context) error {
 }
 
 func initRestful(ctx *cli.Context) {
-	if !config.DefaultConfig.Restful.EnableHttpRestful {
+	if !config.DefaultConfig.RestfulConfig.EnableHttpRestful {
 		return
 	}
 	go restful.StartServer()
@@ -339,5 +340,42 @@ func startChain(ctx *cli.Context) error {
 	chain.InitNodeInfo(ctx, p2pSvr)
 
 	go chain.LogCurrBlockHeight()
+	return nil
+}
+
+func initEndPointReg(ctx *cli.Context, p2p *network.Network) error {
+	client, err := ccom.OpenWallet(ctx)
+	if err != nil {
+		return err
+	}
+	pw, err := ccom.GetPasswd(ctx)
+	if err != nil {
+		log.Errorf("regEndPoint GetPasswd error:%s\n", err)
+		return err
+	}
+	acc, err := client.GetDefaultAccount(pw)
+	if err != nil {
+		log.Errorf("regEndPoint GetDefaultAccount error:%s\n", err)
+		return err
+	}
+	a := acc.Address
+	if ctx.IsSet(utils.GetFlagName(utils.WalletFlag)) {
+		wAddr = ctx.String(utils.GetFlagName(utils.WalletFlag))
+	} else {
+		wAddr = a.ToBase58()
+	}
+	log.Debugf("ExternalAddr is %s\n", p2p.ExternalAddr)
+	if p2p.ExternalAddr != "" {
+		host := p2p.ExternalAddr
+		err = tracker.EndPointRegistry(wAddr, host)
+		if err != nil {
+			log.Errorf("DDNS node EndPointRegistry error:%v", err)
+			return err
+		}
+		return nil
+	} else {
+		return errors.NewErr("DDNS node can not acquire external ip")
+	}
+	log.Info("initEndPointReg success!")
 	return nil
 }

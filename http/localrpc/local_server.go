@@ -24,15 +24,15 @@ import (
 	"strconv"
 
 	"fmt"
-	cfg "github.com/oniio/oniDNS/config"
 	"github.com/oniio/oniChain/common/log"
+	cfg "github.com/oniio/oniDNS/common/config"
 	"github.com/oniio/oniDNS/http/base/rpc"
 )
 
 const (
 	LOCAL_HOST string = "127.0.0.1"
 	//LOCAL_DIR  string = "/local"
-	LOCAL_DIR  string = "/"
+	LOCAL_DIR string = "/"
 )
 
 func StartLocalServer() error {
@@ -42,7 +42,7 @@ func StartLocalServer() error {
 	//rpc.HandleFunc("regendpoint",rpc.EndPointReg)
 
 	// TODO: only listen to local host
-	err := http.ListenAndServe(":"+strconv.Itoa(int(cfg.DefaultConfig.Rpc.HttpLocalPort)), nil)
+	err := http.ListenAndServe(":"+strconv.Itoa(int(cfg.DefaultConfig.RpcConfig.HttpLocalPort)), nil)
 	if err != nil {
 		return fmt.Errorf("ListenAndServe error:%s", err)
 	}

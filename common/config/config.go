@@ -1,0 +1,172 @@
+package config
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	//"os"
+)
+
+//VERSION set this via ldflags
+var VERSION = ""
+
+var (
+	ConfigDir   string
+	Wallet1Addr = "AYMnqA65pJFKAbbpD8hi5gdNDBmeFBy5hS"
+)
+
+//default common parameter
+const (
+	WALLET_FILE              = "./wallet.dat"
+	DEFAULT_CONFIG_FILE      = "./config.json"
+	DEFAULT_LOG_DIR          = "./log/"
+	DEFAULT_LOG_LEVEL        = 2 //INFO
+	DEFAULT_DB_PATH          = "./TrackerLevelDB"
+	DEFAULT_MAX_LOG_SIZE     = 20 * 1024 * 1024 //MB
+	DEFAULT_WALLET_FILE_NAME = "./wallet.dat"
+	DEFAULT_PWD              = "123"
+)
+
+//p2p relative
+
+const (
+	NETWORK_ID_MAIN_NET = 1
+	NETWORK_ID_SOLO_NET = 2
+)
+
+// Tacker&DNS default port
+const (
+	DEFAULT_TRACKER_PORT   = 6369
+	DEFAULT_TRACKER_FEE    = 0
+	DEFAULT_P2P_PORT       = 6699
+	DEFAULT_HOST           = "127.0.0.1:6699"
+	DEFAULT_DNS_PORT       = 53
+	DEFAULT_DNS_FEE        = 0
+	DEFAULT_RPC_PORT       = uint(20448)
+	DEFAULT_RPC_LOCAL_PORT = uint(20449)
+	DEFAULT_REST_PORT      = uint(20445)
+)
+
+type CommonConfig struct {
+	LogLevel     uint   `json:"LogLevel"`
+	LogStderr    bool   `json:"LogStderr"`
+	CommonDBPath string `json:"CommonDBPath"`
+	ConfPath     string `json:"ConfPath"`
+}
+
+type P2PConfig struct {
+	NetworkId uint32   `json:"NetworkId"`
+	PortBase  uint     `json:"PortBase"`
+	SeedList  []string `json:"SeedList"`
+}
+
+type RpcConfig struct {
+	EnableHttpJsonRpc bool
+	HttpJsonPort      uint
+	HttpLocalPort     uint
+	RpcServer         string
+}
+
+type RestfulConfig struct {
+	EnableHttpRestful bool
+	HttpRestPort      uint
+	HttpCertPath      string
+	HttpKeyPath       string
+}
+
+// TrackerConfig config
+type TrackerConfig struct {
+	UdpPort   uint   // UDP server listen port
+	Fee       uint64 // Service fee
+	SeedLists []string
+}
+
+// DnsConfig dns config
+type DnsConfig struct {
+	UdpPort uint   // UDP server port
+	Fee     uint64 // Service fee
+}
+
+type ChannelConfig struct {
+	ChannelPortOffset    int    `json:"ChannelPortOffset"`
+	ChannelProtocol      string `json:"ChannelProtocol"`
+	ChannelClientType    string `json:"ChannelClientType"`
+	ChannelRevealTimeout string `json:"ChannelRevealTimeout"`
+}
+
+type DDNSConfig struct {
+	CommonConfig  CommonConfig  `json:"Common"`
+	P2PConfig     P2PConfig     `json:"P2P"`
+	TrackerConfig TrackerConfig `json:"Tracker"`
+	//Dns          DnsConfig
+	ChannelConfig ChannelConfig `json:"Channel"`
+	RpcConfig     RpcConfig     `json:"Rpc"`
+	RestfulConfig RestfulConfig `json:"Restful"`
+}
+
+func DefDDNSConfig() *DDNSConfig {
+	return &DDNSConfig{
+		CommonConfig: CommonConfig{
+			LogLevel:     DEFAULT_LOG_LEVEL,
+			LogStderr:    false,
+			CommonDBPath: DEFAULT_DB_PATH,
+		},
+		P2PConfig: P2PConfig{
+			NetworkId: NETWORK_ID_MAIN_NET,
+			PortBase:  DEFAULT_P2P_PORT,
+			SeedList:  nil,
+		},
+		TrackerConfig: TrackerConfig{
+			UdpPort:   DEFAULT_TRACKER_PORT,
+			Fee:       DEFAULT_TRACKER_FEE,
+			SeedLists: nil,
+		},
+		RpcConfig: RpcConfig{
+			EnableHttpJsonRpc: true,
+			HttpJsonPort:      DEFAULT_RPC_PORT,
+			HttpLocalPort:     DEFAULT_RPC_LOCAL_PORT,
+		},
+		RestfulConfig: RestfulConfig{
+			EnableHttpRestful: true,
+			HttpRestPort:      DEFAULT_REST_PORT,
+		},
+		ChannelConfig: ChannelConfig{},
+	}
+}
+
+//current default config
+var DefaultConfig = DefConfig()
+
+func DefConfig() *DDNSConfig {
+	return &DDNSConfig{}
+}
+
+func GetJsonObjectFromFile(filePath string, jsonObject interface{}) error {
+	data, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		return err
+	}
+	// Remove the UTF-8 Byte Order Mark
+	data = bytes.TrimPrefix(data, []byte("\xef\xbb\xbf"))
+
+	err = json.Unmarshal(data, jsonObject)
+	if err != nil {
+		return fmt.Errorf("json.Unmarshal %s error:%s", data, err)
+	}
+	return nil
+}
+
+var DefaultDDnsConfig = DefDDNSConfig()
+
+func Save() error {
+	data, err := json.MarshalIndent(DefaultDDnsConfig, "", "  ")
+	if err != nil {
+		return err
+	}
+	//err = os.Remove(ConfigDir)
+	//if err != nil {
+	//	return err
+	//}
+	return ioutil.WriteFile(ConfigDir, data, 0666)
+}

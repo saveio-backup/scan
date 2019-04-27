@@ -21,7 +21,7 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/oniio/oniDNS/config"
+	//"github.com/oniio/oniDNS/config"
 	rpcerr "github.com/oniio/oniDNS/http/base/error"
 	"io/ioutil"
 	"net/http"
@@ -69,6 +69,7 @@ type JsonRpcResponse struct {
 	Desc   string          `json:"desc"`
 	Result json.RawMessage `json:"result"`
 }
+
 func sendRpcRequest(method string, params []interface{}) ([]byte, *OntologyError) {
 	rpcReq := &JsonRpcRequest{
 		Version: JSON_RPC_VERSION,
@@ -81,7 +82,7 @@ func sendRpcRequest(method string, params []interface{}) ([]byte, *OntologyError
 		return nil, NewOntologyError(fmt.Errorf("JsonRpcRequest json.Marshal error:%s", err))
 	}
 
-	addr := fmt.Sprintf("http://localhost:%d", config.DefaultConfig.Rpc.HttpJsonPort)
+	addr := fmt.Sprintf("http://localhost:%d/dns", 20448)
 	resp, err := http.Post(addr, "application/json", strings.NewReader(string(data)))
 	if err != nil {
 		return nil, NewOntologyError(err)

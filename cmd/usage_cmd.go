@@ -4,11 +4,11 @@ import (
 	"io"
 	"sort"
 
-	"github.com/urfave/cli"
 	"bytes"
-	"fmt"
 	"encoding/json"
+	"fmt"
 	"github.com/oniio/oniDNS/cmd/utils"
+	"github.com/urfave/cli"
 )
 
 // AppHelpTemplate is the test template for the default, global app help topic.

@@ -5,14 +5,14 @@ import (
 	//"encoding/binary"
 	"net"
 
-	"github.com/oniio/oniDNS/common"
+	"fmt"
+	"github.com/anacrolix/dht/krpc"
 	"github.com/oniio/oniChain/common/log"
 	"github.com/oniio/oniChain/errors"
-	"fmt"
-	"github.com/oniio/oniDNS/storage"
-	"github.com/anacrolix/dht/krpc"
-	"github.com/oniio/oniDNS/network/actor/recv"
+	"github.com/oniio/oniDNS/common"
 	pm "github.com/oniio/oniDNS/messages/protoMessages"
+	"github.com/oniio/oniDNS/network/actor/recv"
+	"github.com/oniio/oniDNS/storage"
 )
 
 // CompleteTorrent Complete make torrent
@@ -61,170 +61,174 @@ func GetTorrentPeers(infoHash common.MetaInfoHash, trackerUrl string, numWant in
 	log.Debugf("interval:%d, leechers:%d, seeders:%d, peers:%v\n", ret.Interval, ret.Leechers, ret.Seeders, ret.Peers)
 	return ret.Peers
 }
+
 // ---------Tracker client relative action------------
-func RegEndPoint(trackerUrl string,walletAddr [20]byte,nodeIP net.IP, port uint16)error{
+func RegEndPoint(trackerUrl string, walletAddr [20]byte, nodeIP net.IP, port uint16) error {
 	id := common.PeerID{}
 	rand.Read(id[:])
 	announce := Announce{
 		TrackerUrl: trackerUrl,
-		Request:AnnounceRequest{
-			PeerId:   id,
+		Request: AnnounceRequest{
+			PeerId:    id,
 			IPAddress: ipconvert(nodeIP),
 			Port:      port,
-			Wallet:walletAddr,
+			Wallet:    walletAddr,
 		},
-		flag:ActionReg,
+		flag: ActionReg,
 	}
 	ret, err := announce.Do()
 	if err != nil {
 		log.Errorf("RegEndPoint failed err:%s\n", err)
 		return err
 	}
-	log.Debugf("[RegEndPoint ]ip:%v, port:%d, wallet:%s\n",ret.IPAddress , ret.Port, ret.Wallet)
+	log.Debugf("[RegEndPoint ]ip:%v, port:%d, wallet:%s\n", ret.IPAddress, ret.Port, ret.Wallet)
 	return nil
 }
 
-func UnRegEndPoint(trackerUrl string,walletAddr [20]byte)error{
+func UnRegEndPoint(trackerUrl string, walletAddr [20]byte) error {
 	id := common.PeerID{}
 	rand.Read(id[:])
 	announce := Announce{
 		TrackerUrl: trackerUrl,
-		Request:AnnounceRequest{
-			PeerId:   id,
-			Wallet:walletAddr,
+		Request: AnnounceRequest{
+			PeerId: id,
+			Wallet: walletAddr,
 		},
-		flag:ActionUnReg,
+		flag: ActionUnReg,
 	}
 	ret, err := announce.Do()
 	if err != nil {
 		log.Errorf("UnRegEndPoint failed err:%s\n", err)
 		return err
 	}
-	log.Debugf("[UnRegEndPoint ]wallet:%s\n",ret.Wallet)
+	log.Debugf("[UnRegEndPoint ]wallet:%s\n", ret.Wallet)
 	return nil
 }
 
-func ReqEndPoint(trackerUrl string,walletAddr [20]byte)([]byte,error){
+func ReqEndPoint(trackerUrl string, walletAddr [20]byte) ([]byte, error) {
 	id := common.PeerID{}
 	rand.Read(id[:])
 	announce := Announce{
 		TrackerUrl: trackerUrl,
-		Request:AnnounceRequest{
-			PeerId:   id,
-			Wallet:walletAddr,
+		Request: AnnounceRequest{
+			PeerId: id,
+			Wallet: walletAddr,
 		},
-		flag:ActionReq,
+		flag: ActionReq,
 	}
 	ret, err := announce.Do()
 	if err != nil {
 		log.Errorf("ReqEndPoint failed err:%s\n", err)
-		return nil,err
+		return nil, err
 	}
 	var nodeAddr krpc.NodeAddr
-	nodeAddr.IP=ret.IPAddress[:]
-	nodeAddr.Port=int(ret.Port)
-	nb,err:=nodeAddr.MarshalBinary()
-	if err!=nil{
-		return nil,err
+	nodeAddr.IP = ret.IPAddress[:]
+	nodeAddr.Port = int(ret.Port)
+	nb, err := nodeAddr.MarshalBinary()
+	if err != nil {
+		return nil, err
 	}
-	log.Debugf("[ReqEndPoint ]wallet:%s,ip:%v, port:%d\n",ret.Wallet,ret.IPAddress,ret.Port)
+	log.Debugf("[ReqEndPoint ]wallet:%s,ip:%v, port:%d\n", ret.Wallet, ret.IPAddress, ret.Port)
 
-	return nb,nil
+	return nb, nil
 }
-func UpdateEndPoint(trackerUrl string,walletAddr [20]byte,nodeIP net.IP, port uint16)error{
+func UpdateEndPoint(trackerUrl string, walletAddr [20]byte, nodeIP net.IP, port uint16) error {
 	id := common.PeerID{}
 	rand.Read(id[:])
 	announce := Announce{
 		TrackerUrl: trackerUrl,
-		Request:AnnounceRequest{
-			PeerId:   id,
-			Wallet:walletAddr,
-			IPAddress:ipconvert(nodeIP),
-			Port:port,
+		Request: AnnounceRequest{
+			PeerId:    id,
+			Wallet:    walletAddr,
+			IPAddress: ipconvert(nodeIP),
+			Port:      port,
 		},
-		flag:ActionUpdate,
+		flag: ActionUpdate,
 	}
 	ret, err := announce.Do()
 	if err != nil {
 		log.Errorf("RegEndPoint failed err:%s\n", err)
 		return err
 	}
-	log.Debugf("[UpdateEndPoint]  wallet:%s, ip:%v, port:%d\n", ret.Wallet,ret.IPAddress , ret.Port)
+	log.Debugf("[UpdateEndPoint]  wallet:%s, ip:%v, port:%d\n", ret.Wallet, ret.IPAddress, ret.Port)
 	return nil
 }
 
 // ---------Local DDNS client relative action------------
 //local endPointReg
-func EndPointRegistry(walletAddr,hostPort string )error{
-	log.Debugf("w:%s,h:%s\n",walletAddr,hostPort)
-	if walletAddr==""|| hostPort==""{
+func EndPointRegistry(walletAddr, hostPort string) error {
+	log.Debugf("Local EndPointRegistry wallet:%s,host:%s\n", walletAddr, hostPort)
+	if walletAddr == "" || hostPort == "" {
 		return errors.NewErr("[EndPointRegistry] walletAddr or hostPort is null")
 	}
-	k,v:=common.WHPTobyte(walletAddr,hostPort)
-	fmt.Printf("storageDb:%v",storage.TDB)
-	if err:=storage.TDB.Put(k,v);err!=nil{
+	k, v := common.WHPTobyte(walletAddr, hostPort)
+	if err := storage.TDB.Put(k, v); err != nil {
 		return err
 	}
-	//messageBus.MsgBus.MsgBox <- &messageBus.RegMsg{WalletAddr:walletAddr,HostPort:hostPort}
-	m:=&pm.Registry{
-		WalletAddr:walletAddr,
-		HostPort:hostPort,
+	//hb, err := storage.TDB.Get(k)
+	//if hb != nil && err == nil {
+	//	log.Errorf("This wallet:%s had already registerd! Do not multiple registration", walletAddr)
+	//	return nil
+	//}
+	m := &pm.Registry{
+		WalletAddr: walletAddr,
+		HostPort:   hostPort,
 	}
 	recv.P2pPid.Tell(m)
 	return nil
 }
+
 //local endPointUpdate
-func EndPointRegUpdate(walletAddr,hostPort string )error{
-	if walletAddr==""|| hostPort==""{
+func EndPointRegUpdate(walletAddr, hostPort string) error {
+	if walletAddr == "" || hostPort == "" {
 		return errors.NewErr("[EndPointRegistry] walletAddr or hostPort is null")
 	}
-	k,v:=common.WHPTobyte(walletAddr,hostPort)
-	exist,err:=storage.TDB.Has(k)
-	if !exist || err!=nil{
+	k, v := common.WHPTobyte(walletAddr, hostPort)
+	exist, err := storage.TDB.Has(k)
+	if !exist || err != nil {
 		return errors.NewErr("[EndPointRegUpdate] wallet is not Registed!")
 	}
-	if err:=storage.TDB.Put(k,v);err!=nil{
+	if err := storage.TDB.Put(k, v); err != nil {
 		return err
 	}
-	//messageBus.MsgBus.MsgBox <- &messageBus.RegMsg{WalletAddr:walletAddr,HostPort:hostPort}
-	m:=&pm.Registry{
-		WalletAddr:walletAddr,
-		HostPort:hostPort,
+	m := &pm.Registry{
+		WalletAddr: walletAddr,
+		HostPort:   hostPort,
 	}
 	recv.P2pPid.Tell(m)
 	return nil
 }
+
 //local endPointUnReg
-func EndPointUnRegistry(walletAddr string )error{
-	if walletAddr==""{
+func EndPointUnRegistry(walletAddr string) error {
+	if walletAddr == "" {
 		return errors.NewErr("[EndPointUnRegistry] walletAddr is null")
 	}
-	w,_:=common.WHPTobyte(walletAddr,"")
-	exist,_:=storage.TDB.Has(w)
-	if !exist{
-		return fmt.Errorf("[EndPointUnRegistry] wallet %s is not Registed!",walletAddr)
+	w, _ := common.WHPTobyte(walletAddr, "")
+	exist, _ := storage.TDB.Has(w)
+	if !exist {
+		return fmt.Errorf("[EndPointUnRegistry] wallet %s is not Registed!", walletAddr)
 	}
 
-	if err:=storage.TDB.Delete(w);err!=nil{
+	if err := storage.TDB.Delete(w); err != nil {
 		return err
 	}
-	//messageBus.MsgBus.MsgBox <- &messageBus.RegMsg{WalletAddr:walletAddr}
-	m:=&pm.UnRegistry{
-		WalletAddr:walletAddr,
+	m := &pm.UnRegistry{
+		WalletAddr: walletAddr,
 	}
 	recv.P2pPid.Tell(m)
 	return nil
 }
-//local endPointQuery
-func EndPointQuery(walletAddr string)(string,error){
-	w,_:=common.WHPTobyte(walletAddr,"")
-	hpBytes,err:=storage.TDB.Get(w)
-	if err!=nil{
-		return "",err
-	}
-	if hpBytes==nil{
-		return "",fmt.Errorf("This wallet %s did not regist endpoint",walletAddr)
-	}
-	return string(hpBytes),nil
-}
 
+//local endPointQuery
+func EndPointQuery(walletAddr string) (string, error) {
+	w, _ := common.WHPTobyte(walletAddr, "")
+	hpBytes, err := storage.TDB.Get(w)
+	if err != nil {
+		return "", err
+	}
+	if hpBytes == nil {
+		return "", fmt.Errorf("This wallet %s did not regist endpoint", walletAddr)
+	}
+	return string(hpBytes), nil
+}

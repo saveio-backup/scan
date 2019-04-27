@@ -22,9 +22,9 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/oniio/oniChain/account"
 	"github.com/oniio/oniChain/common/log"
 	berr "github.com/oniio/oniDNS/http/base/error"
-	"github.com/oniio/oniChain/account"
 )
 
 const (
@@ -32,11 +32,11 @@ const (
 )
 
 var (
-	wAddr,host string
-	sigData []byte
-	acc *account.Account
-	
+	wAddr, host string
+	sigData     []byte
+	acc         *account.Account
 )
+
 func getCurrentDirectory() string {
 	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
@@ -44,9 +44,6 @@ func getCurrentDirectory() string {
 	}
 	return dir
 }
-
-
-
 
 func SetDebugInfo(params []interface{}) map[string]interface{} {
 	if len(params) < 1 {
@@ -63,4 +60,3 @@ func SetDebugInfo(params []interface{}) map[string]interface{} {
 	}
 	return responsePack(berr.SUCCESS, true)
 }
-

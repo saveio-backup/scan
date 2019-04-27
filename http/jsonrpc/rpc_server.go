@@ -25,14 +25,18 @@ import (
 
 	"fmt"
 
-	cfg "github.com/oniio/oniDNS/config"
 	"github.com/oniio/oniChain/common/log"
+	cfg "github.com/oniio/oniDNS/common/config"
 	"github.com/oniio/oniDNS/http/base/rpc"
+)
+
+const (
+	ONIDNS_DIR string = "/dns"
 )
 
 func StartRPCServer() error {
 	log.Debug()
-	http.HandleFunc("/", rpc.Handle)
+	http.HandleFunc(ONIDNS_DIR, rpc.Handle)
 
 	rpc.HandleFunc("getbestblockhash", rpc.GetBestBlockHash)
 	rpc.HandleFunc("getblock", rpc.GetBlock)
@@ -59,8 +63,11 @@ func StartRPCServer() error {
 	rpc.HandleFunc("getblocktxsbyheight", rpc.GetBlockTxsByHeight)
 	rpc.HandleFunc("getgasprice", rpc.GetGasPrice)
 
-	rpc.HandleFunc("regendpoint",rpc.EndPointReg)
-	err := http.ListenAndServe(":"+strconv.Itoa(int(cfg.DefaultConfig.Rpc.HttpJsonPort)), nil)
+	rpc.HandleFunc("regendpoint", rpc.EndPointReg)
+	rpc.HandleFunc("updateendpoint", rpc.EndPointUpdate)
+	rpc.HandleFunc("unRegendpoint", rpc.EndPointUnReg)
+	rpc.HandleFunc("reqendpoint", rpc.EndPointReq)
+	err := http.ListenAndServe(":"+strconv.Itoa(int(cfg.DefaultConfig.RpcConfig.HttpJsonPort)), nil)
 	if err != nil {
 		return fmt.Errorf("ListenAndServe error:%s", err)
 	}

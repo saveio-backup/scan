@@ -44,7 +44,7 @@ const MAX_SEARCH_HEIGHT uint32 = 100
 
 type EndPointRsp struct {
 	Wallet string `json:"wallet"`
-	Host string  `json:"host"`
+	Host   string `json:"host"`
 }
 
 type BalanceOfRsp struct {

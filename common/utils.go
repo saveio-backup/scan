@@ -1,31 +1,31 @@
 /**
  * Description:
  * Author: LiYong Zhang
- * Create: 2019-03-19 
-*/
+ * Create: 2019-03-19
+ */
 package common
 
 import (
 	"bytes"
 	netcomm "github.com/oniio/oniChain/common"
-	"os"
-	"syscall"
-	"os/signal"
 	"github.com/oniio/oniChain/common/log"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
-func WHPTobyte(walletAddr,hostPort string)([]byte,[]byte){
-	wAddr,err:=netcomm.AddressFromBase58(walletAddr)
-	if err!=nil{
-		return nil,nil
+func WHPTobyte(walletAddr, hostPort string) ([]byte, []byte) {
+	wAddr, err := netcomm.AddressFromBase58(walletAddr)
+	if err != nil {
+		return nil, nil
 	}
-	bf:=new(bytes.Buffer)
-	if err=wAddr.Serialize(bf);err!=nil{
-		return nil,nil
+	bf := new(bytes.Buffer)
+	if err = wAddr.Serialize(bf); err != nil {
+		return nil, nil
 	}
-	key:=bf.Bytes()
-	value:=[]byte(hostPort)
-	return key,value
+	key := bf.Bytes()
+	value := []byte(hostPort)
+	return key, value
 }
 
 func WaitToExit() {

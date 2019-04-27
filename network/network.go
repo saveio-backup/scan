@@ -1,30 +1,30 @@
 /**
  * Description:
  * Author: LiYong Zhang
- * Create: 2019-03-12 
-*/
+ * Create: 2019-03-12
+ */
 package network
 
 import (
-	"github.com/oniio/oniP2p/network"
 	"github.com/oniio/oniP2p/crypto/ed25519"
+	"github.com/oniio/oniP2p/network"
 
+	"context"
 	"github.com/oniio/oniChain/common/log"
+	"github.com/oniio/oniDNS/common/config"
 	"github.com/oniio/oniP2p/network/keepalive"
 	"github.com/oniio/oniP2p/network/nat"
-	"github.com/oniio/oniDNS/config"
-	"context"
 	//"github.com/golang/protobuf/proto"
-	"github.com/gogo/protobuf/proto"
-	"github.com/oniio/oniP2p/types/opcode"
-	pm "github.com/oniio/oniDNS/messages/protoMessages"
-	"github.com/oniio/oniDNS/tracker/common"
-	comm "github.com/oniio/oniDNS/common"
-	"github.com/ontio/ontology-eventbus/actor"
-	"github.com/oniio/oniDNS/storage"
-	"fmt"
-	"time"
 	"errors"
+	"fmt"
+	"github.com/gogo/protobuf/proto"
+	comm "github.com/oniio/oniDNS/common"
+	pm "github.com/oniio/oniDNS/messages/protoMessages"
+	"github.com/oniio/oniDNS/storage"
+	"github.com/oniio/oniDNS/tracker/common"
+	"github.com/oniio/oniP2p/types/opcode"
+	"github.com/ontio/ontology-eventbus/actor"
+	"time"
 )
 
 var DDNSP2P *Network
@@ -34,12 +34,12 @@ type Network struct {
 	*network.Network
 	peerAddrs  []string
 	listenAddr string
-	pid *actor.PID
+	pid        *actor.PID
 }
 
-func NewP2P()*Network{
-	n:=&Network{
-		Network:new(network.Network),
+func NewP2P() *Network {
+	n := &Network{
+		Network: new(network.Network),
 	}
 	return n
 
@@ -49,7 +49,7 @@ func (this *Network) Start() error {
 	keys := ed25519.RandomKeyPair()
 	builder := network.NewBuilder()
 	builder.SetKeys(keys)
-	builder.SetAddress(network.FormatAddress("udp", "127.0.0.1", uint16(config.DefaultConfig.Tracker.SyncPort)))
+	builder.SetAddress(network.FormatAddress("udp", "127.0.0.1", uint16(config.DefaultConfig.TrackerConfig.UdpPort)))
 	opcode.RegisterMessageType(opcode.Opcode(common.SYNC_MSG_OP_CODE), &pm.Torrent{})
 	opcode.RegisterMessageType(opcode.Opcode(common.SYNC_REGMSG_OP_CODE), &pm.Registry{})
 	opcode.RegisterMessageType(opcode.Opcode(common.SYNC_UNREGMSG_OP_CODE), &pm.UnRegistry{})
@@ -78,7 +78,7 @@ func (this *Network) Start() error {
 		this.ExternalAddr = exAddr
 	}
 	log.Infof("Listening for peers on %s.", this.ExternalAddr)
-	peers := config.DefaultConfig.Tracker.SeedLists
+	peers := config.DefaultConfig.TrackerConfig.SeedLists
 	if len(peers) > 0 {
 		this.Bootstrap(peers...)
 		log.Debug("had bootStraped peers")
@@ -94,7 +94,7 @@ func (this *Network) Receive(ctx *network.ComponentContext) error {
 		switch msg := ctx.Message().(type) {
 		case *pm.Torrent:
 			if msg.InfoHash == nil || msg.Torrent == nil {
-				log.Errorf("[MSB Receive] receive from peer:%s, nil Torrent message",ctx.Sender().Address)
+				log.Errorf("[MSB Receive] receive from peer:%s, nil Torrent message", ctx.Sender().Address)
 				break
 			}
 			k := msg.InfoHash
@@ -150,7 +150,7 @@ func (this *Network) Connect(tAddr ...string) error {
 	for _, addr := range tAddr {
 		exist := this.Network.ConnectionStateExists(addr)
 		if !exist {
-			return fmt.Errorf("[P2P connect] bootstrap addr:%s error",addr)
+			return fmt.Errorf("[P2P connect] bootstrap addr:%s error", addr)
 		}
 	}
 	return nil
@@ -167,7 +167,7 @@ func (this *Network) Send(msg proto.Message, peer interface{}) error {
 }
 
 // Request. send msg to peer and wait for response synchronously
-func (this *Network) Request(msg proto.Message, peer interface{},timeout uint64) (proto.Message, error) {
+func (this *Network) Request(msg proto.Message, peer interface{}, timeout uint64) (proto.Message, error) {
 	client, err := this.loadClient(peer)
 	if err != nil {
 		return nil, err
@@ -216,30 +216,30 @@ func (this *Network) loadClient(peer interface{}) (*network.PeerClient, error) {
 	return client, nil
 }
 
-func (this *Network)ConnState(address string)(*network.ConnState,bool){
+func (this *Network) ConnState(address string) (*network.ConnState, bool) {
 	return this.ConnectionState(address)
 }
 
-func (this *Network)ConnStateExists(address string)(*network.ConnState,bool){
+func (this *Network) ConnStateExists(address string) (*network.ConnState, bool) {
 	return this.ConnStateExists(address)
 }
 
-func (this *Network)CompletNet(){
+func (this *Network) CompletNet() {
 	//common.ListeningCh=make(chan struct{})
 	close(common.ListeningCh)
 }
 
-func (this *Network)PeerStateChange(fn func(*keepalive.PeerStateEvent)){
-	ka,reg:=this.Network.Component(keepalive.ComponentID)
-	if !reg{
+func (this *Network) PeerStateChange(fn func(*keepalive.PeerStateEvent)) {
+	ka, reg := this.Network.Component(keepalive.ComponentID)
+	if !reg {
 		log.Error("keepalive component do not reg")
 		return
 	}
-	peerStateChan:=ka.(*keepalive.Component).GetPeerStateChan()
-	stopCh:=ka.(*keepalive.Component).GetStopChan()
-	for{
+	peerStateChan := ka.(*keepalive.Component).GetPeerStateChan()
+	stopCh := ka.(*keepalive.Component).GetStopChan()
+	for {
 		select {
-		case event:=<-peerStateChan:
+		case event := <-peerStateChan:
 			fn(event)
 
 		case <-stopCh:

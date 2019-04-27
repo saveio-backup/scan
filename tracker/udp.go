@@ -129,7 +129,7 @@ func (c *udpAnnounce) Do(req AnnounceRequest) (res AnnounceResponse, err error) 
 	var b *bytes.Buffer
 	if flag != 0 {
 		b, err = c.request(flag, req, options)
-	}else{
+	} else {
 		b, err = c.request(ActionAnnounce, req, options)
 	}
 	if err != nil {
@@ -293,10 +293,10 @@ func (c *udpAnnounce) connect() (err error) {
 		}
 		c.socket, err = net.Dial(c.dialNetwork(), hmp.String())
 		if err != nil {
-			log.Debugf("Net Dial error:%v",err)
+			log.Debugf("Net Dial error:%v", err)
 			return
 		}
-		log.Debugf("Net Dial success,socket:%v",c.socket)
+		log.Debugf("Net Dial success,socket:%v", c.socket)
 		c.socket = pproffd.WrapNetConn(c.socket)
 	}
 	b, err := c.request(ActionConnect, nil, nil)

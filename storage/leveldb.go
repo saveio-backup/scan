@@ -1,19 +1,20 @@
 /**
  * Description:
  * Author: LiYong Zhang
- * Create: 2019-02-18 
-*/
+ * Create: 2019-02-18
+ */
 package storage
 
 import (
+	"github.com/oniio/oniChain/core/store/common"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/filter"
 	"github.com/syndtr/goleveldb/leveldb/opt"
 	"github.com/syndtr/goleveldb/leveldb/storage"
 	"github.com/syndtr/goleveldb/leveldb/util"
-	"github.com/oniio/oniChain/core/store/common"
 )
+
 //global variable TDB
 var TDB *LevelDBStore
 
@@ -26,7 +27,6 @@ type LevelDBStore struct {
 // used to compute the size of bloom filter bits array .
 // too small will lead to high false positive rate.
 const BITSPERKEY = 10
-
 
 //NewLevelDBStore return LevelDBStore instance
 func NewLevelDBStore(file string) (*LevelDBStore, error) {

@@ -22,18 +22,18 @@ import (
 	"bytes"
 	"encoding/hex"
 
+	"fmt"
 	"github.com/oniio/oniChain/common"
 	"github.com/oniio/oniChain/common/config"
 	"github.com/oniio/oniChain/common/log"
 	"github.com/oniio/oniChain/core/payload"
 	scom "github.com/oniio/oniChain/core/store/common"
-	httpComm "github.com/oniio/oniDNS/http/base/common"
 	"github.com/oniio/oniChain/core/types"
 	ontErrors "github.com/oniio/oniChain/errors"
 	bactor "github.com/oniio/oniChain/http/base/actor"
 	bcomn "github.com/oniio/oniChain/http/base/common"
+	httpComm "github.com/oniio/oniDNS/http/base/common"
 	berr "github.com/oniio/oniDNS/http/base/error"
-	"fmt"
 	"github.com/oniio/oniDNS/tracker"
 )
 
@@ -570,33 +570,91 @@ func GetGasPrice(params []interface{}) map[string]interface{} {
 	return responseSuccess(result)
 }
 
-func EndPointReg(params []interface{}) map[string]interface{}{
-	fmt.Println("in endreg")
+func EndPointReg(params []interface{}) map[string]interface{} {
 	switch (params[0]).(type) {
 	case string:
-		wAddr=params[0].(string)
+		wAddr = params[0].(string)
 	default:
-		fmt.Println("int/reg/p0")
 		return responsePack(berr.INVALID_PARAMS, "")
 	}
 	switch (params[1]).(type) {
 	case string:
-		host=params[1].(string)
+		host = params[1].(string)
 	default:
-		fmt.Println("int/reg/p1")
 		return responsePack(berr.INVALID_PARAMS, "")
 	}
-	log.Infof("EndPointReg wallet:%s,host:%s",wAddr,host)
-	endPoint:=httpComm.EndPointRsp{
-		Wallet:wAddr,
-		Host:host,
+	endPoint := httpComm.EndPointRsp{
+		Wallet: wAddr,
+		Host:   host,
 	}
 
-	if err:=tracker.EndPointRegistry(wAddr,host);err!=nil{
-		//PrintErrorMsg("regEndPoint EndPointRegistry error:%s\n",err)
-		log.Errorf("regEndPoint EndPointRegistry error:%s\n",err)
-		return responsePack(berr.INTERNAL_ERROR,"")
+	if err := tracker.EndPointRegistry(wAddr, host); err != nil {
+		log.Errorf("EndPointRegistry error:%s\n", err)
+		return responsePack(berr.INTERNAL_ERROR, "")
 	}
-	//return responsePack(berr.SUCCESS,true)
+	return responseSuccess(&endPoint)
+}
+
+func EndPointUpdate(params []interface{}) map[string]interface{} {
+	switch (params[0]).(type) {
+	case string:
+		wAddr = params[0].(string)
+	default:
+		return responsePack(berr.INVALID_PARAMS, "")
+	}
+	switch (params[1]).(type) {
+	case string:
+		host = params[1].(string)
+	default:
+		return responsePack(berr.INVALID_PARAMS, "")
+	}
+	endPoint := httpComm.EndPointRsp{
+		Wallet: wAddr,
+		Host:   host,
+	}
+
+	if err := tracker.EndPointRegUpdate(wAddr, host); err != nil {
+		log.Errorf("EndPointUpdate error:%s\n", err)
+		return responsePack(berr.INTERNAL_ERROR, "")
+	}
+	return responseSuccess(&endPoint)
+}
+
+func EndPointUnReg(params []interface{}) map[string]interface{} {
+	switch (params[0]).(type) {
+	case string:
+		wAddr = params[0].(string)
+	default:
+		return responsePack(berr.INVALID_PARAMS, "")
+	}
+	endPoint := httpComm.EndPointRsp{
+		Wallet: wAddr,
+	}
+
+	if err := tracker.EndPointUnRegistry(wAddr); err != nil {
+		log.Errorf("EndPointUnRegistry error:%s\n", err)
+		return responsePack(berr.INTERNAL_ERROR, "")
+	}
+	return responseSuccess(&endPoint)
+}
+
+func EndPointReq(params []interface{}) map[string]interface{} {
+	switch (params[0]).(type) {
+	case string:
+		wAddr = params[0].(string)
+	default:
+		return responsePack(berr.INVALID_PARAMS, "")
+	}
+
+	host, err := tracker.EndPointQuery(wAddr)
+	if err != nil {
+		log.Errorf("EndPointUnRegistry error:%s\n", err)
+		return responsePack(berr.INTERNAL_ERROR, "")
+	}
+	fmt.Printf("rpc/interface/endpointreq host:%s\n", host)
+	endPoint := httpComm.EndPointRsp{
+		Wallet: wAddr,
+		Host:   host,
+	}
 	return responseSuccess(&endPoint)
 }

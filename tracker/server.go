@@ -12,12 +12,12 @@ import (
 
 	"github.com/anacrolix/dht/krpc"
 	"github.com/anacrolix/missinggo"
-	"github.com/oniio/oniChain/common/log"
 	Ccomon "github.com/oniio/oniChain/common"
+	"github.com/oniio/oniChain/common/log"
 	"github.com/oniio/oniDNS/common"
+	pm "github.com/oniio/oniDNS/messages/protoMessages"
 	"github.com/oniio/oniDNS/storage"
 	"github.com/ontio/ontology-eventbus/actor"
-	pm "github.com/oniio/oniDNS/messages/protoMessages"
 )
 
 type peerInfo struct {
@@ -37,7 +37,7 @@ type torrent struct {
 type Server struct {
 	pc    net.PacketConn
 	conns map[int64]struct{}
-	p2p *actor.PID
+	p2p   *actor.PID
 }
 
 // NewServer
@@ -209,13 +209,13 @@ func (s *Server) Accepted() (err error) {
 		err = storage.TDB.Put(ar.Wallet[:], nb)
 		m := &pm.Registry{
 			WalletAddr: ar.Wallet.ToHexString(),
-			HostPort:  nodeAddr.String(),
+			HostPort:   nodeAddr.String(),
 		}
 		s.p2p.Tell(m)
-		if err!=nil{
+		if err != nil {
 			return err
 		}
-		ipAddr:=ipconvert(nodeAddr.IP)
+		ipAddr := ipconvert(nodeAddr.IP)
 		err = s.respond(addr, ResponseHeader{
 			TransactionId: h.TransactionId,
 			Action:        ActionReg,
@@ -224,7 +224,7 @@ func (s *Server) Accepted() (err error) {
 			Port:      ar.Port,
 			Wallet:    ar.Wallet,
 		})
-		log.Debugf("Tracker client  reg success,wallet:%s,nodeAddr:%s",Ccomon.ToHexString(ar.Wallet[:]), nodeAddr.String())
+		log.Debugf("Tracker client  reg success,wallet:%s,nodeAddr:%s", Ccomon.ToHexString(ar.Wallet[:]), nodeAddr.String())
 		return err
 	case ActionUnReg:
 		if _, ok := s.conns[h.ConnectionId]; !ok {
@@ -287,8 +287,8 @@ func (s *Server) Accepted() (err error) {
 		}
 		var nodeAddr krpc.NodeAddr
 		nodeAddr.UnmarshalBinary(nb)
-		ipAddr:=ipconvert(nodeAddr.IP)
-		err=s.respond(addr, ResponseHeader{
+		ipAddr := ipconvert(nodeAddr.IP)
+		err = s.respond(addr, ResponseHeader{
 			TransactionId: h.TransactionId,
 			Action:        ActionReq,
 		}, AnnounceResponseHeader{
@@ -325,7 +325,7 @@ func (s *Server) Accepted() (err error) {
 			Port: int(ar.Port),
 		}
 		var exist bool
-		exist,err = storage.TDB.Has(ar.Wallet[:])
+		exist, err = storage.TDB.Has(ar.Wallet[:])
 		if !exist || err != nil {
 			log.Errorf("This wallet:%s is not exist!", ar.Wallet)
 			return
@@ -341,18 +341,18 @@ func (s *Server) Accepted() (err error) {
 		}
 		m := &pm.Registry{
 			WalletAddr: ar.Wallet.ToHexString(),
-			HostPort:  nodeAddr.String(),
+			HostPort:   nodeAddr.String(),
 		}
 		s.p2p.Tell(m)
-		ipAddr:=ipconvert(nodeAddr.IP)
+		ipAddr := ipconvert(nodeAddr.IP)
 		log.Debugf("Tracker client  update success,wallet:%s,nodeAddr:%s", ar.Wallet, nodeAddr.String())
 		s.respond(addr, ResponseHeader{
 			TransactionId: h.TransactionId,
 			Action:        ActionUpdate,
 		}, AnnounceResponseHeader{
-			Wallet:ar.Wallet,
+			Wallet:    ar.Wallet,
 			IPAddress: ipAddr,
-			Port:  uint16(nodeAddr.Port),
+			Port:      uint16(nodeAddr.Port),
 		})
 		return
 	default:
