@@ -3,24 +3,17 @@ package tracker
 import (
 	"crypto/rand"
 	//"encoding/binary"
-	"net"
-
-	"encoding/json"
 	"fmt"
 	"github.com/anacrolix/dht/krpc"
-	"github.com/oniio/oniChain/account"
-	chainCom "github.com/oniio/oniChain/common"
 	"github.com/oniio/oniChain/common/log"
-	"github.com/oniio/oniChain/core/signature"
-	"github.com/oniio/oniChain/core/types"
 	"github.com/oniio/oniChain/crypto/keypair"
 	"github.com/oniio/oniChain/errors"
-	"github.com/oniio/oniDNS/cmd/utils"
 	"github.com/oniio/oniDNS/common"
 	pm "github.com/oniio/oniDNS/messages/protoMessages"
 	"github.com/oniio/oniDNS/network/actor/recv"
 	"github.com/oniio/oniDNS/storage"
 	common2 "github.com/oniio/oniDNS/tracker/common"
+	"net"
 )
 
 // CompleteTorrent Complete make torrent
