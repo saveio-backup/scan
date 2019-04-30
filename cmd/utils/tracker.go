@@ -8,8 +8,8 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/oniio/oniChain/common/log"
-	httpComm "github.com/oniio/oniDNS/http/base/common"
+	"github.com/saveio/themis/common/log"
+	httpComm "github.com/saveio/scan/http/base/common"
 )
 
 func RegEndPoint(waddr, host string) error {

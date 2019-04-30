@@ -1,19 +1,19 @@
 /*
- * Copyright (C) 2019 The oniChain Authors
- * This file is part of The oniChain library.
+ * Copyright (C) 2019 The themis Authors
+ * This file is part of The themis library.
  *
- * The oniChain is free software: you can redistribute it and/or modify
+ * The themis is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * The oniChain is distributed in the hope that it will be useful,
+ * The themis is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with The oniChain.  If not, see <http://www.gnu.org/licenses/>.
+ * along with The themis.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 // Package common privides functions for http handler call
@@ -26,18 +26,18 @@ import (
 	"strings"
 	"time"
 
-	"github.com/oniio/oniChain/common"
-	"github.com/oniio/oniChain/common/log"
-	"github.com/oniio/oniChain/core/payload"
-	"github.com/oniio/oniChain/core/types"
-	cutils "github.com/oniio/oniChain/core/utils"
-	"github.com/oniio/oniChain/crypto/keypair"
-	ontErrors "github.com/oniio/oniChain/errors"
-	bactor "github.com/oniio/oniChain/http/base/actor"
-	"github.com/oniio/oniChain/smartcontract/event"
-	"github.com/oniio/oniChain/smartcontract/service/native/utils"
-	cstate "github.com/oniio/oniChain/smartcontract/states"
-	"github.com/oniio/oniChain/vm/neovm"
+	"github.com/saveio/themis/common"
+	"github.com/saveio/themis/common/log"
+	"github.com/saveio/themis/core/payload"
+	"github.com/saveio/themis/core/types"
+	cutils "github.com/saveio/themis/core/utils"
+	"github.com/saveio/themis/crypto/keypair"
+	ontErrors "github.com/saveio/themis/errors"
+	bactor "github.com/saveio/themis/http/base/actor"
+	"github.com/saveio/themis/smartcontract/event"
+	"github.com/saveio/themis/smartcontract/service/native/utils"
+	cstate "github.com/saveio/themis/smartcontract/states"
+	"github.com/saveio/themis/vm/neovm"
 )
 
 const MAX_SEARCH_HEIGHT uint32 = 100

@@ -7,7 +7,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/oniio/oniDNS/cmd/utils"
+	"github.com/saveio/scan/cmd/utils"
 	"github.com/urfave/cli"
 )
 

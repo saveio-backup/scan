@@ -12,11 +12,11 @@ import (
 
 	"github.com/anacrolix/dht/krpc"
 	"github.com/anacrolix/missinggo"
-	Ccomon "github.com/oniio/oniChain/common"
-	"github.com/oniio/oniChain/common/log"
-	"github.com/oniio/oniDNS/common"
-	pm "github.com/oniio/oniDNS/messages/protoMessages"
-	"github.com/oniio/oniDNS/storage"
+	Ccomon "github.com/saveio/themis/common"
+	"github.com/saveio/themis/common/log"
+	"github.com/saveio/scan/common"
+	pm "github.com/saveio/scan/messages/protoMessages"
+	"github.com/saveio/scan/storage"
 	"github.com/ontio/ontology-eventbus/actor"
 )
 

@@ -5,7 +5,7 @@
  * The ontology is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any oniiolater version.
+ * (at your option) any saveio later version.
  *
  * The ontology is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -20,11 +20,11 @@ package common
 
 import (
 	"fmt"
-	"github.com/oniio/oniChain/account"
-	"github.com/oniio/oniChain/cmd/utils"
-	"github.com/oniio/oniChain/common"
-	"github.com/oniio/oniChain/common/config"
-	"github.com/oniio/oniChain/common/password"
+	"github.com/saveio/themis/account"
+	"github.com/saveio/themis/cmd/utils"
+	"github.com/saveio/themis/common"
+	"github.com/saveio/themis/common/config"
+	"github.com/saveio/themis/common/password"
 	"github.com/urfave/cli"
 	"strconv"
 )

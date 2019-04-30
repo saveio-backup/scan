@@ -1,4 +1,4 @@
-package: github.com/oniio/oniDNS
+package: github.com/saveio/scan
 import:
 - package: github.com/anacrolix/dht
   subpackages:
@@ -13,13 +13,13 @@ import:
 - package: github.com/golang/protobuf
   subpackages:
   - proto
-- package: github.com/oniio/oniChain
+- package: github.com/saveio/themis
   subpackages:
   - common
   - common/log
   - core/store/common
   - errors
-- package: github.com/oniio/oniP2p
+- package: github.com/saveio/carrier
   subpackages:
   - crypto/ed25519
   - network

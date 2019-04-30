@@ -8,11 +8,11 @@ package tracker
 import (
 	"fmt"
 	"github.com/anacrolix/dht/krpc"
-	"github.com/oniio/oniChain/common"
-	"github.com/oniio/oniFS/thirdparty/assert"
+	"github.com/saveio/themis/common"
+	"github.com/saveio/max/thirdparty/assert"
 	"net"
 	"testing"
-	//"github.com/oniio/oniChain/common/log"
+	//"github.com/saveio/themis/common/log"
 )
 
 var wallet1Addr = "AYMnqA65pJFKAbbpD8hi5gdNDBmeFBy5hS"

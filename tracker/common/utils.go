@@ -7,12 +7,12 @@ package common
 
 import (
 	"encoding/json"
-	"github.com/oniio/oniChain/common"
-	"github.com/oniio/oniChain/common/log"
-	"github.com/oniio/oniChain/core/signature"
-	"github.com/oniio/oniChain/core/types"
-	"github.com/oniio/oniChain/crypto/keypair"
-	"github.com/oniio/oniChain/errors"
+	"github.com/saveio/themis/common"
+	"github.com/saveio/themis/common/log"
+	"github.com/saveio/themis/core/signature"
+	"github.com/saveio/themis/core/types"
+	"github.com/saveio/themis/crypto/keypair"
+	"github.com/saveio/themis/errors"
 	"net"
 )
 

@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/oniio/oniChain/common/log"
-	"github.com/oniio/oniDNS/common/config"
-	"github.com/oniio/oniDNS/dns"
-	"github.com/oniio/oniDNS/tracker"
+	"github.com/saveio/themis/common/log"
+	"github.com/saveio/scan/common/config"
+	"github.com/saveio/scan/dns"
+	"github.com/saveio/scan/tracker"
 )
 
 var (

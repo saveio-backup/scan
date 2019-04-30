@@ -1,19 +1,19 @@
 /*
- * Copyright (C) 2019 The oniChain Authors
- * This file is part of The oniChain library.
+ * Copyright (C) 2019 The themis Authors
+ * This file is part of The themis library.
  *
- * The oniChain is free software: you can redistribute it and/or modify
+ * The themis is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * The oniChain is distributed in the hope that it will be useful,
+ * The themis is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with The oniChain.  If not, see <http://www.gnu.org/licenses/>.
+ * along with The themis.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 // Package jsonrpc privides a function to start json rpc server
@@ -25,18 +25,18 @@ import (
 
 	"fmt"
 
-	"github.com/oniio/oniChain/common/log"
-	cfg "github.com/oniio/oniDNS/common/config"
-	"github.com/oniio/oniDNS/http/base/rpc"
+	"github.com/saveio/themis/common/log"
+	cfg "github.com/saveio/scan/common/config"
+	"github.com/saveio/scan/http/base/rpc"
 )
 
 const (
-	ONIDNS_DIR string = "/dns"
+	SCAN_DIR string = "/dns"
 )
 
 func StartRPCServer() error {
 	log.Debug()
-	http.HandleFunc(ONIDNS_DIR, rpc.Handle)
+	http.HandleFunc(SCAN_DIR, rpc.Handle)
 
 	rpc.HandleFunc("getbestblockhash", rpc.GetBestBlockHash)
 	rpc.HandleFunc("getblock", rpc.GetBlock)

@@ -6,7 +6,7 @@
 package storage
 
 import (
-	"github.com/oniio/oniChain/core/store/common"
+	"github.com/saveio/themis/core/store/common"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/filter"

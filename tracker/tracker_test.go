@@ -5,7 +5,7 @@ import (
 	"net"
 	"testing"
 
-	"github.com/oniio/oniDNS/common"
+	"github.com/saveio/scan/common"
 )
 
 func TestUnsupportedTrackerScheme(t *testing.T) {

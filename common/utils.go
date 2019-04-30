@@ -7,8 +7,8 @@ package common
 
 import (
 	"bytes"
-	netcomm "github.com/oniio/oniChain/common"
-	"github.com/oniio/oniChain/common/log"
+	netcomm "github.com/saveio/themis/common"
+	"github.com/saveio/themis/common/log"
 	"os"
 	"os/signal"
 	"syscall"

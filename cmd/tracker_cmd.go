@@ -6,9 +6,9 @@
 package cmd
 
 import (
-	"github.com/oniio/oniDNS/cmd/common"
-	"github.com/oniio/oniDNS/cmd/utils"
-	//"github.com/oniio/oniDNS/config"
+	"github.com/saveio/scan/cmd/common"
+	"github.com/saveio/scan/cmd/utils"
+	//"github.com/saveio/scan/config"
 	"github.com/urfave/cli"
 )
 

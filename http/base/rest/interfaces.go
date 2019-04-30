@@ -1,19 +1,19 @@
 /*
- * Copyright (C) 2019 The oniChain Authors
- * This file is part of The oniChain library.
+ * Copyright (C) 2019 The themis Authors
+ * This file is part of The themis library.
  *
- * The oniChain is free software: you can redistribute it and/or modify
+ * The themis is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * The oniChain is distributed in the hope that it will be useful,
+ * The themis is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with The oniChain.  If not, see <http://www.gnu.org/licenses/>.
+ * along with The themis.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 package rest
@@ -22,15 +22,15 @@ import (
 	"bytes"
 	"strconv"
 
-	"github.com/oniio/oniChain/common"
-	"github.com/oniio/oniChain/common/config"
-	"github.com/oniio/oniChain/common/log"
-	scom "github.com/oniio/oniChain/core/store/common"
-	"github.com/oniio/oniChain/core/types"
-	ontErrors "github.com/oniio/oniChain/errors"
-	bactor "github.com/oniio/oniChain/http/base/actor"
-	bcomn "github.com/oniio/oniChain/http/base/common"
-	berr "github.com/oniio/oniChain/http/base/error"
+	"github.com/saveio/themis/common"
+	"github.com/saveio/themis/common/config"
+	"github.com/saveio/themis/common/log"
+	scom "github.com/saveio/themis/core/store/common"
+	"github.com/saveio/themis/core/types"
+	ontErrors "github.com/saveio/themis/errors"
+	bactor "github.com/saveio/themis/http/base/actor"
+	bcomn "github.com/saveio/themis/http/base/common"
+	berr "github.com/saveio/themis/http/base/error"
 )
 
 const TLS_PORT int = 443

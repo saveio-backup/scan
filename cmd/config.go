@@ -6,9 +6,9 @@
 package cmd
 
 import (
-	"github.com/oniio/oniChain/common/log"
-	"github.com/oniio/oniDNS/cmd/utils"
-	"github.com/oniio/oniDNS/common/config"
+	"github.com/saveio/themis/common/log"
+	"github.com/saveio/scan/cmd/utils"
+	"github.com/saveio/scan/common/config"
 	alog "github.com/ontio/ontology-eventbus/log"
 	"github.com/urfave/cli"
 	"os"

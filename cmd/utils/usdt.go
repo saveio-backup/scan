@@ -1,19 +1,19 @@
 /*
- * Copyright (C) 2019 The oniChain Authors
- * This file is part of The oniChain library.
+ * Copyright (C) 2019 The themis Authors
+ * This file is part of The themis library.
  *
- * The oniChain is free software: you can redistribute it and/or modify
+ * The themis is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * The oniChain is distributed in the hope that it will be useful,
+ * The themis is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with The oniChain.  If not, see <http://www.gnu.org/licenses/>.
+ * along with The themis.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 package utils
@@ -30,25 +30,25 @@ import (
 	"strings"
 	"time"
 
-	"github.com/oniio/oniChain/account"
-	"github.com/oniio/oniChain/common"
-	"github.com/oniio/oniChain/common/constants"
-	"github.com/oniio/oniChain/common/serialization"
-	"github.com/oniio/oniChain/core/payload"
-	"github.com/oniio/oniChain/core/signature"
-	"github.com/oniio/oniChain/core/types"
-	cutils "github.com/oniio/oniChain/core/utils"
-	"github.com/oniio/oniChain/crypto/keypair"
-	sig "github.com/oniio/oniChain/crypto/signature"
-	httpcom "github.com/oniio/oniChain/http/base/common"
-	rpccommon "github.com/oniio/oniChain/http/base/common"
-	"github.com/oniio/oniChain/smartcontract/service/native/dns"
-	"github.com/oniio/oniChain/smartcontract/service/native/governance"
-	"github.com/oniio/oniChain/smartcontract/service/native/usdt"
-	"github.com/oniio/oniChain/smartcontract/service/native/utils"
-	"github.com/oniio/oniChain/smartcontract/service/wasmvm"
-	cstates "github.com/oniio/oniChain/smartcontract/states"
-	"github.com/oniio/oniChain/vm/wasmvm/exec"
+	"github.com/saveio/themis/account"
+	"github.com/saveio/themis/common"
+	"github.com/saveio/themis/common/constants"
+	"github.com/saveio/themis/common/serialization"
+	"github.com/saveio/themis/core/payload"
+	"github.com/saveio/themis/core/signature"
+	"github.com/saveio/themis/core/types"
+	cutils "github.com/saveio/themis/core/utils"
+	"github.com/saveio/themis/crypto/keypair"
+	sig "github.com/saveio/themis/crypto/signature"
+	httpcom "github.com/saveio/themis/http/base/common"
+	rpccommon "github.com/saveio/themis/http/base/common"
+	"github.com/saveio/themis/smartcontract/service/native/dns"
+	"github.com/saveio/themis/smartcontract/service/native/governance"
+	"github.com/saveio/themis/smartcontract/service/native/usdt"
+	"github.com/saveio/themis/smartcontract/service/native/utils"
+	"github.com/saveio/themis/smartcontract/service/wasmvm"
+	cstates "github.com/saveio/themis/smartcontract/states"
+	"github.com/saveio/themis/vm/wasmvm/exec"
 )
 
 const (
@@ -472,7 +472,7 @@ func Sign(data []byte, signer *account.Account) ([]byte, error) {
 	return sigData, nil
 }
 
-//SendRawTransaction send a transaction to oniChain network, and return hash of the transaction
+//SendRawTransaction send a transaction to themis network, and return hash of the transaction
 func SendRawTransaction(tx *types.Transaction) (string, error) {
 	var buffer bytes.Buffer
 	err := tx.Serialize(&buffer)
