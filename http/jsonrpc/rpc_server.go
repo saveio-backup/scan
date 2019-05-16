@@ -77,11 +77,12 @@ func StartRPCServer() error {
 	rpc.HandleFunc("getdnshostinfo", rpc.GetDnsHostInfo)
 
 	rpc.HandleFunc("openchannel", rpc.OpenChannel)
+	// rpc.HandleFunc("closechannel", rpc.CloseChannel)
 	rpc.HandleFunc("depositchannel", rpc.DepositToChannel)
 	rpc.HandleFunc("transferchannel", rpc.TransferToSomebody)
 	rpc.HandleFunc("withdrawchannel", rpc.WithdrawChannel)
 	rpc.HandleFunc("getallchannels", rpc.GetAllChannels)
-	rpc.HandleFunc("getcurrentbalance", rpc.GetCurrentBalance)
+	// rpc.HandleFunc("getcurrentbalance", rpc.GetCurrentBalance)
 	rpc.HandleFunc("querychanneldeposit", rpc.QueryChannelDeposit)
 	rpc.HandleFunc("queryhostinfo", rpc.QueryHostInfo)
 	err := http.ListenAndServe(":"+strconv.Itoa(int(cfg.DefaultConfig.RpcConfig.HttpJsonPort)), nil)

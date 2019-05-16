@@ -24,6 +24,16 @@ var ChannelCommand = cli.Command{
 			},
 			Description: "Open a payment channel with partner",
 		},
+		// {
+		// 	Action:    closeChannel,
+		// 	Name:      "close",
+		// 	Usage:     "Close a payment channel",
+		// 	ArgsUsage: " ",
+		// 	Flags: []cli.Flag{
+		// 		utils.PartnerAddressFlag,
+		// 	},
+		// 	Description: "Close a payment channel with partner",
+		// },
 		{
 			Action:    depositToChannel,
 			Name:      "deposit",
@@ -66,16 +76,16 @@ var ChannelCommand = cli.Command{
 			Flags:       []cli.Flag{},
 			Description: "Show all channels info which belong to current owner",
 		},
-		{
-			Action:    getCurrentBalance,
-			Name:      "balance",
-			Usage:     "Get current balance",
-			ArgsUsage: " ",
-			Flags: []cli.Flag{
-				utils.PartnerAddressFlag,
-			},
-			Description: "Get current channel balance which belong to current owner",
-		},
+		// {
+		// 	Action:    getCurrentBalance,
+		// 	Name:      "balance",
+		// 	Usage:     "Get current balance",
+		// 	ArgsUsage: " ",
+		// 	Flags: []cli.Flag{
+		// 		utils.PartnerAddressFlag,
+		// 	},
+		// 	Description: "Get current channel balance which belong to current owner",
+		// },
 		{
 			Action:    queryChannelDeposit,
 			Name:      "querydeposit",
@@ -87,16 +97,6 @@ var ChannelCommand = cli.Command{
 			Description: "Query deposit of channel which belong to owner and partner",
 		},
 		{
-			Action:    cooperativeSettle,
-			Name:      "cooperativeSettle",
-			Usage:     "Cooperative settle",
-			ArgsUsage: " ",
-			Flags: []cli.Flag{
-				utils.PartnerAddressFlag,
-			},
-			Description: "settle cooperatively of channel which belong to owner and partner",
-		},
-		{
 			Action:    queryHostInfo,
 			Name:      "queryhost",
 			Usage:     "Query host info",
@@ -105,6 +105,16 @@ var ChannelCommand = cli.Command{
 				utils.PartnerAddressFlag,
 			},
 			Description: "Query host info of partner",
+		},
+		{
+			Action:    cooperativeSettle,
+			Name:      "cooperativeSettle",
+			Usage:     "Cooperative settle",
+			ArgsUsage: " ",
+			Flags: []cli.Flag{
+				utils.PartnerAddressFlag,
+			},
+			Description: "settle cooperatively of channel which belong to owner and partner",
 		},
 	},
 }
@@ -129,6 +139,27 @@ func openChannel(ctx *cli.Context) error {
 	PrintInfoMsg("\nOpen channel success. Channel ID: %d", chanRsp.Id)
 	return nil
 }
+
+// func closeChannel(ctx *cli.Context) error {
+// 	SetRpcPort(ctx)
+
+// 	if ctx.NumFlags() < 1 {
+// 		PrintErrorMsg("Missing argument.")
+// 		cli.ShowSubcommandHelp(ctx)
+// 		return nil
+// 	}
+
+// 	partnerAddr := ctx.String(flags.GetFlagName(flags.PartnerAddressFlag))
+
+// 	_, failed := utils.CloseChannel(partnerAddr)
+// 	if failed != nil {
+// 		PrintErrorMsg("\nClose channel failed. Failed message:")
+// 		PrintJsonObject(failed)
+// 		return nil
+// 	}
+// 	PrintInfoMsg("\nClose channel success.")
+// 	return nil
+// }
 
 func depositToChannel(ctx *cli.Context) error {
 	SetRpcPort(ctx)
@@ -211,24 +242,24 @@ func getAllChannels(ctx *cli.Context) error {
 	return nil
 }
 
-func getCurrentBalance(ctx *cli.Context) error {
-	if ctx.NumFlags() < 1 {
-		PrintErrorMsg("Missing argument.")
-		cli.ShowSubcommandHelp(ctx)
-		return nil
-	}
+// func getCurrentBalance(ctx *cli.Context) error {
+// 	if ctx.NumFlags() < 1 {
+// 		PrintErrorMsg("Missing argument.")
+// 		cli.ShowSubcommandHelp(ctx)
+// 		return nil
+// 	}
 
-	partnerAddr := ctx.String(flags.GetFlagName(flags.PartnerAddressFlag))
-	currBalanceRsp, failed := utils.GetCurrentBalance(partnerAddr)
-	if failed != nil {
-		PrintErrorMsg("\nGet channel current balance failed. Failed message:")
-		PrintJsonObject(failed)
-		return nil
-	}
-	PrintInfoMsg("\nGet channel current balance success. TotalDepositBalance msg:")
-	PrintJsonObject(currBalanceRsp)
-	return nil
-}
+// 	partnerAddr := ctx.String(flags.GetFlagName(flags.PartnerAddressFlag))
+// 	currBalanceRsp, failed := utils.GetCurrentBalance(partnerAddr)
+// 	if failed != nil {
+// 		PrintErrorMsg("\nGet channel current balance failed. Failed message:")
+// 		PrintJsonObject(failed)
+// 		return nil
+// 	}
+// 	PrintInfoMsg("\nGet channel current balance success. TotalDepositBalance msg:")
+// 	PrintJsonObject(currBalanceRsp)
+// 	return nil
+// }
 
 func queryChannelDeposit(ctx *cli.Context) error {
 	SetRpcPort(ctx)

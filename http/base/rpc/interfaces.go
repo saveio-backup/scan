@@ -920,6 +920,25 @@ func OpenChannel(params []interface{}) map[string]interface{} {
 	return responseSuccess(&channelRsp)
 }
 
+// func CloseChannel(params []interface{}) map[string]interface{} {
+// 	var partnerAddrstr string
+// 	switch (params[0]).(type) {
+// 	case string:
+// 		partnerAddrstr = params[0].(string)
+// 	default:
+// 		return responsePack(berr.INVALID_PARAMS, "")
+// 	}
+
+// 	err := channel.GlbChannelSvr.CloseChannel(partnerAddrstr)
+// 	if err != nil {
+// 		log.Errorf("OpenChannel error: %s", err)
+// 		return responsePack(berr.INTERNAL_ERROR, err.Error())
+// 	}
+// 	fmt.Printf("rpc/interface/openchannel partneraddr:%s\n", partnerAddrstr)
+
+// 	return responseSuccess(&httpComm.SuccessRsp{})
+// }
+
 func DepositToChannel(params []interface{}) map[string]interface{} {
 	var partnerAddrstr string
 	var totalDeposituint64 uint64
@@ -1036,26 +1055,26 @@ func GetAllChannels(params []interface{}) map[string]interface{} {
 	return responseSuccess(channelInfos)
 }
 
-func GetCurrentBalance(params []interface{}) map[string]interface{} {
-	var partnerAddrstr string
-	switch (params[0]).(type) {
-	case string:
-		partnerAddrstr = params[0].(string)
-	default:
-		return responsePack(berr.INVALID_PARAMS, "")
-	}
+// func GetCurrentBalance(params []interface{}) map[string]interface{} {
+// 	var partnerAddrstr string
+// 	switch (params[0]).(type) {
+// 	case string:
+// 		partnerAddrstr = params[0].(string)
+// 	default:
+// 		return responsePack(berr.INVALID_PARAMS, "")
+// 	}
 
-	balance, err := channel.GlbChannelSvr.GetCurrentBalance(partnerAddrstr)
-	if err != nil {
-		log.Errorf("GetCurrentBalance error: %s", err)
-		return responsePack(berr.INTERNAL_ERROR, err.Error())
-	}
-	fmt.Printf("rpc/interface/getcurrentbalance partneraddr:%s\n", partnerAddrstr)
-	channelRsp := httpComm.ChannelTotalDepositBalanceRsp{
-		TotalDepositBalance: balance,
-	}
-	return responseSuccess(&channelRsp)
-}
+// 	balance, err := channel.GlbChannelSvr.GetCurrentBalance(partnerAddrstr)
+// 	if err != nil {
+// 		log.Errorf("GetCurrentBalance error: %s", err)
+// 		return responsePack(berr.INTERNAL_ERROR, err.Error())
+// 	}
+// 	fmt.Printf("rpc/interface/getcurrentbalance partneraddr:%s\n", partnerAddrstr)
+// 	channelRsp := httpComm.ChannelTotalDepositBalanceRsp{
+// 		TotalDepositBalance: balance,
+// 	}
+// 	return responseSuccess(&channelRsp)
+// }
 
 func QueryChannelDeposit(params []interface{}) map[string]interface{} {
 	var partnerAddrstr string

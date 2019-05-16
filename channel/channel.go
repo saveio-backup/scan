@@ -127,6 +127,10 @@ func (this *ChannelSvr) OpenChannel(partnerAddr string) (chanCom.ChannelID, erro
 	return this.Channel.OpenChannel(partnerAddr)
 }
 
+// func (this *ChannelSvr) CloseChannel(partnerAddr string) error {
+// 	return this.Channel.ChannelClose(partnerAddr)
+// }
+
 func (this *ChannelSvr) QuerySpecialChannelDeposit(partnerAddr string) (uint64, error) {
 	return this.Channel.GetTotalDepositBalance(partnerAddr)
 }
@@ -135,23 +139,8 @@ func (this *ChannelSvr) DepositToChannel(partnerAddr string, totalDeposit uint64
 	return this.Channel.SetDeposit(partnerAddr, totalDeposit)
 }
 
-func (this *ChannelSvr) ChannelWithdraw(partnerAddr string, amount uint64) error {
-	success, err := this.Channel.Withdraw(partnerAddr, amount)
-	if err != nil {
-		return err
-	}
-	if !success {
-		return errors.New("withdraw failed")
-	}
-	return nil
-}
-
 func (this *ChannelSvr) GetAllChannels() *channel.ChannelInfosResp {
 	return this.Channel.AllChannels()
-}
-
-func (this *ChannelSvr) GetCurrentBalance(partnerAddr string) (uint64, error) {
-	return this.Channel.GetCurrentBalance(partnerAddr)
 }
 
 func (this *ChannelSvr) Transfer(paymentId int32, amount uint64, to string) error {
@@ -163,6 +152,17 @@ func (this *ChannelSvr) GetChannelListByOwnerAddress(addr string, tokenAddr stri
 	//[NOTE] addr and token Addr should NOT be needed. addr mean PaymentNetworkID
 	//tokenAddr mean TokenAddress. Need comfirm the behavior when integrate dsp-go-sdk with pylons
 	return list.New()
+}
+
+func (this *ChannelSvr) ChannelWithdraw(partnerAddr string, amount uint64) error {
+	success, err := this.Channel.Withdraw(partnerAddr, amount)
+	if err != nil {
+		return err
+	}
+	if !success {
+		return errors.New("withdraw failed")
+	}
+	return nil
 }
 
 func (this *ChannelSvr) QueryHostInfo(partnerAddr string) (string, error) {
