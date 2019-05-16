@@ -21,11 +21,13 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
+
 	//"github.com/saveio/scan/config"
-	rpcerr "github.com/saveio/scan/http/base/error"
 	"io/ioutil"
 	"net/http"
 	"strings"
+
+	rpcerr "github.com/saveio/scan/http/base/error"
 )
 
 //JsonRpc version

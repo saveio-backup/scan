@@ -8,7 +8,9 @@ package cmd
 import (
 	"github.com/saveio/scan/cmd/common"
 	"github.com/saveio/scan/cmd/utils"
+
 	//"github.com/saveio/scan/config"
+
 	"github.com/urfave/cli"
 )
 
@@ -24,6 +26,7 @@ var EndPointCommand = cli.Command{
 			Usage:     "Reg wallet address and host",
 			ArgsUsage: "[sub-command options]",
 			Flags: []cli.Flag{
+				utils.WalletFlag,
 				utils.HostFlag,
 			},
 		},
@@ -33,6 +36,7 @@ var EndPointCommand = cli.Command{
 			Usage:     "Update the host of your wallet address",
 			ArgsUsage: "[sub-command options]",
 			Flags: []cli.Flag{
+				utils.WalletFlag,
 				utils.HostFlag,
 			},
 		},
@@ -41,6 +45,9 @@ var EndPointCommand = cli.Command{
 			Name:      "unreg",
 			Usage:     "UnReg wallet address and host",
 			ArgsUsage: "[sub-command options]",
+			Flags: []cli.Flag{
+				utils.WalletFlag,
+			},
 		},
 		{
 			Action:    reqEndPoint,
@@ -56,11 +63,13 @@ var EndPointCommand = cli.Command{
 
 func regEndPoint(ctx *cli.Context) error {
 	SetRpcPort(ctx)
-	//if ctx.NumFlags() < 2 {
-	//	PrintErrorMsg("Missing argument.")
-	//	cli.ShowSubcommandHelp(ctx)
-	//	return nil
-	//}
+
+	if ctx.NumFlags() < 2 {
+		PrintErrorMsg("Missing argument.")
+		cli.ShowSubcommandHelp(ctx)
+		return nil
+	}
+
 	var wAddr string
 	client, err := common.OpenWallet(ctx)
 	if err != nil {
@@ -68,85 +77,39 @@ func regEndPoint(ctx *cli.Context) error {
 	}
 	pw, err := common.GetPasswd(ctx)
 	if err != nil {
-		PrintErrorMsg("regEndPoint GetPasswd error:%s\n", err)
+		PrintErrorMsg("GetPasswd error, ErrMsg:")
 		return err
 	}
-	acc, err := client.GetDefaultAccount(pw)
+	_, err = client.GetDefaultAccount(pw)
 	if err != nil {
-		PrintErrorMsg("regEndPoint GetDefaultAccount error:%s\n", err)
+		PrintErrorMsg("GetDefaultAccount from wallet and password error, ErrMsg:")
 		return err
 	}
-	wAddr = acc.Address.ToBase58()
+
+	wAddr = ctx.String(utils.GetFlagName(utils.WalletFlag))
 	host := ctx.String(utils.GetFlagName(utils.HostFlag))
-	if err != nil {
-		PrintErrorMsg("regEndPoint utils.Sign error:%s\n", err)
+
+	endpoint, failed := utils.RegEndPoint(wAddr, host)
+	if failed != nil {
+		PrintErrorMsg("Register endpoint failed. Failed message:")
+		PrintJsonObject(failed)
+		return nil
 	}
-	err = utils.RegEndPoint(wAddr, host)
-	if err != nil {
-		return err
-		PrintErrorMsg("Register wallet:%s,host:%s", wAddr, host)
-	}
+
+	PrintInfoMsg("Register endpoint success. EndPoint message:")
+	PrintJsonObject(endpoint)
 	return nil
 }
 
 func updateEndPoint(ctx *cli.Context) error {
 	SetRpcPort(ctx)
-	client, err := common.OpenWallet(ctx)
-	if err != nil {
-		return err
-	}
-	pw, err := common.GetPasswd(ctx)
-	if err != nil {
-		PrintErrorMsg("regEndPoint GetPasswd error:%s\n", err)
-		return err
-	}
-	acc, err := client.GetDefaultAccount(pw)
-	if err != nil {
-		PrintErrorMsg("regEndPoint GetDefaultAccount error:%s\n", err)
-		return err
-	}
-	a := acc.Address
-	wAddr := a.ToBase58()
-	host := ctx.String(utils.GetFlagName(utils.HostFlag))
-	if err != nil {
-		PrintErrorMsg("regEndPoint utils.Sign error:%s\n", err)
-	}
-	err = utils.UpdateEndPoint(wAddr, host)
-	if err != nil {
-		return err
-		PrintErrorMsg("Register wallet:%s,host:%s", wAddr, host)
-	}
-	return nil
-}
 
-func unRegEndPoint(ctx *cli.Context) error {
-	SetRpcPort(ctx)
-	client, err := common.OpenWallet(ctx)
-	if err != nil {
-		return err
+	if ctx.NumFlags() < 2 {
+		PrintErrorMsg("Missing argument.")
+		cli.ShowSubcommandHelp(ctx)
+		return nil
 	}
-	pw, err := common.GetPasswd(ctx)
-	if err != nil {
-		PrintErrorMsg("regEndPoint GetPasswd error:%s\n", err)
-		return err
-	}
-	acc, err := client.GetDefaultAccount(pw)
-	if err != nil {
-		PrintErrorMsg("regEndPoint GetDefaultAccount error:%s\n", err)
-		return err
-	}
-	a := acc.Address
-	wAddr := a.ToBase58()
-	err = utils.UnRegEndPoint(wAddr)
-	if err != nil {
-		return err
-		PrintErrorMsg("unRegister wallet:%s", wAddr)
-	}
-	return nil
-}
 
-func reqEndPoint(ctx *cli.Context) error {
-	SetRpcPort(ctx)
 	var wAddr string
 	client, err := common.OpenWallet(ctx)
 	if err != nil {
@@ -154,28 +117,105 @@ func reqEndPoint(ctx *cli.Context) error {
 	}
 	pw, err := common.GetPasswd(ctx)
 	if err != nil {
-		PrintErrorMsg("regEndPoint GetPasswd error:%s\n", err)
+		PrintErrorMsg("GetPasswd error:%s\n", err)
 		return err
 	}
-	acc, err := client.GetDefaultAccount(pw)
+	_, err = client.GetDefaultAccount(pw)
+	if err != nil {
+		PrintErrorMsg("GetDefaultAccount from wallet and password error, ErrMsg:")
+		return err
+	}
+
+	wAddr = ctx.String(utils.GetFlagName(utils.WalletFlag))
+	host := ctx.String(utils.GetFlagName(utils.HostFlag))
+
+	endpoint, failed := utils.UpdateEndPoint(wAddr, host)
+	if failed != nil {
+		PrintErrorMsg("Update endpoint failed. Failed message:")
+		PrintJsonObject(failed)
+		return nil
+	}
+
+	PrintInfoMsg("Update endpoint success. EndPoint updated message:")
+	PrintJsonObject(endpoint)
+	return nil
+}
+
+func unRegEndPoint(ctx *cli.Context) error {
+	SetRpcPort(ctx)
+
+	if ctx.NumFlags() < 1 {
+		PrintErrorMsg("Missing argument.")
+		cli.ShowSubcommandHelp(ctx)
+		return nil
+	}
+
+	var wAddr string
+	client, err := common.OpenWallet(ctx)
+	if err != nil {
+		return err
+	}
+	pw, err := common.GetPasswd(ctx)
+	if err != nil {
+		PrintErrorMsg("GetDefaultAccount from wallet and password error, ErrMsg:")
+		return err
+	}
+	_, err = client.GetDefaultAccount(pw)
 	if err != nil {
 		PrintErrorMsg("regEndPoint GetDefaultAccount error:%s\n", err)
 		return err
 	}
-	a := acc.Address
-	if ctx.IsSet(utils.GetFlagName(utils.WalletFlag)) {
-		wAddr = ctx.String(utils.GetFlagName(utils.WalletFlag))
-	} else {
-		wAddr = a.ToBase58()
+
+	wAddr = ctx.String(utils.GetFlagName(utils.WalletFlag))
+
+	endpoint, failed := utils.UnRegEndPoint(wAddr)
+	if failed != nil {
+		PrintErrorMsg("Unregister endpoint failed. Failed message:")
+		PrintJsonObject(failed)
+		return nil
 	}
-	host := ctx.String(utils.GetFlagName(utils.WalletFlag))
-	if err != nil {
-		PrintErrorMsg("regEndPoint utils.Sign error:%s\n", err)
+
+	PrintInfoMsg("Unregister endpoint success. Endpoint unregister message:")
+	PrintJsonObject(endpoint)
+	return nil
+}
+
+func reqEndPoint(ctx *cli.Context) error {
+	SetRpcPort(ctx)
+
+	if ctx.NumFlags() < 1 {
+		PrintErrorMsg("Missing argument.")
+		cli.ShowSubcommandHelp(ctx)
+		return nil
 	}
-	err = utils.ReqEndPoint(wAddr)
+
+	var wAddr string
+	client, err := common.OpenWallet(ctx)
 	if err != nil {
 		return err
-		PrintErrorMsg("Register wallet:%s,host:%s", wAddr, host)
 	}
+	pw, err := common.GetPasswd(ctx)
+	if err != nil {
+		PrintErrorMsg("GetPasswd error, ErrMsg:")
+		return err
+	}
+
+	_, err = client.GetDefaultAccount(pw)
+	if err != nil {
+		PrintErrorMsg("GetDefaultAccount from wallet and password error, ErrMsg:")
+		return err
+	}
+
+	wAddr = ctx.String(utils.GetFlagName(utils.WalletFlag))
+
+	endpoint, failed := utils.ReqEndPoint(wAddr)
+	if failed != nil {
+		PrintErrorMsg("Request endpoint failed. Failed message:")
+		PrintJsonObject(failed)
+		return nil
+	}
+
+	PrintInfoMsg("Request endpoint success. EndPoint message:")
+	PrintJsonObject(endpoint)
 	return nil
 }

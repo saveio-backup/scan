@@ -7,11 +7,12 @@ package common
 
 import (
 	"bytes"
-	netcomm "github.com/saveio/themis/common"
-	"github.com/saveio/themis/common/log"
 	"os"
 	"os/signal"
 	"syscall"
+
+	netcomm "github.com/saveio/themis/common"
+	"github.com/saveio/themis/common/log"
 )
 
 func WHPTobyte(walletAddr, hostPort string) ([]byte, []byte) {
@@ -26,6 +27,19 @@ func WHPTobyte(walletAddr, hostPort string) ([]byte, []byte) {
 	key := bf.Bytes()
 	value := []byte(hostPort)
 	return key, value
+}
+
+func WTobyte(walletAddr string) []byte {
+	wAddr, err := netcomm.AddressFromBase58(walletAddr)
+	if err != nil {
+		return nil
+	}
+	bf := new(bytes.Buffer)
+	if err = wAddr.Serialize(bf); err != nil {
+		return nil
+	}
+	key := bf.Bytes()
+	return key
 }
 
 func WaitToExit() {

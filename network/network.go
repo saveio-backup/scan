@@ -1,188 +1,259 @@
-/**
- * Description:
- * Author: LiYong Zhang
- * Create: 2019-03-12
- */
 package network
 
 import (
+	"sync"
+
+	"github.com/saveio/carrier/crypto"
 	"github.com/saveio/carrier/crypto/ed25519"
 	"github.com/saveio/carrier/network"
+	"github.com/saveio/carrier/types/opcode"
+	"github.com/saveio/pylons/common/constants"
 
 	"context"
-	"github.com/saveio/themis/common/log"
-	"github.com/saveio/scan/common/config"
+
 	"github.com/saveio/carrier/network/keepalive"
-	"github.com/saveio/carrier/network/nat"
+	act "github.com/saveio/pylons/actor/server"
+	"github.com/saveio/scan/common/config"
+	"github.com/saveio/themis/common/log"
+
 	//"github.com/golang/protobuf/proto"
-	"errors"
+	"github.com/saveio/pylons/network/transport/messages"
+
 	"fmt"
-	"github.com/gogo/protobuf/proto"
-	comm "github.com/saveio/scan/common"
-	pm "github.com/saveio/scan/messages/protoMessages"
-	"github.com/saveio/scan/storage"
-	"github.com/saveio/scan/tracker/common"
-	"github.com/saveio/carrier/types/opcode"
-	"github.com/ontio/ontology-eventbus/actor"
 	"time"
+
+	"github.com/gogo/protobuf/proto"
+	"github.com/ontio/ontology-eventbus/actor"
+	pm "github.com/saveio/scan/messages/protoMessages"
+	"github.com/saveio/scan/tracker/common"
 )
 
 var DDNSP2P *Network
 
+var once sync.Once
+
+const (
+	OpCodeProcessed opcode.Opcode = 1000 + iota
+	OpCodeDelivered
+	OpCodeSecretRequest
+	OpCodeRevealSecret
+	OpCodeSecretMsg
+	OpCodeDirectTransfer
+	OpCodeLockedTransfer
+	OpCodeRefundTransfer
+	OpCodeLockExpired
+	OpCodeWithdrawRequest
+	OpCodeWithdraw
+	OpCodeCooperativeSettleRequest
+	OpCodeCooperativeSettle
+	OpCodeRegistry
+	OpCodeUnRegistry
+	OpCodeTorrent
+)
+
+var opCodes = map[opcode.Opcode]proto.Message{
+	OpCodeRegistry:                 &pm.Registry{},
+	OpCodeUnRegistry:               &pm.UnRegistry{},
+	OpCodeTorrent:                  &pm.Torrent{},
+	OpCodeProcessed:                &messages.Processed{},
+	OpCodeDelivered:                &messages.Delivered{},
+	OpCodeSecretRequest:            &messages.SecretRequest{},
+	OpCodeRevealSecret:             &messages.RevealSecret{},
+	OpCodeSecretMsg:                &messages.Secret{},
+	OpCodeDirectTransfer:           &messages.DirectTransfer{},
+	OpCodeLockedTransfer:           &messages.LockedTransfer{},
+	OpCodeRefundTransfer:           &messages.RefundTransfer{},
+	OpCodeLockExpired:              &messages.LockExpired{},
+	OpCodeWithdrawRequest:          &messages.WithdrawRequest{},
+	OpCodeWithdraw:                 &messages.Withdraw{},
+	OpCodeCooperativeSettleRequest: &messages.CooperativeSettleRequest{},
+	OpCodeCooperativeSettle:        &messages.CooperativeSettle{},
+}
+
 type Network struct {
-	*network.Component
-	*network.Network
-	peerAddrs  []string
-	listenAddr string
-	pid        *actor.PID
+	P2p                   *network.Network
+	peerAddrs             []string
+	listenAddr            string
+	proxyAddr             string
+	pid                   *actor.PID
+	protocol              string
+	address               string
+	mappingAddress        string
+	Keys                  *crypto.KeyPair
+	keepaliveInterval     time.Duration
+	keepaliveTimeout      time.Duration
+	peerStateChan         chan *keepalive.PeerStateEvent
+	kill                  chan struct{}
+	ActivePeers           *sync.Map
+	addressForHealthCheck *sync.Map
 }
 
 func NewP2P() *Network {
 	n := &Network{
-		Network: new(network.Network),
+		P2p: new(network.Network),
 	}
+	n.ActivePeers = new(sync.Map)
+	n.addressForHealthCheck = new(sync.Map)
+	n.kill = make(chan struct{})
+	n.peerStateChan = make(chan *keepalive.PeerStateEvent, 16)
 	return n
-
 }
 
-func (this *Network) Start() error {
-	keys := ed25519.RandomKeyPair()
-	builder := network.NewBuilder()
-	builder.SetKeys(keys)
-	builder.SetAddress(network.FormatAddress("udp", "127.0.0.1", uint16(config.DefaultConfig.TrackerConfig.UdpPort)))
-	opcode.RegisterMessageType(opcode.Opcode(common.SYNC_MSG_OP_CODE), &pm.Torrent{})
-	opcode.RegisterMessageType(opcode.Opcode(common.SYNC_REGMSG_OP_CODE), &pm.Registry{})
-	opcode.RegisterMessageType(opcode.Opcode(common.SYNC_UNREGMSG_OP_CODE), &pm.UnRegistry{})
-	peerStateChan := make(chan *keepalive.PeerStateEvent, 10)
-	options := []keepalive.ComponentOption{
-		keepalive.WithKeepaliveInterval(keepalive.DefaultKeepaliveInterval),
-		keepalive.WithKeepaliveTimeout(keepalive.DefaultKeepaliveTimeout),
-		keepalive.WithPeerStateChan(peerStateChan),
+func (this *Network) SetProxyServer(address string) {
+	this.proxyAddr = address
+}
+
+func (this *Network) Start(address string) error {
+	builder := network.NewBuilderWithOptions(network.WriteFlushLatency(1 * time.Millisecond))
+	if this.Keys != nil {
+		log.Debugf("channel use account key")
+		builder.SetKeys(this.Keys)
+	} else {
+		builder.SetKeys(ed25519.RandomKeyPair())
 	}
+
+	builder.SetAddress(address)
+	if this.keepaliveInterval == 0 {
+		this.keepaliveInterval = keepalive.DefaultKeepaliveInterval
+	}
+	if this.keepaliveTimeout == 0 {
+		this.keepaliveTimeout = keepalive.DefaultKeepaliveTimeout
+	}
+	options := []keepalive.ComponentOption{
+		keepalive.WithKeepaliveInterval(this.keepaliveInterval),
+		keepalive.WithKeepaliveTimeout(this.keepaliveTimeout),
+		keepalive.WithPeerStateChan(this.peerStateChan),
+	}
+
+	component := new(NetComponent)
+	component.Net = this
+	builder.AddComponent(component)
+
 	builder.AddComponent(keepalive.New(options...))
-	builder.AddComponentWithPriority(-9998, new(nat.StunComponent))
-	net, err := builder.Build()
-	this.Network = net
-	this.CompletNet()
+	// builder.AddComponent(new(proxy.ProxyComponent))
+	var err error
+	this.P2p, err = builder.Build()
 	if err != nil {
-		log.Fatal(err)
+		log.Error("[P2pNetwork] Start builder.Build error: ", err.Error())
 		return err
 	}
-	go this.Listen()
-	this.BlockUntilListening()
-	sc, reg := this.Network.Component(nat.StunComponentID)
-	if !reg {
-		log.Error("stun component don't reg ")
-	} else {
-		exAddr := sc.(*nat.StunComponent).GetPublicAddr()
-		this.ExternalAddr = exAddr
-	}
-	log.Infof("Listening for peers on %s.", this.ExternalAddr)
+
+	once.Do(func() {
+		for k, v := range opCodes {
+			err := opcode.RegisterMessageType(k, v)
+			if err != nil {
+				panic("register messages failed")
+			}
+		}
+	})
+
+	this.CompletNet()
+	// this.P2p.SetProxyServer(this.proxyAddr)
+	go this.P2p.Listen()
+	go this.PeerStateChange(this.syncPeerState)
+
+	this.P2p.BlockUntilListening()
+	log.Debugf("finish BlockUntilFinish...")
+
+	// sc, reg := this.Network.Component(nat.StunComponentID)
+	// if !reg {
+	// 	log.Error("stun component don't reg ")
+	// } else {
+	// 	exAddr := sc.(*nat.StunComponent).GetPublicAddr()
+	// 	this.ExternalAddr = exAddr
+	// }
+	// log.Infof("Listening for peers on %s.", this.ExternalAddr)
+
 	peers := config.DefaultConfig.TrackerConfig.SeedLists
 	if len(peers) > 0 {
-		this.Bootstrap(peers...)
-		log.Debug("had bootStraped peers")
+		this.P2p.Bootstrap(peers...)
+		log.Debug("had bootStraped peers: %v", peers)
 	}
-	comm.WaitToExit()
+	// reader := bufio.NewReader(os.Stdin)
+	// for {
+	// 	input, _ := reader.ReadString('\n')
+	// 	log.Info("We Chat> ")
+	// 	// skip blank lines
+	// 	if len(strings.TrimSpace(input)) == 0 {
+	// 		continue
+	// 	}
+
+	// 	log.Infof("<%s> %s", this.P2p.Address, input)
+
+	// 	ctx := network.WithSignMessage(context.Background(), true)
+	// 	this.P2p.Broadcast(ctx, &pm.Registry{WalletAddr: "uoijwfjowiejfiowjfoijwo", HostPort: "127.0.0.1:11000"})
+	// }
+
+	// comm.WaitToExit()
 	return nil
 }
 
-//P2P network msg receive. torrent msg, reg msg, unReg msg
-func (this *Network) Receive(ctx *network.ComponentContext) error {
-	log.Info("msgBus is accepting for syncNet messages ")
-	for {
-		switch msg := ctx.Message().(type) {
-		case *pm.Torrent:
-			if msg.InfoHash == nil || msg.Torrent == nil {
-				log.Errorf("[MSB Receive] receive from peer:%s, nil Torrent message", ctx.Sender().Address)
-				break
-			}
-			k := msg.InfoHash
-			v := msg.Torrent
+func (this *Network) Stop() {
+	close(this.kill)
+	this.P2p.Close()
+}
 
-			if err := storage.TDB.Put(k, v); err != nil {
-				log.Errorf("[MSB Receive] sync filemessage error:%v", err)
-			}
-
-		case *pm.Registry:
-			if msg.WalletAddr == "" || msg.HostPort == "" {
-				log.Errorf("[MSB Receive] receive from peer:%s, nil Reg message", ctx.Sender().Address)
-				break
-			}
-			k, v := comm.WHPTobyte(msg.WalletAddr, msg.HostPort)
-
-			if err := storage.TDB.Put(k, v); err != nil {
-				log.Errorf("[MSB Receive] sync regmessage error:%v", err)
-			}
-
-		case *pm.UnRegistry:
-			k, _ := comm.WHPTobyte(msg.WalletAddr, "")
-			if err := storage.TDB.Delete(k); err != nil {
-				return fmt.Errorf("[MSB Receive] sync unregmessage error:%v", err)
-			}
-		default:
-			log.Errorf("[MSB Receive] unknown message type:%s", msg.String())
-
+func (this *Network) Connect(tAddr string) error {
+	if _, ok := this.ActivePeers.Load(tAddr); ok {
+		// node is active, no need to connect
+		pse := &keepalive.PeerStateEvent{
+			Address: tAddr,
+			State:   keepalive.PEER_REACHABLE,
 		}
+		this.peerStateChan <- pse
+		return nil
 	}
+	if _, ok := this.addressForHealthCheck.Load(tAddr); ok {
+		// already try to connect, donn't retry before we get a result
+		log.Info("already try to connect")
+		return nil
+	}
+
+	this.addressForHealthCheck.Store(tAddr, struct{}{})
+	this.P2p.Bootstrap(tAddr)
 	return nil
 }
 
-func (this *Network) NewNetwork() *Network {
-	return new(Network)
-
-}
-
-func (this *Network) ListenAddr() string {
-	return this.listenAddr
-}
-
-func (this *Network) GetPeersIfExist() error {
-	this.EachPeer(func(client *network.PeerClient) bool {
-		this.peerAddrs = append(this.peerAddrs, client.Address)
-		return true
-	})
-	return nil
-}
-
-func (this *Network) Connect(tAddr ...string) error {
-	this.Network.Bootstrap(tAddr...)
-	for _, addr := range tAddr {
-		exist := this.Network.ConnectionStateExists(addr)
-		if !exist {
-			return fmt.Errorf("[P2P connect] bootstrap addr:%s error", addr)
-		}
+func (this *Network) Close(tAddr string) error {
+	peer, err := this.P2p.Client(tAddr)
+	if err != nil {
+		log.Error("[P2P Close] close addr: %s error ", tAddr)
+	} else {
+		this.addressForHealthCheck.Delete(tAddr)
+		peer.Close()
 	}
 	return nil
 }
 
 // Send send msg to peer asyncnously
 // peer can be addr(string) or client(*network.peerClient)
-func (this *Network) Send(msg proto.Message, peer interface{}) error {
-	client, err := this.loadClient(peer)
-	if err != nil {
-		return err
+func (this *Network) Send(msg proto.Message, toAddr string) error {
+	if _, ok := this.ActivePeers.Load(toAddr); !ok {
+		return fmt.Errorf("can not send to inactive peer %s", toAddr)
 	}
-	return client.Tell(context.Background(), msg)
+	signed, err := this.P2p.PrepareMessage(context.Background(), msg)
+	if err != nil {
+		return fmt.Errorf("failed to sign message")
+	}
+	err = this.P2p.Write(toAddr, signed)
+	if err != nil {
+		return fmt.Errorf("failed to send message to %s", toAddr)
+	}
+	return nil
+}
+func (this *Network) ListenAddr() string {
+	return this.listenAddr
 }
 
-// Request. send msg to peer and wait for response synchronously
-func (this *Network) Request(msg proto.Message, peer interface{}, timeout uint64) (proto.Message, error) {
-	client, err := this.loadClient(peer)
-	if err != nil {
-		return nil, err
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
-	defer cancel()
-	res, err := client.Request(ctx, msg)
-	if err != nil {
-		return nil, err
-	}
-	return res, nil
+func (this *Network) PublicAddr() string {
+	return this.P2p.ID.Address
 }
 
-func (this *Network) BroadCast(ctx context.Context, message proto.Message) error {
-	this.Broadcast(ctx, message)
+func (this *Network) GetPeersIfExist() error {
+	this.P2p.EachPeer(func(client *network.PeerClient) bool {
+		this.peerAddrs = append(this.peerAddrs, client.Address)
+		return true
+	})
 	return nil
 }
 
@@ -197,40 +268,8 @@ func (this *Network) GetPID() *actor.PID {
 	return this.pid
 }
 
-func (this *Network) loadClient(peer interface{}) (*network.PeerClient, error) {
-	addr, ok := peer.(string)
-	if ok {
-		client, err := this.Network.Client(addr)
-		if err != nil {
-			return nil, err
-		}
-		if client == nil {
-			return nil, errors.New("client is nil")
-		}
-		return client, nil
-	}
-	client, ok := peer.(*network.PeerClient)
-	if !ok || client == nil {
-		return nil, errors.New("invalid peer type")
-	}
-	return client, nil
-}
-
-func (this *Network) ConnState(address string) (*network.ConnState, bool) {
-	return this.ConnectionState(address)
-}
-
-func (this *Network) ConnStateExists(address string) (*network.ConnState, bool) {
-	return this.ConnStateExists(address)
-}
-
-func (this *Network) CompletNet() {
-	//common.ListeningCh=make(chan struct{})
-	close(common.ListeningCh)
-}
-
 func (this *Network) PeerStateChange(fn func(*keepalive.PeerStateEvent)) {
-	ka, reg := this.Network.Component(keepalive.ComponentID)
+	ka, reg := this.P2p.Component(keepalive.ComponentID)
 	if !reg {
 		log.Error("keepalive component do not reg")
 		return
@@ -247,4 +286,81 @@ func (this *Network) PeerStateChange(fn func(*keepalive.PeerStateEvent)) {
 
 		}
 	}
+}
+func (this *Network) syncPeerState(state *keepalive.PeerStateEvent) {
+	// var nodeNetworkState string
+	if state.State == keepalive.PEER_REACHABLE {
+		log.Debugf("[syncPeerState] addr: %s state: NetworkReachable\n", state.Address)
+		this.ActivePeers.LoadOrStore(state.Address, struct{}{})
+		// nodeNetworkState = transfer.NetworkReachable
+	} else {
+		this.ActivePeers.Delete(state.Address)
+		log.Debugf("[syncPeerState] addr: %s state: NetworkUnreachable\n", state.Address)
+		// nodeNetworkState = transfer.NetworkUnreachable
+	}
+	// act.SetNodeNetworkState(state.Address, nodeNetworkState)
+}
+
+//P2P network msg receive. torrent msg, reg msg, unReg msg
+func (this *Network) Receive(message proto.Message, from string) error {
+	log.Info("[P2pNetwork] Receive msgBus is accepting for syncNet messages ")
+	switch msg := message.(type) {
+	case *messages.Processed:
+		act.OnBusinessMessage(message, from)
+	case *messages.Delivered:
+		act.OnBusinessMessage(message, from)
+	case *messages.SecretRequest:
+		act.OnBusinessMessage(message, from)
+	case *messages.RevealSecret:
+		act.OnBusinessMessage(message, from)
+	case *messages.Secret:
+		act.OnBusinessMessage(message, from)
+	case *messages.DirectTransfer:
+		act.OnBusinessMessage(message, from)
+	case *messages.LockedTransfer:
+		act.OnBusinessMessage(message, from)
+	case *messages.RefundTransfer:
+		act.OnBusinessMessage(message, from)
+	case *messages.LockExpired:
+		act.OnBusinessMessage(message, from)
+	case *messages.WithdrawRequest:
+		act.OnBusinessMessage(message, from)
+	case *messages.Withdraw:
+		act.OnBusinessMessage(message, from)
+	case *messages.CooperativeSettleRequest:
+		act.OnBusinessMessage(message, from)
+	case *messages.CooperativeSettle:
+		act.OnBusinessMessage(message, from)
+	case *pm.Torrent:
+		log.Errorf("[MSB Receive] receive from peer:%s, nil Torrent message", from)
+	case *pm.Registry:
+		log.Errorf("[MSB Receive] receive from peer:%s, nil Reg message", from)
+		this.OnBusinessMessage(message, from)
+	case *pm.UnRegistry:
+		log.Errorf("[MSB Receive] receive from peer:%s, nil Unreg message", from)
+
+	default:
+		log.Errorf("[MSB Receive] unknown message type:%s", msg.String())
+
+	}
+	return nil
+}
+
+func (this *Network) CompletNet() {
+	//common.ListeningCh=make(chan struct{})
+	close(common.ListeningCh)
+}
+
+func (this *Network) OnBusinessMessage(message proto.Message, from string) error {
+	log.Errorf("[OnBusinessMessage] receive from peer:%s, nil Reg message", from)
+	switch msg := message.(type) {
+	case *pm.Registry:
+		future := this.GetPID().RequestFuture(&pm.Registry{WalletAddr: msg.WalletAddr, HostPort: msg.HostPort},
+			constants.REQ_TIMEOUT*time.Second)
+		if _, err := future.Result(); err != nil {
+			log.Error("[OnBusinessMessage] error: ", err)
+			return err
+		}
+	}
+	return nil
 }

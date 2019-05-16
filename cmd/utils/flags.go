@@ -1,8 +1,9 @@
 package utils
 
 import (
-	"github.com/urfave/cli"
 	"strings"
+
+	"github.com/urfave/cli"
 )
 
 var (

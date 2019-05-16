@@ -37,6 +37,7 @@ func (ns *NetServer) Run() error {
 func (ns *NetServer) startTrackerListening() error {
 	pc, err := net.ListenPacket("udp", fmt.Sprintf(":%d", config.DefaultConfig.TrackerConfig.UdpPort))
 	if err != nil {
+		log.Errorf("start tracker service net.ListenPacket err:%s", err)
 		return err
 	}
 	if pc != nil {

@@ -22,13 +22,14 @@ package rpc
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/saveio/themis/common/log"
-	berr "github.com/saveio/themis/http/base/error"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
 	"sync"
+
+	"github.com/saveio/themis/common/log"
+	berr "github.com/saveio/themis/http/base/error"
 )
 
 func init() {
@@ -134,7 +135,7 @@ func Handle(w http.ResponseWriter, r *http.Request) {
 		w.Write(data)
 	} else {
 		//if the function does not exist
-		log.Warn("HTTP JSON RPC Handle - No function to call for ", request["method"])
+		log.Warnf("HTTP JSON RPC Handle - No function to call for %s", request["method"])
 		data, err := json.Marshal(map[string]interface{}{
 			"error": berr.INVALID_METHOD,
 			"result": map[string]interface{}{

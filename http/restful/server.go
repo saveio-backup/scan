@@ -20,7 +20,7 @@
 package restful
 
 import (
-	"github.com/saveio/themis/http/restful/restful"
+	"github.com/saveio/scan/http/restful/restful"
 )
 
 //start restful

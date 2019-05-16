@@ -22,7 +22,14 @@ import (
 	"bytes"
 	"encoding/hex"
 
+	"github.com/saveio/scan/channel"
+	"github.com/saveio/scan/dns"
+	"github.com/saveio/scan/tracker"
+
 	"fmt"
+
+	httpComm "github.com/saveio/scan/http/base/common"
+	berr "github.com/saveio/scan/http/base/error"
 	"github.com/saveio/themis/common"
 	"github.com/saveio/themis/common/config"
 	"github.com/saveio/themis/common/log"
@@ -32,9 +39,6 @@ import (
 	ontErrors "github.com/saveio/themis/errors"
 	bactor "github.com/saveio/themis/http/base/actor"
 	bcomn "github.com/saveio/themis/http/base/common"
-	httpComm "github.com/saveio/scan/http/base/common"
-	berr "github.com/saveio/scan/http/base/error"
-	"github.com/saveio/scan/tracker"
 )
 
 //get best block hash
@@ -583,38 +587,19 @@ func EndPointReg(params []interface{}) map[string]interface{} {
 	default:
 		return responsePack(berr.INVALID_PARAMS, "")
 	}
-	/*
-		endPoint := httpComm.EndPointRsp{
-			Wallet: wAddr,
-			Host:   host,
-		}
-		em, _ := json.Marshal(endPoint)
-		switch (params[2]).(type) {
-		case []byte:
-			sigData = params[2].([]byte)
-		default:
-			return responsePack(berr.INVALID_PARAMS, "")
-		}
-		switch (params[3]).(type) {
-		case *account.Account:
-			acc = params[3].(*account.Account)
-		default:
-			return responsePack(berr.INVALID_PARAMS, "")
-		}
-		if err := signature.Verify(acc.PublicKey, em, sigData); err != nil {
-			return responsePack(berr.SIG_VERIFY_ERROR, "")
-		}
-	*/
-	endPoint := httpComm.EndPointRsp{
-		Wallet: wAddr,
-		Host:   host,
+
+	if wAddr == "" || host == "" {
+		return responsePack(berr.INVALID_PARAMS, "")
 	}
 
 	if err := tracker.EndPointRegistry(wAddr, host); err != nil {
 		log.Errorf("EndPointRegistry error:%s\n", err)
 		return responsePack(berr.INTERNAL_ERROR, "")
 	}
-	return responseSuccess(&endPoint)
+	return responseSuccess(&httpComm.EndPointRsp{
+		Wallet: wAddr,
+		Host:   host,
+	})
 }
 
 func EndPointUpdate(params []interface{}) map[string]interface{} {
@@ -630,16 +615,24 @@ func EndPointUpdate(params []interface{}) map[string]interface{} {
 	default:
 		return responsePack(berr.INVALID_PARAMS, "")
 	}
-	endPoint := httpComm.EndPointRsp{
-		Wallet: wAddr,
-		Host:   host,
+
+	if wAddr == "" || host == "" {
+		return responsePack(berr.INVALID_PARAMS, "")
 	}
 
-	if err := tracker.EndPointRegUpdate(wAddr, host); err != nil {
+	err := tracker.EndPointRegUpdate(wAddr, host)
+	if err != nil && err.Error() == "not exist" {
+		return responsePack(berr.ENDPOINT_NOT_FOUND, "")
+	} else if err != nil {
 		log.Errorf("EndPointUpdate error:%s\n", err)
 		return responsePack(berr.INTERNAL_ERROR, "")
 	}
-	return responseSuccess(&endPoint)
+	log.Debugf("rpc/interface/endpointupdate wAddr: %s, host:%s\n", wAddr, host)
+
+	return responseSuccess(&httpComm.EndPointRsp{
+		Wallet: wAddr,
+		Host:   host,
+	})
 }
 
 func EndPointUnReg(params []interface{}) map[string]interface{} {
@@ -649,15 +642,18 @@ func EndPointUnReg(params []interface{}) map[string]interface{} {
 	default:
 		return responsePack(berr.INVALID_PARAMS, "")
 	}
-	endPoint := httpComm.EndPointRsp{
-		Wallet: wAddr,
-	}
 
-	if err := tracker.EndPointUnRegistry(wAddr); err != nil {
+	err := tracker.EndPointUnRegistry(wAddr)
+	if err != nil && err.Error() == "not exist" {
+		return responsePack(berr.ENDPOINT_NOT_FOUND, "")
+	} else if err != nil {
 		log.Errorf("EndPointUnRegistry error:%s\n", err)
 		return responsePack(berr.INTERNAL_ERROR, "")
 	}
-	return responseSuccess(&endPoint)
+
+	return responseSuccess(&httpComm.EndPointRsp{
+		Wallet: wAddr,
+	})
 }
 
 func EndPointReq(params []interface{}) map[string]interface{} {
@@ -669,14 +665,437 @@ func EndPointReq(params []interface{}) map[string]interface{} {
 	}
 
 	host, err := tracker.EndPointQuery(wAddr)
-	if err != nil {
-		log.Errorf("EndPointUnRegistry error:%s\n", err)
+	if err != nil && err.Error() == "not found" {
+		return responsePack(berr.ENDPOINT_NOT_FOUND, "")
+	} else if err != nil {
+		log.Errorf("EndPointReq error:%s\n", err)
 		return responsePack(berr.INTERNAL_ERROR, "")
 	}
-	fmt.Printf("rpc/interface/endpointreq host:%s\n", host)
-	endPoint := httpComm.EndPointRsp{
+	log.Debugf("rpc/interface/endpointreq host:%s\n", host)
+
+	return responseSuccess(&httpComm.EndPointRsp{
 		Wallet: wAddr,
 		Host:   host,
+	})
+}
+
+func RegisterDns(params []interface{}) map[string]interface{} {
+	var ipstr string
+	var portstr string
+	var initDeposituint64 uint64
+	switch (params[0]).(type) {
+	case string:
+		ipstr = params[0].(string)
+	default:
+		return responsePack(berr.INVALID_PARAMS, "")
 	}
-	return responseSuccess(&endPoint)
+
+	switch (params[1]).(type) {
+	case string:
+		portstr = params[1].(string)
+	default:
+		return responsePack(berr.INVALID_PARAMS, "")
+	}
+
+	switch (params[2]).(type) {
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+		initDeposituint64 = uint64(params[2].(uint64))
+	case float32, float64:
+		// may be bugs
+		initDeposituint64 = uint64(params[2].(float64))
+	default:
+		return responsePack(berr.INVALID_PARAMS, "")
+	}
+
+	ret, err := dns.GlbDNSSvr.DNSNodeReg(ipstr, portstr, initDeposituint64)
+	if err != nil {
+		log.Errorf("RegisterDns error: %s", err)
+		return responsePack(berr.INTERNAL_ERROR, err.Error())
+	}
+	fmt.Printf("rpc/interface/registerdns ip:%s port:%s initDeposit:%d\n", ipstr, portstr, initDeposituint64)
+	dspRsp := httpComm.DnsRsp{
+		Tx: hex.EncodeToString(common.ToArrayReverse(ret.ToArray())),
+	}
+	return responseSuccess(&dspRsp)
+}
+
+func UnregisterDns(params []interface{}) map[string]interface{} {
+	ret, err := dns.GlbDNSSvr.DNSNodeUnreg()
+	if err != nil {
+		log.Errorf("UnRegisterDns error: %s", err)
+		return responsePack(berr.INTERNAL_ERROR, err.Error())
+	}
+	fmt.Printf("rpc/interface/unregisterdns %s", "")
+	dspRsp := httpComm.DnsRsp{
+		Tx: hex.EncodeToString(common.ToArrayReverse(ret.ToArray())),
+	}
+	return responseSuccess(&dspRsp)
+}
+
+func QuitDns(params []interface{}) map[string]interface{} {
+	ret, err := dns.GlbDNSSvr.DNSNodeQuit()
+	if err != nil {
+		log.Errorf("QuitDns error: %s", err)
+		return responsePack(berr.INTERNAL_ERROR, err.Error())
+	}
+	fmt.Printf("rpc/interface/quitdns %s", "")
+	dspRsp := httpComm.DnsRsp{
+		Tx: hex.EncodeToString(common.ToArrayReverse(ret.ToArray())),
+	}
+	return responseSuccess(&dspRsp)
+}
+
+func AddDnsPos(params []interface{}) map[string]interface{} {
+	var deltaDeposit uint64
+	switch (params[0]).(type) {
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+		deltaDeposit = uint64(params[0].(uint64))
+	case float32, float64:
+		// may be bugs
+		deltaDeposit = uint64(params[0].(float64))
+	default:
+		return responsePack(berr.INVALID_PARAMS, "")
+	}
+
+	ret, err := dns.GlbDNSSvr.DNSAddPos(deltaDeposit)
+	if err != nil {
+		log.Errorf("AddDnsPos error: %s", err)
+		return responsePack(berr.INTERNAL_ERROR, err.Error())
+	}
+	fmt.Printf("rpc/interface/adddnspos deltaDeposit:%d\n", deltaDeposit)
+	dspRsp := httpComm.DnsRsp{
+		Tx: hex.EncodeToString(common.ToArrayReverse(ret.ToArray())),
+	}
+	return responseSuccess(&dspRsp)
+}
+
+func ReduceDnsPos(params []interface{}) map[string]interface{} {
+	var deltaDeposit uint64
+	switch (params[0]).(type) {
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+		deltaDeposit = uint64(params[0].(uint64))
+	case float32, float64:
+		// may be bugs
+		deltaDeposit = uint64(params[0].(float64))
+	default:
+		return responsePack(berr.INVALID_PARAMS, "")
+	}
+
+	ret, err := dns.GlbDNSSvr.DNSReducePos(deltaDeposit)
+	if err != nil {
+		log.Errorf("AddDnsPos error: %s", err)
+		return responsePack(berr.INTERNAL_ERROR, err.Error())
+	}
+	fmt.Printf("rpc/interface/reducednspos deltaDeposit:%d\n", deltaDeposit)
+	dspRsp := httpComm.DnsRsp{
+		Tx: hex.EncodeToString(common.ToArrayReverse(ret.ToArray())),
+	}
+	return responseSuccess(&dspRsp)
+}
+
+func GetRegisterDnsInfo(params []interface{}) map[string]interface{} {
+	var dnsAll bool
+	var peerPubkey string
+	switch (params[0]).(type) {
+	case bool:
+		dnsAll = params[0].(bool)
+	default:
+		return responsePack(berr.INVALID_PARAMS, "")
+	}
+	switch (params[1]).(type) {
+	case string:
+		peerPubkey = params[1].(string)
+	default:
+		return responsePack(berr.INVALID_PARAMS, "")
+	}
+
+	if dnsAll {
+		m, err := dns.GlbDNSSvr.GetDnsPeerPoolMap()
+		if err != nil {
+			log.Errorf("Get all dns register info err:%s\n", err)
+			return responsePack(berr.INTERNAL_ERROR, err.Error())
+		}
+
+		if _, ok := m.PeerPoolMap[""]; ok {
+			delete(m.PeerPoolMap, "")
+		}
+
+		fmt.Println("rpc/interface/getregisterdnsinfo getdnspeeerpoolmap")
+		dnsPPRsp := httpComm.DnsPeerPoolRsp{
+			PeerPoolMap:  m.PeerPoolMap,
+			PeerPoolItem: nil,
+		}
+		return responseSuccess(&dnsPPRsp)
+	} else if peerPubkey != "" {
+		item, err := dns.GlbDNSSvr.GetDnsPeerPoolItem(peerPubkey)
+		if err != nil {
+			log.Errorf("Get all dns register info err:%s\n", err)
+			return responsePack(berr.INTERNAL_ERROR, err.Error())
+		}
+		dnsPPRsp := httpComm.DnsPeerPoolRsp{
+			PeerPoolMap:  nil,
+			PeerPoolItem: item,
+		}
+		return responseSuccess(&dnsPPRsp)
+	} else {
+		return responsePack(berr.INVALID_PARAMS, "")
+	}
+}
+
+func GetDnsHostInfo(params []interface{}) map[string]interface{} {
+	var dnsAll bool
+	var walletAddr string
+	switch (params[0]).(type) {
+	case bool:
+		dnsAll = params[0].(bool)
+	default:
+		return responsePack(berr.INVALID_PARAMS, "")
+	}
+	switch (params[1]).(type) {
+	case string:
+		walletAddr = params[1].(string)
+	default:
+		return responsePack(berr.INVALID_PARAMS, "")
+	}
+
+	if dnsAll {
+		m, err := dns.GlbDNSSvr.GetAllDnsNodes()
+		if err != nil {
+			log.Errorf("Get all dns register info err:%s\n", err)
+			return responsePack(berr.INTERNAL_ERROR, err.Error())
+		}
+
+		if _, ok := m[""]; ok {
+			delete(m, "")
+		}
+
+		fmt.Println("rpc/interface/getdnshostinfo GetAllDnsNodes")
+		dnsNIRsp := httpComm.DnsNodeInfoRsp{
+			NodeInfoMap:  m,
+			NodeInfoItem: nil,
+		}
+		return responseSuccess(&dnsNIRsp)
+	} else if walletAddr != "" {
+		addr, err := common.AddressFromBase58(walletAddr)
+		if err != nil {
+			log.Errorf("Get dns host info err:%s\n", err)
+			return responsePack(berr.INTERNAL_ERROR, err.Error())
+		}
+
+		item, err := dns.GlbDNSSvr.GetDnsNodeByAddr(addr)
+		if err != nil {
+			log.Errorf("Get all dns register info err:%s\n", err)
+			return responsePack(berr.INTERNAL_ERROR, err.Error())
+		}
+
+		fmt.Println("rpc/interface/getdnshostinfo GetDnsNodeByAddr")
+		dnsNIRsp := httpComm.DnsNodeInfoRsp{
+			NodeInfoMap:  nil,
+			NodeInfoItem: item,
+		}
+		return responseSuccess(&dnsNIRsp)
+	} else {
+		return responsePack(berr.INVALID_PARAMS, "")
+	}
+}
+
+func OpenChannel(params []interface{}) map[string]interface{} {
+	var partnerAddrstr string
+	switch (params[0]).(type) {
+	case string:
+		partnerAddrstr = params[0].(string)
+	default:
+		return responsePack(berr.INVALID_PARAMS, "")
+	}
+
+	id, err := channel.GlbChannelSvr.OpenChannel(partnerAddrstr)
+	if err != nil {
+		log.Errorf("OpenChannel error: %s", err)
+		return responsePack(berr.INTERNAL_ERROR, err.Error())
+	}
+	fmt.Printf("rpc/interface/openchannel partneraddr:%s\n", partnerAddrstr)
+	channelRsp := httpComm.ChannelRsp{
+		Id: uint32(id),
+	}
+	return responseSuccess(&channelRsp)
+}
+
+func DepositToChannel(params []interface{}) map[string]interface{} {
+	var partnerAddrstr string
+	var totalDeposituint64 uint64
+	switch (params[0]).(type) {
+	case string:
+		partnerAddrstr = params[0].(string)
+	default:
+		return responsePack(berr.INVALID_PARAMS, "")
+	}
+
+	switch (params[1]).(type) {
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+		totalDeposituint64 = params[1].(uint64)
+	case float32, float64:
+		// may be bugs
+		totalDeposituint64 = uint64(params[1].(float64))
+		fmt.Println(totalDeposituint64)
+	default:
+		return responsePack(berr.INVALID_PARAMS, "")
+	}
+
+	err := channel.GlbChannelSvr.DepositToChannel(partnerAddrstr, totalDeposituint64)
+	if err != nil {
+		log.Errorf("DepositToChannel error: %s", err)
+		return responsePack(berr.INTERNAL_ERROR, err.Error())
+	}
+	fmt.Printf("rpc/interface/depositchannel partneraddr:%s totaldeposit:%d \n", partnerAddrstr, totalDeposituint64)
+	return responseSuccess(&httpComm.SuccessRsp{})
+}
+
+func TransferToSomebody(params []interface{}) map[string]interface{} {
+	var partnerAddrstr string
+	var amountuint64 uint64
+	var paymentIduint int32
+	switch (params[0]).(type) {
+	case string:
+		partnerAddrstr = params[0].(string)
+	default:
+		return responsePack(berr.INVALID_PARAMS, "")
+	}
+
+	switch (params[1]).(type) {
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+		amountuint64 = params[1].(uint64)
+	case float32, float64:
+		// may be bugs
+		amountuint64 = uint64(params[1].(float64))
+	default:
+		return responsePack(berr.INVALID_PARAMS, "")
+	}
+
+	switch (params[2]).(type) {
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+		paymentIduint = int32(params[2].(uint64))
+	case float32, float64:
+		// may be bugs
+		paymentIduint = int32(params[2].(float64))
+	default:
+		return responsePack(berr.INVALID_PARAMS, "")
+	}
+
+	host, err := channel.GlbChannelSvr.QueryHostInfo(partnerAddrstr)
+	if host == "" {
+		log.Errorf("WithdrawChannel hostinfo is null, error: %s", err)
+		return responsePack(berr.CHANNEL_TARGET_HOST_INFO_NOT_FOUND, "")
+	}
+
+	err = channel.GlbChannelSvr.Transfer(paymentIduint, amountuint64, partnerAddrstr)
+	if err != nil {
+		log.Errorf("TransferToSomebody error: %s", err)
+		return responsePack(berr.INTERNAL_ERROR, err.Error())
+	}
+	fmt.Printf("rpc/interface/transferchannel partneraddr:%s amount:%d paymentid:%d\n", partnerAddrstr, amountuint64, paymentIduint)
+	return responseSuccess(&httpComm.SuccessRsp{})
+}
+
+func WithdrawChannel(params []interface{}) map[string]interface{} {
+	var partnerAddrstr string
+	var amountuint64 uint64
+	switch (params[0]).(type) {
+	case string:
+		partnerAddrstr = params[0].(string)
+	default:
+		return responsePack(berr.INVALID_PARAMS, "")
+	}
+
+	switch (params[1]).(type) {
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+		amountuint64 = params[1].(uint64)
+	case float32, float64:
+		// may be bugs
+		amountuint64 = uint64(params[1].(float64))
+	default:
+		return responsePack(berr.INVALID_PARAMS, "")
+	}
+
+	host, err := channel.GlbChannelSvr.QueryHostInfo(partnerAddrstr)
+	if host == "" {
+		log.Errorf("WithdrawChannel hostinfo is null, error: %s", err)
+		return responsePack(berr.CHANNEL_TARGET_HOST_INFO_NOT_FOUND, "")
+	}
+
+	err = channel.GlbChannelSvr.ChannelWithdraw(partnerAddrstr, amountuint64)
+	if err != nil {
+		log.Errorf("WithdrawChannel error: %s", err)
+		return responsePack(berr.INTERNAL_ERROR, err.Error())
+	}
+	fmt.Printf("rpc/interface/withdrawchannel partneraddr:%s amount:%d \n", partnerAddrstr, amountuint64)
+	return responseSuccess(&httpComm.SuccessRsp{})
+}
+
+func GetAllChannels(params []interface{}) map[string]interface{} {
+	channelInfos := channel.GlbChannelSvr.GetAllChannels()
+	return responseSuccess(channelInfos)
+}
+
+func GetCurrentBalance(params []interface{}) map[string]interface{} {
+	var partnerAddrstr string
+	switch (params[0]).(type) {
+	case string:
+		partnerAddrstr = params[0].(string)
+	default:
+		return responsePack(berr.INVALID_PARAMS, "")
+	}
+
+	balance, err := channel.GlbChannelSvr.GetCurrentBalance(partnerAddrstr)
+	if err != nil {
+		log.Errorf("GetCurrentBalance error: %s", err)
+		return responsePack(berr.INTERNAL_ERROR, err.Error())
+	}
+	fmt.Printf("rpc/interface/getcurrentbalance partneraddr:%s\n", partnerAddrstr)
+	channelRsp := httpComm.ChannelTotalDepositBalanceRsp{
+		TotalDepositBalance: balance,
+	}
+	return responseSuccess(&channelRsp)
+}
+
+func QueryChannelDeposit(params []interface{}) map[string]interface{} {
+	var partnerAddrstr string
+	switch (params[0]).(type) {
+	case string:
+		partnerAddrstr = params[0].(string)
+	default:
+		return responsePack(berr.INVALID_PARAMS, "")
+	}
+
+	balance, err := channel.GlbChannelSvr.QuerySpecialChannelDeposit(partnerAddrstr)
+	if err != nil {
+		log.Errorf("QueryChannelDeposit error: %s", err)
+		return responsePack(berr.INTERNAL_ERROR, err.Error())
+	}
+	fmt.Printf("rpc/interface/openchanneldeposit partneraddr:%s\n", partnerAddrstr)
+	curBalanceRsp := httpComm.ChannelCurrentBalanceRsp{
+		CurrentBalance: balance,
+	}
+	return responseSuccess(&curBalanceRsp)
+}
+
+func QueryHostInfo(params []interface{}) map[string]interface{} {
+	var partnerAddrstr string
+	switch (params[0]).(type) {
+	case string:
+		partnerAddrstr = params[0].(string)
+	default:
+		return responsePack(berr.INVALID_PARAMS, "")
+	}
+
+	host, err := channel.GlbChannelSvr.QueryHostInfo(partnerAddrstr)
+	if err != nil {
+		log.Errorf("QueryHostInfo error: %s", err)
+		return responsePack(berr.INTERNAL_ERROR, err.Error())
+	}
+	fmt.Printf("rpc/interface/queryhostinfo partneraddr:%s\n", partnerAddrstr)
+	endpointRsp := httpComm.EndPointRsp{
+		Wallet: partnerAddrstr,
+		Host:   host,
+	}
+	return responseSuccess(&endpointRsp)
 }

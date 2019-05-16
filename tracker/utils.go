@@ -1,8 +1,3 @@
-/**
- * Description:
- * Author: LiYong Zhang
- * Create: 2019-04-08
- */
 package tracker
 
 var ipAddr [4]byte

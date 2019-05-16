@@ -1,8 +1,3 @@
-/**
- * Description:
- * Author: LiYong Zhang
- * Create: 2019-03-13
- */
 package common
 
 const (

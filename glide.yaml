@@ -13,13 +13,13 @@ import:
 - package: github.com/golang/protobuf
   subpackages:
   - proto
-- package: github.com/saveio/themis
+- package: github.com/saveio/themis/
   subpackages:
   - common
   - common/log
   - core/store/common
   - errors
-- package: github.com/saveio/carrier
+- package: github.com/saveio/carrier/
   subpackages:
   - crypto/ed25519
   - network

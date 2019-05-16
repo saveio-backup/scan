@@ -5,13 +5,21 @@ import (
 	"os"
 	"runtime"
 
+	"github.com/saveio/scan/channel"
+	"github.com/saveio/scan/dns"
+	"github.com/saveio/scan/tracker"
+
 	chaincmd "github.com/saveio/themis/cmd"
 	chainutils "github.com/saveio/themis/cmd/utils"
 	"github.com/saveio/themis/common/log"
 
-	chain "github.com/saveio/themis/start"
 	"github.com/saveio/scan/cmd"
+	chain "github.com/saveio/themis/start"
+
 	//ccom "github.com/saveio/scan/cmd/common"
+	"time"
+
+	"github.com/ontio/ontology-eventbus/actor"
 	ccom "github.com/saveio/scan/cmd/common"
 	"github.com/saveio/scan/cmd/utils"
 	"github.com/saveio/scan/common"
@@ -24,14 +32,12 @@ import (
 	"github.com/saveio/scan/network/actor/recv"
 	"github.com/saveio/scan/storage"
 	tcomm "github.com/saveio/scan/tracker/common"
-	"github.com/ontio/ontology-eventbus/actor"
 	"github.com/urfave/cli"
-	"time"
+
 	//"github.com/saveio/themis-go-sdk/wallet"
 	//"github.com/saveio/themis-go-sdk/wallet"
 	//"github.com/saveio/scan/tracker"
 	"github.com/saveio/themis/errors"
-	"github.com/saveio/scan/tracker"
 )
 
 func initAPP() *cli.App {
@@ -54,6 +60,8 @@ func initAPP() *cli.App {
 		chaincmd.SendTxCommand,
 		chaincmd.ShowTxCommand,
 		cmd.EndPointCommand,
+		cmd.ChannelCommand,
+		cmd.DNSCommand,
 	}
 	app.Flags = []cli.Flag{
 		//common setting
@@ -130,8 +138,8 @@ func initAPP() *cli.App {
 		chainutils.RestfulEnableFlag,
 		chainutils.RestfulPortFlag,
 		//ws setting
-		//chainutils.WsEnabledFlag,
-		//chainutils.WsPortFlag,
+		// chainutils.WsEnabledFlag,
+		chainutils.WsPortFlag,
 	}
 	app.Before = func(context *cli.Context) error {
 		runtime.GOMAXPROCS(runtime.NumCPU())
@@ -144,18 +152,24 @@ func initAPP() *cli.App {
 var wAddr string
 
 func main() {
+	fmt.Print(os.Args)
 	if err := initAPP().Run(os.Args); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
+
 func startDDNS(ctx *cli.Context) {
+	config.DefaultConfig = config.GenDefConfig()
+	log.Info("\n------------------\n/> Chain starting \n------------------")
 	//chainnode
-	//err := startChain(ctx)
-	//if err != nil {
-	//	log.Error("Chain init error")
-	//	return
-	//}
+	err := startChain(ctx)
+	if err != nil {
+		log.Error("Chain init error")
+		return
+	}
+	log.Info("Chain start success")
+	log.Info("\n----------------------------------------\n/> Dns Tracker Channel Service starting \n----------------------------------------")
 	startTracker(ctx)
 	common.WaitToExit()
 }
@@ -163,7 +177,7 @@ func startDDNS(ctx *cli.Context) {
 func startTracker(ctx *cli.Context) {
 	initLog(ctx)
 	cmd.SetDDNSConfig(ctx)
-	p2pSvr, p2pPid, err := initP2P()
+	p2pSvr, p2pPid, err := initP2P(ctx)
 	if err != nil {
 		log.Errorf("initP2PNode error:%s", err)
 		return
@@ -175,26 +189,24 @@ func startTracker(ctx *cli.Context) {
 		log.Errorf("run ddns server error:%s", err)
 		return
 	}
-	recv.P2pPid = p2pPid
+
 	network.DDNSP2P = p2pSvr
-	storage.TDB, err = initTrackerDB(config.DEFAULT_DB_PATH)
+	storage.TDB, err = initTrackerDB(config.DefaultConfig.CommonConfig.CommonDBPath)
 	if err != nil {
 		log.Fatalf("InitTrackerDB error: %v", err)
 	}
 
-	svr.Tsvr.SetPID(p2pPid)
-	if err = svr.Run(); err != nil {
-		log.Errorf("run ddns server error:%s", err)
-		return
-	}
 	err = initRpc(ctx)
 	if err != nil {
-		log.Errorf("initRpc error:%s", err)
+		log.Errorf("initTrackerRpc error:%s", err)
 		return
 	}
 	initRestful(ctx)
-	initEndPointReg(ctx, p2pSvr)
+	initChannelService(ctx, p2pSvr.GetPID())
+	initDnsService(ctx)
+	// initEndPointReg(ctx, p2pSvr)
 	log.Info("Tracker start success")
+	log.Info("\n--------------\n/> Setup Done \n--------------")
 }
 
 func initLog(ctx *cli.Context) {
@@ -213,19 +225,47 @@ func initTrackerDB(path string) (*storage.LevelDBStore, error) {
 	return db, nil
 }
 
-func initP2P() (*network.Network, *actor.PID, error) {
+func initP2P(ctx *cli.Context) (*network.Network, *actor.PID, error) {
 	log.Info("P2P is init...")
-	p2p := network.NewP2P()
-	go p2p.Start()
-	pid, err := recv.NewP2PActor(p2p)
-	BlockUntilComplete()
+	// wallet, err := ccom.OpenWallet(ctx)
+	// if err != nil {
+	// 	return nil, nil, err
+	// }
+	// pwd := []byte(config.DefaultConfig.CommonConfig.WalletPwd)
+
+	// account, err := wallet.GetDefaultAccount(pwd)
+	// if err != nil {
+	// 	log.Errorf("initP2P GetDefaultAccount error:%s\n", err)
+	// 	return nil, nil, err
+	// }
+
+	p2pserver := network.NewP2P()
+	// bPrivate := keypair.SerializePrivateKey(account.PrivKey())
+	// bPub := keypair.SerializePublicKey(account.PubKey())
+	// p2pserver.Keys = &crypto.KeyPair{
+	// 	PrivateKey: bPrivate,
+	// 	PublicKey:  bPub,
+	// }
+	go p2pserver.Start(fmt.Sprintf("tcp://127.0.0.1:%d", config.DefaultConfig.CommonConfig.P2PNATPort))
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	pid, err := recv.NewP2PActor(p2pserver)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// p2p := network.NewP2P()
+	// go p2p.Start()
+	// pid, err := recv.NewP2PActor(p2p)
+	// BlockUntilComplete()
 	if err != nil {
 		return nil, nil, fmt.Errorf("p2pActor init error %s", err)
 	}
-	p2p.SetPID(pid)
+	p2pserver.SetPID(pid)
 	log.Infof("PID:%v", pid)
 	log.Info("p2p init success")
-	return p2p, pid, nil
+	return p2pserver, pid, nil
 }
 
 func initRpc(ctx *cli.Context) error {
@@ -248,7 +288,7 @@ func initRpc(ctx *cli.Context) error {
 	case <-time.After(time.Millisecond * 5):
 		flag = true
 	}
-	log.Infof("Rpc init success")
+	log.Infof("Rpc init success jsonrpc")
 	return nil
 }
 
@@ -343,20 +383,20 @@ func startChain(ctx *cli.Context) error {
 	return nil
 }
 
-func initEndPointReg(ctx *cli.Context, p2p *network.Network) error {
+func initEndPointReg(ctx *cli.Context, p2p *network.Network) {
 	client, err := ccom.OpenWallet(ctx)
 	if err != nil {
-		return err
+		log.Error("initEndPointReg OpenWallet error")
 	}
-	pw, err := ccom.GetPasswd(ctx)
-	if err != nil {
-		log.Errorf("regEndPoint GetPasswd error:%s\n", err)
-		return err
-	}
+	// pw, err := ccom.GetPasswd(ctx)
+	// if err != nil {
+	// 	log.Errorf("regEndPoint GetPasswd error:%s\n", err)
+	// 	return err
+	// }
+	pw := []byte(config.DefaultConfig.CommonConfig.WalletPwd)
 	acc, err := client.GetDefaultAccount(pw)
 	if err != nil {
 		log.Errorf("regEndPoint GetDefaultAccount error:%s\n", err)
-		return err
 	}
 	a := acc.Address
 	if ctx.IsSet(utils.GetFlagName(utils.WalletFlag)) {
@@ -364,18 +404,64 @@ func initEndPointReg(ctx *cli.Context, p2p *network.Network) error {
 	} else {
 		wAddr = a.ToBase58()
 	}
-	log.Debugf("ExternalAddr is %s\n", p2p.ExternalAddr)
-	if p2p.ExternalAddr != "" {
-		host := p2p.ExternalAddr
+	log.Infof("ExternalAddr is %s\n", p2p.ListenAddr())
+	if p2p.ListenAddr() != "" {
+		host := p2p.ListenAddr()
 		err = tracker.EndPointRegistry(wAddr, host)
 		if err != nil {
 			log.Errorf("DDNS node EndPointRegistry error:%v", err)
-			return err
 		}
-		return nil
 	} else {
-		return errors.NewErr("DDNS node can not acquire external ip")
+		log.Error("DDNS node can not acquire external ip")
 	}
 	log.Info("initEndPointReg success!")
+}
+
+func initChannelService(ctx *cli.Context, p2pActor *actor.PID) error {
+	wallet, err := ccom.OpenWallet(ctx)
+	if err != nil {
+		return err
+	}
+	pwd := []byte(config.DefaultConfig.CommonConfig.WalletPwd)
+
+	acc, err := wallet.GetDefaultAccount(pwd)
+	if err != nil {
+		log.Errorf("initChannelService GetDefaultAccount error:%s\n", err)
+		return err
+	}
+	channel.GlbChannelSvr, err = channel.NewChannelSvr(acc, p2pActor)
+	if err != nil {
+		return errors.NewErr("initChannelService Failed.")
+	}
+	err = channel.GlbChannelSvr.Start()
+	if err != nil {
+		return err
+	}
+	log.Info("initChannelService success!")
+	return nil
+}
+
+func initDnsService(ctx *cli.Context) error {
+	wallet, err := ccom.OpenWallet(ctx)
+	if err != nil {
+		return err
+	}
+	// pwd, err := ccom.GetPasswd(ctx)
+	// if err != nil {
+	// 	log.Errorf("initGlobalDspService GetPasswd error:%s\n", err)
+	// 	return err
+	// }
+	pwd := []byte(config.DefaultConfig.CommonConfig.WalletPwd)
+
+	acc, err := wallet.GetDefaultAccount(pwd)
+	if err != nil {
+		log.Errorf("initDnsService GetDefaultAccount error:%s\n", err)
+		return err
+	}
+	dns.GlbDNSSvr, err = dns.NewDNSSvr(acc)
+	if err != nil {
+		return errors.NewErr("initDnsService Failed.")
+	}
+	log.Info("initDnsService success!")
 	return nil
 }

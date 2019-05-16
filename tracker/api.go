@@ -2,18 +2,22 @@ package tracker
 
 import (
 	"crypto/rand"
-	//"encoding/binary"
 	"fmt"
-	"github.com/anacrolix/dht/krpc"
-	"github.com/saveio/themis/common/log"
-	"github.com/saveio/themis/crypto/keypair"
-	"github.com/saveio/themis/errors"
-	"github.com/saveio/scan/common"
-	pm "github.com/saveio/scan/messages/protoMessages"
-	"github.com/saveio/scan/network/actor/recv"
-	"github.com/saveio/scan/storage"
-	common2 "github.com/saveio/scan/tracker/common"
+
+	"github.com/saveio/scan/network"
+
+	//"encoding/binary"
+
 	"net"
+
+	"github.com/anacrolix/dht/krpc"
+	"github.com/saveio/scan/channel"
+	"github.com/saveio/scan/common"
+	"github.com/saveio/scan/common/config"
+	pm "github.com/saveio/scan/messages/protoMessages"
+	"github.com/saveio/scan/storage"
+	"github.com/saveio/themis/common/log"
+	"github.com/saveio/themis/errors"
 )
 
 // CompleteTorrent Complete make torrent
@@ -64,10 +68,7 @@ func GetTorrentPeers(infoHash common.MetaInfoHash, trackerUrl string, numWant in
 }
 
 // ---------Tracker client relative action------------
-func RegEndPoint(trackerUrl string, sigData []byte, pubKey keypair.PublicKey, walletAddr [20]byte, nodeIP net.IP, port uint16) error {
-	if err := common2.ParamVerify(trackerUrl, sigData, pubKey, walletAddr, nodeIP, port); err != nil {
-		return err
-	}
+func RegEndPoint(trackerUrl string, walletAddr [20]byte, nodeIP net.IP, port uint16) error {
 	id := common.PeerID{}
 	rand.Read(id[:])
 	announce := Announce{
@@ -89,10 +90,7 @@ func RegEndPoint(trackerUrl string, sigData []byte, pubKey keypair.PublicKey, wa
 	return nil
 }
 
-func UnRegEndPoint(trackerUrl string, sigData []byte, pubKey keypair.PublicKey, walletAddr [20]byte) error {
-	if err := common2.ParamVerify(trackerUrl, sigData, pubKey, walletAddr, nil, 0); err != nil {
-		return err
-	}
+func UnRegEndPoint(trackerUrl string, walletAddr [20]byte) error {
 	id := common.PeerID{}
 	rand.Read(id[:])
 	announce := Announce{
@@ -139,10 +137,7 @@ func ReqEndPoint(trackerUrl string, walletAddr [20]byte) ([]byte, error) {
 
 	return nb, nil
 }
-func UpdateEndPoint(trackerUrl string, sigData []byte, pubKey keypair.PublicKey, walletAddr [20]byte, nodeIP net.IP, port uint16) error {
-	if err := common2.ParamVerify(trackerUrl, sigData, pubKey, walletAddr, nodeIP, port); err != nil {
-		return err
-	}
+func UpdateEndPoint(trackerUrl string, walletAddr [20]byte, nodeIP net.IP, port uint16) error {
 	id := common.PeerID{}
 	rand.Read(id[:])
 	announce := Announce{
@@ -171,32 +166,33 @@ func EndPointRegistry(walletAddr, hostPort string) error {
 	if walletAddr == "" || hostPort == "" {
 		return errors.NewErr("[EndPointRegistry] walletAddr or hostPort is null")
 	}
-	k, v := common.WHPTobyte(walletAddr, hostPort)
-	if err := storage.TDB.Put(k, v); err != nil {
-		return err
-	}
+	// k, v := common.WHPTobyte(walletAddr, hostPort)
+	// if err := storage.TDB.Put(k, v); err != nil {
+	// 	return err
+	// }
 	//hb, err := storage.TDB.Get(k)
 	//if hb != nil && err == nil {
 	//	log.Errorf("This wallet:%s had already registerd! Do not multiple registration", walletAddr)
 	//	return nil
 	//}
+	channel.GlbChannelSvr.Channel.SetHostAddr(walletAddr, config.DefaultConfig.ChannelConfig.ChannelProtocol+"://"+hostPort)
 	m := &pm.Registry{
 		WalletAddr: walletAddr,
 		HostPort:   hostPort,
 	}
-	recv.P2pPid.Tell(m)
+	network.DDNSP2P.GetPID().Tell(m)
 	return nil
 }
 
 //local endPointUpdate
 func EndPointRegUpdate(walletAddr, hostPort string) error {
 	if walletAddr == "" || hostPort == "" {
-		return errors.NewErr("[EndPointRegistry] walletAddr or hostPort is null")
+		return errors.NewErr("[EndPointRegUpdate] walletAddr or hostPort is null")
 	}
 	k, v := common.WHPTobyte(walletAddr, hostPort)
 	exist, err := storage.TDB.Has(k)
 	if !exist || err != nil {
-		return errors.NewErr("[EndPointRegUpdate] wallet is not Registed!")
+		return errors.NewErr("not exist")
 	}
 	if err := storage.TDB.Put(k, v); err != nil {
 		return err
@@ -205,7 +201,7 @@ func EndPointRegUpdate(walletAddr, hostPort string) error {
 		WalletAddr: walletAddr,
 		HostPort:   hostPort,
 	}
-	recv.P2pPid.Tell(m)
+	network.DDNSP2P.GetPID().Tell(m)
 	return nil
 }
 
@@ -217,7 +213,7 @@ func EndPointUnRegistry(walletAddr string) error {
 	w, _ := common.WHPTobyte(walletAddr, "")
 	exist, _ := storage.TDB.Has(w)
 	if !exist {
-		return fmt.Errorf("[EndPointUnRegistry] wallet %s is not Registed!", walletAddr)
+		return fmt.Errorf("not exist")
 	}
 
 	if err := storage.TDB.Delete(w); err != nil {
@@ -226,7 +222,7 @@ func EndPointUnRegistry(walletAddr string) error {
 	m := &pm.UnRegistry{
 		WalletAddr: walletAddr,
 	}
-	recv.P2pPid.Tell(m)
+	network.DDNSP2P.GetPID().Tell(m)
 	return nil
 }
 
@@ -238,7 +234,7 @@ func EndPointQuery(walletAddr string) (string, error) {
 		return "", err
 	}
 	if hpBytes == nil {
-		return "", fmt.Errorf("This wallet %s did not regist endpoint", walletAddr)
+		return "", fmt.Errorf("not found")
 	}
 	return string(hpBytes), nil
 }

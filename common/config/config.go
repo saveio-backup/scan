@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+
+	"github.com/saveio/themis/common/log"
 	//"os"
 )
 
@@ -53,6 +55,26 @@ type CommonConfig struct {
 	LogStderr    bool   `json:"LogStderr"`
 	CommonDBPath string `json:"CommonDBPath"`
 	ConfPath     string `json:"ConfPath"`
+
+	ChainRestAddr uint `json:"ChainRestAddr"`
+	ChainRpcAddr  uint `json:"ChainRpcAddr"`
+
+	DBPath string `json:"DBPath"`
+
+	DnsNodeMaxNum     int    `json:"DnsNodeMaxNum"`
+	SeedInterval      int    `json:"SeedInterval"`
+	DnsChannelDeposit uint64 `json:"DnsChannelDeposit"`
+
+	WalletPwd string `json:"WalletPwd"`
+	WalletDir string `json:"WalletDir"`
+
+	P2PNATPort uint `json:"P2PNATPort`
+}
+
+type FsConfig struct {
+	FsRepoRoot string `json:"FsRepoRoot"`
+	FsFileRoot string `json:"FsFileRoot"`
+	FsType     int    `json:"FsType"`
 }
 
 type P2PConfig struct {
@@ -93,6 +115,7 @@ type ChannelConfig struct {
 	ChannelProtocol      string `json:"ChannelProtocol"`
 	ChannelClientType    string `json:"ChannelClientType"`
 	ChannelRevealTimeout string `json:"ChannelRevealTimeout"`
+	ChannelDBPath        string `json:"ChannelDBPath`
 }
 
 type DDNSConfig struct {
@@ -103,6 +126,7 @@ type DDNSConfig struct {
 	ChannelConfig ChannelConfig `json:"Channel"`
 	RpcConfig     RpcConfig     `json:"Rpc"`
 	RestfulConfig RestfulConfig `json:"Restful"`
+	FsConfig      FsConfig      `json:"Fs"`
 }
 
 func DefDDNSConfig() *DDNSConfig {
@@ -136,10 +160,16 @@ func DefDDNSConfig() *DDNSConfig {
 }
 
 //current default config
-var DefaultConfig = DefConfig()
+var DefaultConfig *DDNSConfig
 
-func DefConfig() *DDNSConfig {
-	return &DDNSConfig{}
+func GenDefConfig() *DDNSConfig {
+	var defConf *DDNSConfig
+
+	err := GetJsonObjectFromFile("./config.json", &defConf)
+	if err != nil {
+		log.Fatalf("GetDefConfig err: ", err)
+	}
+	return defConf
 }
 
 func GetJsonObjectFromFile(filePath string, jsonObject interface{}) error {

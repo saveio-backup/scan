@@ -14,7 +14,9 @@ import (
 	"github.com/anacrolix/missinggo"
 	Ccomon "github.com/saveio/themis/common"
 	"github.com/saveio/themis/common/log"
+	"github.com/saveio/scan/channel"
 	"github.com/saveio/scan/common"
+	"github.com/saveio/scan/common/config"
 	pm "github.com/saveio/scan/messages/protoMessages"
 	"github.com/saveio/scan/storage"
 	"github.com/ontio/ontology-eventbus/actor"
@@ -224,7 +226,8 @@ func (s *Server) Accepted() (err error) {
 			Port:      ar.Port,
 			Wallet:    ar.Wallet,
 		})
-		log.Debugf("Tracker client  reg success,wallet:%s,nodeAddr:%s", Ccomon.ToHexString(ar.Wallet[:]), nodeAddr.String())
+		channel.GlbChannelSvr.Channel.SetHostAddr(m.WalletAddr, config.DefaultConfig.ChannelConfig.ChannelProtocol+"://"+m.HostPort)
+		log.Infof("Tracker client  reg success,wallet:%s,nodeAddr:%s", Ccomon.ToHexString(ar.Wallet[:]), nodeAddr.String())
 		return err
 	case ActionUnReg:
 		if _, ok := s.conns[h.ConnectionId]; !ok {

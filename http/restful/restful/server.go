@@ -31,6 +31,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/saveio/scan/common/config"
 	cfg "github.com/saveio/themis/common/config"
 	"github.com/saveio/themis/common/log"
 	berr "github.com/saveio/themis/http/base/error"
@@ -90,7 +91,7 @@ func InitRestServer() rest.ApiServer {
 
 //start server
 func (this *restServer) Start() error {
-	retPort := int(cfg.DefConfig.Restful.HttpRestPort)
+	retPort := int(config.DefaultConfig.RestfulConfig.HttpRestPort)
 	if retPort == 0 {
 		log.Fatal("Not configure HttpRestPort port ")
 		return nil
@@ -108,7 +109,7 @@ func (this *restServer) Start() error {
 		var err error
 		this.listener, err = net.Listen("tcp", ":"+strconv.Itoa(retPort))
 		if err != nil {
-			log.Fatal("net.Listen: ", err.Error())
+			log.Fatal("dns rest net.Listen : ", err.Error())
 			return err
 		}
 	}
@@ -119,6 +120,7 @@ func (this *restServer) Start() error {
 		log.Fatal("ListenAndServe: ", err.Error())
 		return err
 	}
+	log.Infof("Scan REST ListenAndServe: %d", retPort)
 
 	return nil
 }

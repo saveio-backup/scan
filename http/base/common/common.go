@@ -35,6 +35,7 @@ import (
 	ontErrors "github.com/saveio/themis/errors"
 	bactor "github.com/saveio/themis/http/base/actor"
 	"github.com/saveio/themis/smartcontract/event"
+	cdns "github.com/saveio/themis/smartcontract/service/native/dns"
 	"github.com/saveio/themis/smartcontract/service/native/utils"
 	cstate "github.com/saveio/themis/smartcontract/states"
 	"github.com/saveio/themis/vm/neovm"
@@ -42,9 +43,59 @@ import (
 
 const MAX_SEARCH_HEIGHT uint32 = 100
 
+type FailedRsp struct {
+	ErrCode   int64  `json:"errcode"`
+	ErrMsg    string `json:"errmsg"`
+	FailedMsg string `json:"failedmsg"`
+}
+
+type SuccessRsp struct {
+}
+
 type EndPointRsp struct {
 	Wallet string `json:"wallet"`
 	Host   string `json:"host"`
+}
+
+type ChannelRsp struct {
+	Id uint32
+}
+
+type ChannelTotalDepositBalanceRsp struct {
+	TotalDepositBalance uint64
+}
+
+type ChannelCurrentBalanceRsp struct {
+	CurrentBalance uint64
+}
+
+type DnsRsp struct {
+	Tx string
+}
+
+type DnsPeerPoolRsp struct {
+	PeerPoolMap  map[string]*cdns.PeerPoolItem
+	PeerPoolItem *cdns.PeerPoolItem
+}
+
+type DnsRspPeerPoolItem struct {
+	PeerPubkey    string      //peer pubkey
+	WalletAddress string      //peer owner base58encode
+	Status        cdns.Status //peer status
+	TotalInitPos  uint64      //total authorize pos this peer received
+}
+
+type DnsNodeInfoRsp struct {
+	NodeInfoMap  map[string]cdns.DNSNodeInfo
+	NodeInfoItem *cdns.DNSNodeInfo
+}
+
+type DnsNodeInfoItem struct {
+	WalletAddr  string //base58encode
+	IP          string
+	Port        string
+	InitDeposit uint64
+	PeerPubKey  string
 }
 
 type BalanceOfRsp struct {

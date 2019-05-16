@@ -1,36 +1,51 @@
 {
-  "Common": {
-    "LogLevel": 2,
-    "LogStderr": false,
-    "CommonDBPath": "./TrackerLevelDB",
-    "ConfPath": ""
-  },
-  "P2P": {
-    "NetworkId": 1,
-    "PortBase": 6699,
-    "SeedList": null
-  },
-  "Tracker": {
-    "UdpPort": 6369,
-    "Fee": 0,
-    "SeedLists": null
-  },
-  "Channel": {
-    "ChannelPortOffset": 0,
-    "ChannelProtocol": "",
-    "ChannelClientType": "",
-    "ChannelRevealTimeout": ""
-  },
-  "Rpc": {
-    "EnableHttpJsonRpc": true,
-    "HttpJsonPort": 20448,
-    "HttpLocalPort": 20449,
-    "RpcServer": ""
-  },
-  "Restful": {
-    "EnableHttpRestful": true,
-    "HttpRestPort": 20445,
-    "HttpCertPath": "",
-    "HttpKeyPath": ""
-  }
+    "Common": {
+        "LogLevel": 2,
+        "LogStderr": false,
+        "CommonDBPath": "./TrackerLevelDB",
+        "ConfPath": "",
+        "ChainRestAddr": 20334,
+        "ChainRpcAddr": 20336,
+        "DBPath": "./DspDB",
+        "DnsNodeMaxNum": 100,
+        "SeedInterval": 10,
+        "DnsChannelDeposit": 1000000000,
+        "WalletDir": "./wallet.dat",
+        "WalletPwd": "wwens",
+        "P2PNATPort": 11259
+    },
+    "P2P": {
+        "NetworkId": 1,
+        "PortBase": 6699,
+        "SeedList": [
+	    "tcp://127.0.0.1:11259",
+	    "tcp://127.0.0.1:11359"
+	]
+    },
+    "Tracker": {
+        "UdpPort": 6369,
+        "Fee": 0,
+        "SeedLists": []
+    },
+    "Channel": {
+        "ChannelPortOffset": 11259,
+        "ChannelProtocol": "tcp",
+        "ChannelClientType": "rpc",
+        "ChannelRevealTimeout": "50",
+        "ChannelDBPath": "./ChannelDB"
+    },
+    "Rpc": {
+        "EnableHttpJsonRpc": true,
+        "HttpJsonPort": 20448,
+        "HttpLocalPort": 20449
+    },
+    "Restful": {
+        "EnableHttpRestful": true,
+        "HttpRestPort": 20445
+    },
+    "Fs": {
+        "FsRepoRoot": "./Fs",
+        "FsFileRoot": "./Downloads",
+        "FsType": 1
+    }
 }

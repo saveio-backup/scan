@@ -25,18 +25,18 @@ import (
 
 	"fmt"
 
-	"github.com/saveio/themis/common/log"
 	cfg "github.com/saveio/scan/common/config"
 	"github.com/saveio/scan/http/base/rpc"
+	"github.com/saveio/themis/common/log"
 )
 
 const (
-	SCAN_DIR string = "/dns"
+	SAVEDNS_DIR string = "/dns"
 )
 
 func StartRPCServer() error {
-	log.Debug()
-	http.HandleFunc(SCAN_DIR, rpc.Handle)
+	log.Debug("startrpcserver")
+	http.HandleFunc(SAVEDNS_DIR, rpc.Handle)
 
 	rpc.HandleFunc("getbestblockhash", rpc.GetBestBlockHash)
 	rpc.HandleFunc("getblock", rpc.GetBlock)
@@ -67,9 +67,27 @@ func StartRPCServer() error {
 	rpc.HandleFunc("updateendpoint", rpc.EndPointUpdate)
 	rpc.HandleFunc("unRegendpoint", rpc.EndPointUnReg)
 	rpc.HandleFunc("reqendpoint", rpc.EndPointReq)
+
+	rpc.HandleFunc("registerdns", rpc.RegisterDns)
+	rpc.HandleFunc("unregisterdns", rpc.UnregisterDns)
+	rpc.HandleFunc("quitdns", rpc.QuitDns)
+	rpc.HandleFunc("adddnspos", rpc.AddDnsPos)
+	rpc.HandleFunc("reducednspos", rpc.ReduceDnsPos)
+	rpc.HandleFunc("getregisterdnsinfo", rpc.GetRegisterDnsInfo)
+	rpc.HandleFunc("getdnshostinfo", rpc.GetDnsHostInfo)
+
+	rpc.HandleFunc("openchannel", rpc.OpenChannel)
+	rpc.HandleFunc("depositchannel", rpc.DepositToChannel)
+	rpc.HandleFunc("transferchannel", rpc.TransferToSomebody)
+	rpc.HandleFunc("withdrawchannel", rpc.WithdrawChannel)
+	rpc.HandleFunc("getallchannels", rpc.GetAllChannels)
+	rpc.HandleFunc("getcurrentbalance", rpc.GetCurrentBalance)
+	rpc.HandleFunc("querychanneldeposit", rpc.QueryChannelDeposit)
+	rpc.HandleFunc("queryhostinfo", rpc.QueryHostInfo)
 	err := http.ListenAndServe(":"+strconv.Itoa(int(cfg.DefaultConfig.RpcConfig.HttpJsonPort)), nil)
 	if err != nil {
 		return fmt.Errorf("ListenAndServe error:%s", err)
 	}
+	log.Info("Rpc Listen at port: ", strconv.Itoa(int(cfg.DefaultConfig.RpcConfig.HttpJsonPort)))
 	return nil
 }
