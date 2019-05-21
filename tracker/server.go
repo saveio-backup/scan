@@ -12,14 +12,14 @@ import (
 
 	"github.com/anacrolix/dht/krpc"
 	"github.com/anacrolix/missinggo"
-	Ccomon "github.com/saveio/themis/common"
-	"github.com/saveio/themis/common/log"
+	"github.com/ontio/ontology-eventbus/actor"
 	"github.com/saveio/scan/channel"
 	"github.com/saveio/scan/common"
 	"github.com/saveio/scan/common/config"
 	pm "github.com/saveio/scan/messages/protoMessages"
 	"github.com/saveio/scan/storage"
-	"github.com/ontio/ontology-eventbus/actor"
+	Ccomon "github.com/saveio/themis/common"
+	"github.com/saveio/themis/common/log"
 )
 
 type peerInfo struct {
@@ -212,6 +212,7 @@ func (s *Server) Accepted() (err error) {
 		m := &pm.Registry{
 			WalletAddr: ar.Wallet.ToHexString(),
 			HostPort:   nodeAddr.String(),
+			Type:       0,
 		}
 		s.p2p.Tell(m)
 		if err != nil {
@@ -255,6 +256,7 @@ func (s *Server) Accepted() (err error) {
 		err = storage.TDB.Delete(ar.Wallet[:])
 		m := &pm.UnRegistry{
 			WalletAddr: ar.Wallet.ToHexString(),
+			Type:       0,
 		}
 		s.p2p.Tell(m)
 		s.respond(addr, ResponseHeader{
@@ -345,6 +347,7 @@ func (s *Server) Accepted() (err error) {
 		m := &pm.Registry{
 			WalletAddr: ar.Wallet.ToHexString(),
 			HostPort:   nodeAddr.String(),
+			Type:       0,
 		}
 		s.p2p.Tell(m)
 		ipAddr := ipconvert(nodeAddr.IP)
@@ -412,6 +415,7 @@ func (s *Server) onAnnounceStarted(ar *AnnounceRequest, pi *peerInfo) {
 	m := &pm.Torrent{
 		InfoHash: ar.InfoHash[:],
 		Torrent:  bt,
+		Type:     0,
 	}
 	s.p2p.Tell(m)
 }
@@ -439,6 +443,7 @@ func (s *Server) onAnnounceUpdated(ar *AnnounceRequest, pi *peerInfo) {
 	m := &pm.Torrent{
 		InfoHash: ar.InfoHash[:],
 		Torrent:  bt,
+		Type:     0,
 	}
 	s.p2p.Tell(m)
 }
@@ -465,6 +470,7 @@ func (s *Server) onAnnounceStopped(ar *AnnounceRequest, pi *peerInfo) {
 	m := &pm.Torrent{
 		InfoHash: ar.InfoHash[:],
 		Torrent:  bt,
+		Type:     0,
 	}
 	s.p2p.Tell(m)
 	//messageBus.MsgBus.TNTBox <- &messageBus.TorrenMsg{
@@ -495,6 +501,7 @@ func (s *Server) onAnnounceCompleted(ar *AnnounceRequest, pi *peerInfo) {
 	m := &pm.Torrent{
 		InfoHash: ar.InfoHash[:],
 		Torrent:  bt,
+		Type:     0,
 	}
 	s.p2p.Tell(m)
 	//messageBus.MsgBus.TNTBox <- &messageBus.TorrenMsg{

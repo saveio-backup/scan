@@ -95,12 +95,14 @@ func (this *P2PActor) Receive(ctx actor.Context) {
 		k, v := comm.WHPTobyte(msg.WalletAddr, msg.HostPort)
 
 		hpBytes, err := storage.TDB.Get(k)
-		if string(hpBytes) != string(v) {
+		if msg.Type == 0 {
+			msg.Type = 1
+			go this.Broadcast(msg)
+		} else if msg.Type == 1 && string(hpBytes) != string(v) {
 			err = storage.TDB.Put(k, v)
 			if err != nil {
 				log.Errorf("[MSB Receive] sync regmessage error:%v", err)
 			}
-			go this.Broadcast(msg)
 		} else {
 			log.Errorf("No NEED BROADCAST, hpBytes: %s, v: %s", hpBytes, v)
 		}
@@ -114,29 +116,34 @@ func (this *P2PActor) Receive(ctx actor.Context) {
 		k := comm.WTobyte(msg.WalletAddr)
 
 		hpBytes, err := storage.TDB.Get(k)
-		if string(hpBytes) != "" {
+		if msg.Type == 0 {
+			msg.Type = 1
+			go this.Broadcast(msg)
+		} else if msg.Type == 1 && string(hpBytes) != "" {
 			err = storage.TDB.Delete(k)
 			if err != nil {
 				log.Errorf("[MSB Receive] sync regmessage error:%v", err)
 			}
-			go this.Broadcast(msg)
 		} else {
 			log.Errorf("No NEED BROADCAST, hpBytes: %s", hpBytes)
 		}
 		// go this.Broadcast(msg)
 	case *pm.Torrent:
+		log.Debugf("tracker client torrent msg:%s", msg.String())
 		if msg.InfoHash == nil || msg.Torrent == nil {
 			log.Errorf("[MSB Receive] receive from peer:%s, nil Torrent message", ctx.Sender().Address)
 			break
 		}
 
 		hpBytes, _ := storage.TDB.Get(msg.InfoHash)
-		if string(hpBytes) != string(msg.Torrent) {
+		if msg.Type == 0 {
+			msg.Type = 1
+			go this.Broadcast(msg)
+		} else if msg.Type == 1 && string(hpBytes) != string(msg.Torrent) {
 			err := storage.TDB.Put(msg.InfoHash, msg.Torrent)
 			if err != nil {
 				log.Errorf("[MSB Receive] sync filemessage error:%v", err)
 			}
-			go this.Broadcast(msg)
 		} else {
 			log.Errorf("No NEED BROADCAST, hpBytes: %s, v: %s", hpBytes, msg.Torrent)
 		}

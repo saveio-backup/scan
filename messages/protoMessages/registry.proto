@@ -5,6 +5,7 @@ package protoMessages;
 message Registry {
     string walletAddr = 1;
     string hostPort = 2;
+    int32 type = 3; // 0 default; 1 broadcast; 2 rebroadcast;
 }
 
 
