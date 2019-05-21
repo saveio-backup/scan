@@ -166,19 +166,20 @@ func EndPointRegistry(walletAddr, hostPort string) error {
 	if walletAddr == "" || hostPort == "" {
 		return errors.NewErr("[EndPointRegistry] walletAddr or hostPort is null")
 	}
-	// k, v := common.WHPTobyte(walletAddr, hostPort)
-	// if err := storage.TDB.Put(k, v); err != nil {
-	// 	return err
+	k, v := common.WHPTobyte(walletAddr, hostPort)
+	if err := storage.TDB.Put(k, v); err != nil {
+		return err
+	}
+	// hb, err := storage.TDB.Get(k)
+	// if hb != nil && err == nil {
+	// 	log.Errorf("This wallet:%s had already registerd! Do not multiple registration", walletAddr)
+	// 	return nil
 	// }
-	//hb, err := storage.TDB.Get(k)
-	//if hb != nil && err == nil {
-	//	log.Errorf("This wallet:%s had already registerd! Do not multiple registration", walletAddr)
-	//	return nil
-	//}
 	channel.GlbChannelSvr.Channel.SetHostAddr(walletAddr, config.DefaultConfig.ChannelConfig.ChannelProtocol+"://"+hostPort)
 	m := &pm.Registry{
 		WalletAddr: walletAddr,
 		HostPort:   hostPort,
+		Type:       0,
 	}
 	network.DDNSP2P.GetPID().Tell(m)
 	return nil
@@ -200,6 +201,7 @@ func EndPointRegUpdate(walletAddr, hostPort string) error {
 	m := &pm.Registry{
 		WalletAddr: walletAddr,
 		HostPort:   hostPort,
+		Type:       0,
 	}
 	network.DDNSP2P.GetPID().Tell(m)
 	return nil
@@ -221,6 +223,7 @@ func EndPointUnRegistry(walletAddr string) error {
 	}
 	m := &pm.UnRegistry{
 		WalletAddr: walletAddr,
+		Type:       0,
 	}
 	network.DDNSP2P.GetPID().Tell(m)
 	return nil

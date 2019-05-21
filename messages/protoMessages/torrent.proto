@@ -5,6 +5,7 @@ package protoMessages;
 message Torrent {
     bytes infoHash = 1;
     bytes torrent = 2;
+    int32 type = 3; // 0 default; 1 broadcast; 2 rebroadcast;
 }
 
 message Bytes {

@@ -333,11 +333,13 @@ func (this *Network) Receive(message proto.Message, from string) error {
 		act.OnBusinessMessage(message, from)
 	case *pm.Torrent:
 		log.Errorf("[MSB Receive] receive from peer:%s, nil Torrent message", from)
+		this.OnBusinessMessage(message, from)
 	case *pm.Registry:
 		log.Errorf("[MSB Receive] receive from peer:%s, nil Reg message", from)
 		this.OnBusinessMessage(message, from)
 	case *pm.UnRegistry:
 		log.Errorf("[MSB Receive] receive from peer:%s, nil Unreg message", from)
+		this.OnBusinessMessage(message, from)
 
 	default:
 		log.Errorf("[MSB Receive] unknown message type:%s", msg.String())
@@ -352,15 +354,12 @@ func (this *Network) CompletNet() {
 }
 
 func (this *Network) OnBusinessMessage(message proto.Message, from string) error {
-	log.Errorf("[OnBusinessMessage] receive from peer:%s, nil Reg message", from)
-	switch msg := message.(type) {
-	case *pm.Registry:
-		future := this.GetPID().RequestFuture(&pm.Registry{WalletAddr: msg.WalletAddr, HostPort: msg.HostPort},
-			constants.REQ_TIMEOUT*time.Second)
-		if _, err := future.Result(); err != nil {
-			log.Error("[OnBusinessMessage] error: ", err)
-			return err
-		}
+	log.Debugf("[OnBusinessMessage] receive message from peer:%s", from)
+	future := this.GetPID().RequestFuture(message,
+		constants.REQ_TIMEOUT*time.Second)
+	if _, err := future.Result(); err != nil {
+		log.Error("[OnBusinessMessage] error: ", err)
+		return err
 	}
 	return nil
 }
