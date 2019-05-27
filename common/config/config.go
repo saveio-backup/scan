@@ -68,7 +68,7 @@ type CommonConfig struct {
 	WalletPwd string `json:"WalletPwd"`
 	WalletDir string `json:"WalletDir"`
 
-	P2PNATPort uint `json:"P2PNATPort`
+	P2PNATAddr string `json:"P2PNATAddr`
 }
 
 type FsConfig struct {
@@ -106,8 +106,11 @@ type TrackerConfig struct {
 
 // DnsConfig dns config
 type DnsConfig struct {
-	UdpPort uint   // UDP server port
-	Fee     uint64 // Service fee
+	AutoSetupDNSRegisterEnable bool
+	AutoSetupDNSChannelsEnable bool
+	UdpPort                    uint // UDP server port
+	InitDeposit                uint64
+	Fee                        uint64 // Service fee
 }
 
 type ChannelConfig struct {
@@ -122,7 +125,7 @@ type DDNSConfig struct {
 	CommonConfig  CommonConfig  `json:"Common"`
 	P2PConfig     P2PConfig     `json:"P2P"`
 	TrackerConfig TrackerConfig `json:"Tracker"`
-	//Dns          DnsConfig
+	DnsConfig     DnsConfig     `json:"Dns"`
 	ChannelConfig ChannelConfig `json:"Channel"`
 	RpcConfig     RpcConfig     `json:"Rpc"`
 	RestfulConfig RestfulConfig `json:"Restful"`
@@ -140,6 +143,10 @@ func DefDDNSConfig() *DDNSConfig {
 			NetworkId: NETWORK_ID_MAIN_NET,
 			PortBase:  DEFAULT_P2P_PORT,
 			SeedList:  nil,
+		},
+		DnsConfig: DnsConfig{
+			AutoSetupDNSRegisterEnable: false,
+			AutoSetupDNSChannelsEnable: true,
 		},
 		TrackerConfig: TrackerConfig{
 			UdpPort:   DEFAULT_TRACKER_PORT,
@@ -161,6 +168,10 @@ func DefDDNSConfig() *DDNSConfig {
 
 //current default config
 var DefaultConfig *DDNSConfig
+
+func SetupDefaultConfig() {
+	DefaultConfig = GenDefConfig()
+}
 
 func GenDefConfig() *DDNSConfig {
 	var defConf *DDNSConfig

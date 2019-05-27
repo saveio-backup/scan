@@ -1,6 +1,7 @@
 package network
 
 import (
+	"errors"
 	"sync"
 
 	"github.com/saveio/carrier/crypto"
@@ -8,10 +9,13 @@ import (
 	"github.com/saveio/carrier/network"
 	"github.com/saveio/carrier/types/opcode"
 	"github.com/saveio/pylons/common/constants"
+	"github.com/saveio/pylons/transfer"
 
 	"context"
 
+	"github.com/saveio/carrier/network/discovery"
 	"github.com/saveio/carrier/network/keepalive"
+	"github.com/saveio/carrier/network/proxy"
 	act "github.com/saveio/pylons/actor/server"
 	"github.com/saveio/scan/common/config"
 	"github.com/saveio/themis/common/log"
@@ -104,7 +108,7 @@ func (this *Network) SetProxyServer(address string) {
 }
 
 func (this *Network) Start(address string) error {
-	builder := network.NewBuilderWithOptions(network.WriteFlushLatency(1 * time.Millisecond))
+	builder := network.NewBuilder()
 	if this.Keys != nil {
 		log.Debugf("channel use account key")
 		builder.SetKeys(this.Keys)
@@ -125,12 +129,17 @@ func (this *Network) Start(address string) error {
 		keepalive.WithPeerStateChan(this.peerStateChan),
 	}
 
+	builder.AddComponent(keepalive.New(options...))
+	// Register peer discovery Component.
+	builder.AddComponent(new(discovery.Component))
+
 	component := new(NetComponent)
 	component.Net = this
 	builder.AddComponent(component)
 
-	builder.AddComponent(keepalive.New(options...))
-	// builder.AddComponent(new(proxy.ProxyComponent))
+	if len(this.proxyAddr) > 0 {
+		builder.AddComponent(new(proxy.UDPProxyComponent))
+	}
 	var err error
 	this.P2p, err = builder.Build()
 	if err != nil {
@@ -148,44 +157,69 @@ func (this *Network) Start(address string) error {
 	})
 
 	this.CompletNet()
-	// this.P2p.SetProxyServer(this.proxyAddr)
+	if len(this.proxyAddr) > 0 {
+		this.P2p.SetProxyServer(this.proxyAddr)
+	}
 	go this.P2p.Listen()
 	go this.PeerStateChange(this.syncPeerState)
 
 	this.P2p.BlockUntilListening()
-	log.Debugf("finish BlockUntilFinish...")
+	log.Debugf("will BlockUntilProxyFinish...")
+	if len(this.proxyAddr) > 0 {
+		this.P2p.BlockUntilUDPProxyFinish()
+	}
+	log.Debugf("finish BlockUntilProxyFinish...")
 
-	// sc, reg := this.Network.Component(nat.StunComponentID)
-	// if !reg {
-	// 	log.Error("stun component don't reg ")
-	// } else {
-	// 	exAddr := sc.(*nat.StunComponent).GetPublicAddr()
-	// 	this.ExternalAddr = exAddr
-	// }
-	// log.Infof("Listening for peers on %s.", this.ExternalAddr)
-
-	peers := config.DefaultConfig.TrackerConfig.SeedLists
+	peers := config.DefaultConfig.P2PConfig.SeedList
 	if len(peers) > 0 {
 		this.P2p.Bootstrap(peers...)
 		log.Debug("had bootStraped peers: %v", peers)
 	}
-	// reader := bufio.NewReader(os.Stdin)
-	// for {
-	// 	input, _ := reader.ReadString('\n')
-	// 	log.Info("We Chat> ")
-	// 	// skip blank lines
-	// 	if len(strings.TrimSpace(input)) == 0 {
-	// 		continue
-	// 	}
 
-	// 	log.Infof("<%s> %s", this.P2p.Address, input)
-
-	// 	ctx := network.WithSignMessage(context.Background(), true)
-	// 	this.P2p.Broadcast(ctx, &pm.Registry{WalletAddr: "uoijwfjowiejfiowjfoijwo", HostPort: "127.0.0.1:11000"})
-	// }
-
-	// comm.WaitToExit()
 	return nil
+}
+
+func (this *Network) Halt() error {
+	if this.P2p == nil {
+		return errors.New("network is down")
+	}
+	this.P2p.Close()
+	return nil
+}
+
+func (this *Network) Dial(addr string) error {
+	if this.P2p == nil {
+		return errors.New("network is nil")
+	}
+	_, err := this.P2p.Dial(addr)
+	return err
+}
+
+func (this *Network) Disconnect(addr string) error {
+	if this.P2p == nil {
+		return errors.New("network is nil")
+	}
+	peer, err := this.P2p.Client(addr)
+	if err != nil {
+		return err
+	}
+	return peer.Close()
+}
+
+// IsPeerListenning. check the peer is listening or not.
+func (this *Network) IsPeerListenning(addr string) bool {
+	if this.P2p == nil {
+		return false
+	}
+	err := this.Dial(addr)
+	if err != nil {
+		return false
+	}
+	err = this.Disconnect(addr)
+	if err != nil {
+		return false
+	}
+	return true
 }
 
 func (this *Network) Stop() {
@@ -288,17 +322,17 @@ func (this *Network) PeerStateChange(fn func(*keepalive.PeerStateEvent)) {
 	}
 }
 func (this *Network) syncPeerState(state *keepalive.PeerStateEvent) {
-	// var nodeNetworkState string
+	var nodeNetworkState string
 	if state.State == keepalive.PEER_REACHABLE {
-		log.Debugf("[syncPeerState] addr: %s state: NetworkReachable\n", state.Address)
+		log.Debugf("[syncPeerState] addr: %s state: NetworkReachable, pubilc addr: %s\n", state.Address, this.P2p.ID.Address)
 		this.ActivePeers.LoadOrStore(state.Address, struct{}{})
-		// nodeNetworkState = transfer.NetworkReachable
+		nodeNetworkState = transfer.NetworkReachable
 	} else {
 		this.ActivePeers.Delete(state.Address)
-		log.Debugf("[syncPeerState] addr: %s state: NetworkUnreachable\n", state.Address)
-		// nodeNetworkState = transfer.NetworkUnreachable
+		log.Debugf("[syncPeerState] addr: %s state: NetworkUnreachable, public addr: %s\n", state.Address, this.P2p.ID.Address)
+		nodeNetworkState = transfer.NetworkUnreachable
 	}
-	// act.SetNodeNetworkState(state.Address, nodeNetworkState)
+	act.SetNodeNetworkState(state.Address, nodeNetworkState)
 }
 
 //P2P network msg receive. torrent msg, reg msg, unReg msg

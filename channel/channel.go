@@ -102,7 +102,10 @@ func (this *ChannelSvr) StartChannelService() error {
 func (this *ChannelSvr) SetupPartnerHost(partners []string) {
 	for _, addr := range partners {
 		host := this.GetExternalIP(addr)
-		this.Channel.SetHostAddr(addr, host)
+		if host != "" {
+			log.Infof("SetHostAddr partners, addr: %s host: %s", addr, host)
+			this.Channel.SetHostAddr(addr, host)
+		}
 	}
 }
 

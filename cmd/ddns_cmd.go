@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"github.com/saveio/edge/cmd/flags"
+	"github.com/saveio/scan/cmd/common"
 	"github.com/saveio/scan/cmd/utils"
 	httpComm "github.com/saveio/scan/http/base/common"
 	"github.com/urfave/cli"
@@ -10,7 +11,7 @@ import (
 var DNSCommand = cli.Command{
 	Action:      cli.ShowSubcommandHelp,
 	Name:        "dns",
-	Usage:       "dns node option:[reg|unReg|req|update]",
+	Usage:       "Manage dns node",
 	Description: "Dns node management",
 	Subcommands: []cli.Command{
 
@@ -82,6 +83,14 @@ var DNSCommand = cli.Command{
 			},
 			Description: "Display all or specified Dns host info including ip, port",
 		},
+		{
+			Action:      checkTopology,
+			Name:        "topology",
+			Usage:       "Display dns node local network topology",
+			ArgsUsage:   " ",
+			Flags:       []cli.Flag{},
+			Description: "Display dns node local network topology",
+		},
 	},
 }
 
@@ -92,6 +101,21 @@ func registerDns(ctx *cli.Context) error {
 		PrintErrorMsg("Missing argument.")
 		cli.ShowSubcommandHelp(ctx)
 		return nil
+	}
+
+	client, err := common.OpenWallet(ctx)
+	if err != nil {
+		return err
+	}
+	pw, err := common.GetPasswd(ctx)
+	if err != nil {
+		PrintErrorMsg("GetPasswd error, ErrMsg:")
+		return err
+	}
+	_, err = client.GetDefaultAccount(pw)
+	if err != nil {
+		PrintErrorMsg("GetDefaultAccount from wallet and password error, ErrMsg:")
+		return err
 	}
 
 	ip := ctx.String(flags.GetFlagName(flags.DnsIpFlag))
@@ -110,6 +134,21 @@ func registerDns(ctx *cli.Context) error {
 }
 
 func unregisterDns(ctx *cli.Context) error {
+	client, err := common.OpenWallet(ctx)
+	if err != nil {
+		return err
+	}
+	pw, err := common.GetPasswd(ctx)
+	if err != nil {
+		PrintErrorMsg("GetPasswd error, ErrMsg:")
+		return err
+	}
+	_, err = client.GetDefaultAccount(pw)
+	if err != nil {
+		PrintErrorMsg("GetDefaultAccount from wallet and password error, ErrMsg:")
+		return err
+	}
+
 	dnsRsp, failed := utils.DNSNodeUnreg()
 	if failed != nil {
 		PrintErrorMsg("\nUnregister dns failed. Failed message:")
@@ -121,6 +160,21 @@ func unregisterDns(ctx *cli.Context) error {
 }
 
 func quitDns(ctx *cli.Context) error {
+	client, err := common.OpenWallet(ctx)
+	if err != nil {
+		return err
+	}
+	pw, err := common.GetPasswd(ctx)
+	if err != nil {
+		PrintErrorMsg("GetPasswd error, ErrMsg:")
+		return err
+	}
+	_, err = client.GetDefaultAccount(pw)
+	if err != nil {
+		PrintErrorMsg("GetDefaultAccount from wallet and password error, ErrMsg:")
+		return err
+	}
+
 	dnsRsp, failed := utils.DNSNodeQuit()
 	if failed != nil {
 		PrintErrorMsg("\nQuit dns failed. Failed message:")
@@ -136,6 +190,21 @@ func addPos(ctx *cli.Context) error {
 		PrintErrorMsg("Missing argument.")
 		cli.ShowSubcommandHelp(ctx)
 		return nil
+	}
+
+	client, err := common.OpenWallet(ctx)
+	if err != nil {
+		return err
+	}
+	pw, err := common.GetPasswd(ctx)
+	if err != nil {
+		PrintErrorMsg("GetPasswd error, ErrMsg:")
+		return err
+	}
+	_, err = client.GetDefaultAccount(pw)
+	if err != nil {
+		PrintErrorMsg("GetDefaultAccount from wallet and password error, ErrMsg:")
+		return err
 	}
 
 	deltaDeposit := ctx.Uint64(flags.GetFlagName(flags.DeltaDepositFlag))
@@ -156,6 +225,21 @@ func reducePos(ctx *cli.Context) error {
 		return nil
 	}
 
+	client, err := common.OpenWallet(ctx)
+	if err != nil {
+		return err
+	}
+	pw, err := common.GetPasswd(ctx)
+	if err != nil {
+		PrintErrorMsg("GetPasswd error, ErrMsg:")
+		return err
+	}
+	_, err = client.GetDefaultAccount(pw)
+	if err != nil {
+		PrintErrorMsg("GetDefaultAccount from wallet and password error, ErrMsg:")
+		return err
+	}
+
 	deltaDeposit := ctx.Uint64(flags.GetFlagName(flags.DeltaDepositFlag))
 	dnsRsp, failed := utils.DNSReducePos(deltaDeposit)
 	if failed != nil {
@@ -172,6 +256,21 @@ func getRegisterInfo(ctx *cli.Context) error {
 		PrintErrorMsg("Missing argument.")
 		cli.ShowSubcommandHelp(ctx)
 		return nil
+	}
+
+	client, err := common.OpenWallet(ctx)
+	if err != nil {
+		return err
+	}
+	pw, err := common.GetPasswd(ctx)
+	if err != nil {
+		PrintErrorMsg("GetPasswd error, ErrMsg:")
+		return err
+	}
+	_, err = client.GetDefaultAccount(pw)
+	if err != nil {
+		PrintErrorMsg("GetDefaultAccount from wallet and password error, ErrMsg:")
+		return err
 	}
 
 	dnsAll := ctx.Bool(flags.GetFlagName(flags.DnsAllFlag))
@@ -226,6 +325,21 @@ func getHostInfo(ctx *cli.Context) error {
 		return nil
 	}
 
+	client, err := common.OpenWallet(ctx)
+	if err != nil {
+		return err
+	}
+	pw, err := common.GetPasswd(ctx)
+	if err != nil {
+		PrintErrorMsg("GetPasswd error, ErrMsg:")
+		return err
+	}
+	_, err = client.GetDefaultAccount(pw)
+	if err != nil {
+		PrintErrorMsg("GetDefaultAccount from wallet and password error, ErrMsg:")
+		return err
+	}
+
 	dnsAll := ctx.Bool(flags.GetFlagName(flags.DnsAllFlag))
 	walletAddr := ctx.String(flags.GetFlagName(flags.DnsWalletFlag))
 
@@ -252,7 +366,7 @@ func getHostInfo(ctx *cli.Context) error {
 				counter++
 			}
 			if counter == 0 {
-				PrintInfoMsg("Empty")
+				PrintInfoMsg("The total number of dns hosts info is 0")
 			}
 			return nil
 		} else if dnsNIRsp.NodeInfoItem != nil {
@@ -270,5 +384,9 @@ func getHostInfo(ctx *cli.Context) error {
 		PrintInfoMsg("\nGet dns host info success. result is null")
 		return nil
 	}
+	return nil
+}
+
+func checkTopology(ctx *cli.Context) error {
 	return nil
 }

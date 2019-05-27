@@ -12,15 +12,21 @@
         "DnsChannelDeposit": 1000000000,
         "WalletDir": "./wallet.dat",
         "WalletPwd": "wwens",
-        "P2PNATPort": 11259
+        "P2PNATAddr": "udp://10.0.1.208:6008"
     },
     "P2P": {
         "NetworkId": 1,
         "PortBase": 6699,
         "SeedList": [
-	    "tcp://127.0.0.1:11259",
-	    "tcp://127.0.0.1:11359"
-	]
+            "udp://127.0.0.1:11259",
+            "udp://127.0.0.1:11359"
+        ]
+    },
+    "DNS": {
+        "AutoSetupDNSRegisterEnable": false,
+        "AutoSetupDNSChannelsEnable": true,
+        "UdpPort": 11259,
+        "InitDeposit": 100000
     },
     "Tracker": {
         "UdpPort": 6369,
@@ -29,7 +35,7 @@
     },
     "Channel": {
         "ChannelPortOffset": 11259,
-        "ChannelProtocol": "tcp",
+        "ChannelProtocol": "udp",
         "ChannelClientType": "rpc",
         "ChannelRevealTimeout": "50",
         "ChannelDBPath": "./ChannelDB"

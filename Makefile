@@ -1,12 +1,12 @@
 GOFMT=gofmt
 GC=go build
 VERSION := $(shell git describe --abbrev=4 --always --tags)
-BUILD_DDNS_PAR = -ldflags "-X github.com/saveio/scan/config/config.VERSION=$(VERSION)"
+BUILD_DDNS_PAR = -ldflags "-X github.com/oniio/oniDNS/config/config.VERSION=$(VERSION)"
 
 SRC_FILES = $(shell git ls-files | grep -e .go$ | grep -v _test.go)
 
-ddns: $(SRC_FILES)
-	$(GC)  $(BUILD_DDNS_PAR) -o ddns main.go
+ddns: 
+	$(GC) $(BUILD_DDNS_PAR) -o ddns main.go
 
 
 all: wddns lddns mdns

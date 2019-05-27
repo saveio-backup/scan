@@ -71,7 +71,7 @@ var ChannelCommand = cli.Command{
 		{
 			Action:      getAllChannels,
 			Name:        "list",
-			Usage:       "List all channels",
+			Usage:       "Show all channels",
 			ArgsUsage:   " ",
 			Flags:       []cli.Flag{},
 			Description: "Show all channels info which belong to current owner",
@@ -233,12 +233,23 @@ func getAllChannels(ctx *cli.Context) error {
 
 	channelInfos, failed := utils.GetAllChannels()
 	if failed != nil {
-		PrintErrorMsg("\nList all channels info failed. Failed message:")
+		PrintErrorMsg("\nShow all channels info failed. Failed message:")
 		PrintJsonObject(failed)
 		return nil
+	} else if channelInfos != nil {
+		PrintInfoMsg("\nShow all channels info success. Default limit 50:")
+		PrintInfoMsg("The total number of channels is %d", len(channelInfos.Channels))
+		PrintInfoMsg("The total balance of channels is %d, and BalanceFormat: %s", channelInfos.Balance, channelInfos.BalanceFormat)
+		counter := 0
+		for _, item := range channelInfos.Channels {
+			if counter < 50 {
+				PrintInfoMsg("Index %d:", counter)
+				PrintJsonObject(item)
+			}
+			counter++
+		}
 	}
-	PrintInfoMsg("\nList all channels info success. Channels info msg:")
-	PrintJsonObject(channelInfos)
+
 	return nil
 }
 

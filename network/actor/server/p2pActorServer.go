@@ -1,20 +1,18 @@
-/**
- * Description:
- * Author: LiYong Zhang
- * Create: 2019-03-31
- */
-package recv
+package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 
+	"github.com/saveio/scan/channel"
 	"github.com/saveio/scan/storage"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/ontio/ontology-eventbus/actor"
 	p2pNet "github.com/saveio/carrier/network"
+	dspact "github.com/saveio/dsp-go-sdk/actor/client"
 	act "github.com/saveio/pylons/actor/client"
 	comm "github.com/saveio/scan/common"
 	pm "github.com/saveio/scan/messages/protoMessages"
@@ -34,18 +32,20 @@ type P2PActor struct {
 	localPID    *actor.PID
 }
 
-func NewP2PActor(n *network.Network) (*actor.PID, error) {
+func NewP2PActor() (*P2PActor, error) {
 	var err error
 	p2pActor := &P2PActor{
-		net:         n,
 		msgHandlers: make(map[string]MessageHandler),
 	}
 	p2pActor.localPID, err = p2pActor.Start()
 	if err != nil {
 		return nil, err
 	}
-	return p2pActor.localPID, nil
+	return p2pActor, nil
+}
 
+func (this *P2PActor) SetNetwork(n *network.Network) {
+	this.net = n
 }
 
 func (this *P2PActor) Start() (*actor.PID, error) {
@@ -73,7 +73,6 @@ func (this *P2PActor) Receive(ctx actor.Context) {
 	case *act.ConnectReq:
 		log.Warn("[P2p]actor ConnectReq Address: %s", msg.Address)
 		err := this.net.Connect(msg.Address)
-		fmt.Println(err)
 		ctx.Sender().Request(&act.P2pResp{err}, ctx.Self())
 	case *act.CloseReq:
 		log.Warn("[P2p]actor CloseReq")
@@ -86,6 +85,14 @@ func (this *P2PActor) Receive(ctx actor.Context) {
 	case *messages.Ping:
 		log.Warn("[P2p]actor Ping")
 		ctx.Sender().Tell(&messages.Pong{})
+	case *dspact.PeerListeningReq:
+		ret := this.net.IsPeerListenning(msg.Address)
+		var err error
+		if !ret {
+			err = errors.New("peer is not listening")
+		}
+		log.Debugf("is peer listening %s, ret %t, err %s", msg.Address, ret, err)
+		ctx.Sender().Request(&dspact.P2pResp{Error: err}, ctx.Self())
 	case *pm.Registry:
 		log.Debugf("tracker client registry or update msg:%s", msg.String())
 		if msg.WalletAddr == "" || msg.HostPort == "" {
@@ -101,10 +108,14 @@ func (this *P2PActor) Receive(ctx actor.Context) {
 		} else if msg.Type == 1 && string(hpBytes) != string(v) {
 			err = storage.TDB.Put(k, v)
 			if err != nil {
-				log.Errorf("[MSB Receive] sync regmessage error:%v", err)
+				log.Errorf("[MSB Receive] sync registry failed, error:%v", err)
 			}
+			log.Infof("sethostaddr, walletAddr:%s, hostport:%s", msg.WalletAddr, msg.HostPort)
+			channel.GlbChannelSvr.Channel.SetHostAddr(msg.WalletAddr, fmt.Sprintf("udp://%s", msg.HostPort))
+
+			log.Infof("[MSB Receive] sync registry success: %v", msg.String())
 		} else {
-			log.Errorf("No NEED BROADCAST, hpBytes: %s, v: %s", hpBytes, v)
+			log.Debugf("No NEED BROADCAST, hpBytes: %s, v: %s", hpBytes, v)
 		}
 
 	case *pm.UnRegistry:

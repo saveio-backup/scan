@@ -17,8 +17,8 @@ import (
 var EndPointCommand = cli.Command{
 	Action:      cli.ShowSubcommandHelp,
 	Name:        "endpoint",
-	Usage:       "Manage endpoint(reg|unReg|req|update)",
-	Description: "Local endpoint (reg|unReg|req|update)",
+	Usage:       "Manage endpoint",
+	Description: "Local endpoint management",
 	Subcommands: []cli.Command{
 		{
 			Action:    regEndPoint,

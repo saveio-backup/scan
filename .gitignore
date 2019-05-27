@@ -34,5 +34,6 @@ tracker/vendor
 torrentdb/*
 *.log
 .idea
+.DS_Store
 ddns
 *.recent
