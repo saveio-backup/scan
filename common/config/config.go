@@ -78,6 +78,7 @@ type FsConfig struct {
 }
 
 type P2PConfig struct {
+	Protocol  string   `json:"Protocol"`
 	NetworkId uint32   `json:"NetworkId"`
 	PortBase  uint     `json:"PortBase"`
 	SeedList  []string `json:"SeedList"`
@@ -108,8 +109,10 @@ type TrackerConfig struct {
 type DnsConfig struct {
 	AutoSetupDNSRegisterEnable bool
 	AutoSetupDNSChannelsEnable bool
+	Protocol                   string
 	UdpPort                    uint // UDP server port
 	InitDeposit                uint64
+	ChannelDeposit             uint64
 	Fee                        uint64 // Service fee
 }
 

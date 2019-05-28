@@ -12,7 +12,9 @@ import (
 	"github.com/saveio/dsp-go-sdk/store"
 	chActorClient "github.com/saveio/pylons/actor/client"
 	chanCom "github.com/saveio/pylons/common"
+	"github.com/saveio/scan/common"
 	"github.com/saveio/scan/common/config"
+	"github.com/saveio/scan/storage"
 	chain "github.com/saveio/themis-go-sdk"
 	"github.com/saveio/themis/account"
 	"github.com/saveio/themis/common/log"
@@ -111,18 +113,13 @@ func (this *ChannelSvr) SetupPartnerHost(partners []string) {
 
 // GetExternalIP. get external ip of wallet from dns nodes
 func (this *ChannelSvr) GetExternalIP(walletAddr string) string {
-	test := make(map[string]string, 0)
-	test["AYMnqA65pJFKAbbpD8hi5gdNDBmeFBy5hS"] = "tcp://127.0.0.1:13001"
-	test["AWaE84wqVf1yffjaR6VJ4NptLdqBAm8G9c"] = "tcp://127.0.0.1:13002"
-	test["AGeTrARjozPVLhuzMxZq36THMtvsrZNAHq"] = "tcp://127.0.0.1:13003"
-	test["ANa3f9jm2FkWu4NrVn6L1FGu7zadKdvPjL"] = "tcp://127.0.0.1:13004"
-	test["ANy4eS6oQaX15xpGV7dvsinh2aiqPm9HDf"] = "tcp://127.0.0.1:13005"
-	test["AJtzEUDLzsRKbHC1Tfc1oNh8a1edpnVAUf"] = "tcp://127.0.0.1:13008"
-	test["AMkN2sRQyT3qHZQqwEycHCX2ezdZNpXNdJ"] = "tcp://127.0.0.1:13001"
-	test["AWpW2ukMkgkgRKtwWxC3viXEX8ijLio2Ng"] = "tcp://127.0.0.1:13003"
-	test["AKTfgYTAEzGG5FXsM8HHc8M3j95N495TBP"] = "tcp://127.0.0.1:13003"
-	test["AGGTaoJ8Ygim7zVi5ZZqrXy8EQqgNQJxYx"] = "tcp://127.0.0.1:13001"
-	return test[walletAddr]
+	w, _ := common.WHPTobyte(walletAddr, "")
+	hpBytes, err := storage.TDB.Get(w)
+	if err != nil {
+		return ""
+	} else {
+		return fmt.Sprintf("%s://%s", config.DefaultConfig.ChannelConfig.ChannelProtocol, string(hpBytes))
+	}
 }
 
 //pylons api

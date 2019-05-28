@@ -15,6 +15,7 @@ import (
 	dspact "github.com/saveio/dsp-go-sdk/actor/client"
 	act "github.com/saveio/pylons/actor/client"
 	comm "github.com/saveio/scan/common"
+	"github.com/saveio/scan/common/config"
 	pm "github.com/saveio/scan/messages/protoMessages"
 	"github.com/saveio/scan/network"
 	"github.com/saveio/scan/network/actor/messages"
@@ -111,7 +112,7 @@ func (this *P2PActor) Receive(ctx actor.Context) {
 				log.Errorf("[MSB Receive] sync registry failed, error:%v", err)
 			}
 			log.Infof("sethostaddr, walletAddr:%s, hostport:%s", msg.WalletAddr, msg.HostPort)
-			channel.GlbChannelSvr.Channel.SetHostAddr(msg.WalletAddr, fmt.Sprintf("udp://%s", msg.HostPort))
+			channel.GlbChannelSvr.Channel.SetHostAddr(msg.WalletAddr, fmt.Sprintf("%s://%s", config.DefaultConfig.ChannelConfig.ChannelProtocol, msg.HostPort))
 
 			log.Infof("[MSB Receive] sync registry success: %v", msg.String())
 		} else {

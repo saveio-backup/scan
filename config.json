@@ -15,18 +15,21 @@
         "P2PNATAddr": "udp://10.0.1.208:6008"
     },
     "P2P": {
+        "Protocol": "udp",
         "NetworkId": 1,
         "PortBase": 6699,
         "SeedList": [
-            "udp://127.0.0.1:11259",
-            "udp://127.0.0.1:11359"
+            "udp://127.0.0.1:6699",
+            "udp://127.0.0.1:6699"
         ]
     },
     "DNS": {
         "AutoSetupDNSRegisterEnable": false,
         "AutoSetupDNSChannelsEnable": true,
+        "Protocol": "udp",
         "UdpPort": 11259,
-        "InitDeposit": 100000
+        "InitDeposit": 100000,
+        "ChannelDeposit": 1000000
     },
     "Tracker": {
         "UdpPort": 6369,

@@ -227,7 +227,7 @@ func (s *Server) Accepted() (err error) {
 			Port:      ar.Port,
 			Wallet:    ar.Wallet,
 		})
-		channel.GlbChannelSvr.Channel.SetHostAddr(m.WalletAddr, config.DefaultConfig.ChannelConfig.ChannelProtocol+"://"+m.HostPort)
+		channel.GlbChannelSvr.Channel.SetHostAddr(m.WalletAddr, fmt.Sprintf("%s://%s", config.DefaultConfig.ChannelConfig.ChannelProtocol, m.HostPort))
 		log.Infof("Tracker client  reg success,wallet:%s,nodeAddr:%s", Ccomon.ToHexString(ar.Wallet[:]), nodeAddr.String())
 		return err
 	case ActionUnReg:
