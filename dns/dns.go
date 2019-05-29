@@ -3,12 +3,12 @@ package dns
 import (
 	"fmt"
 
+	"github.com/saveio/scan/common/config"
 	themisSdk "github.com/saveio/themis-go-sdk"
 	"github.com/saveio/themis/account"
 	"github.com/saveio/themis/common"
 	"github.com/saveio/themis/common/log"
 	"github.com/saveio/themis/smartcontract/service/native/dns"
-	"github.com/saveio/scan/common/config"
 )
 
 // 全局指针变量GlbDNSSvr可能存在数据竞争问题
@@ -48,6 +48,10 @@ func (this *DNSSvr) DNSNodeUnreg() (common.Uint256, error) {
 
 func (this *DNSSvr) DNSNodeQuit() (common.Uint256, error) {
 	return this.Chain.Native.Dns.QuitNode()
+}
+
+func (this *DNSSvr) DNSNodeUpdate(ip, port string) (common.Uint256, error) {
+	return this.Chain.Native.Dns.UpdateNode([]byte(ip), []byte(port))
 }
 
 func (this *DNSSvr) DNSAddPos(deltaDeposit uint64) (common.Uint256, error) {

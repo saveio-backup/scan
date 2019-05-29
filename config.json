@@ -28,7 +28,7 @@
         "AutoSetupDNSChannelsEnable": true,
         "Protocol": "udp",
         "UdpPort": 11259,
-        "InitDeposit": 100000,
+        "InitDeposit": 1000000000,
         "ChannelDeposit": 1000000
     },
     "Tracker": {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"strconv"
 	"strings"
 
 	"github.com/saveio/dsp-go-sdk/actor/client"
@@ -40,6 +41,7 @@ import (
 	//"github.com/saveio/themis-go-sdk/wallet"
 	//"github.com/saveio/scan/tracker"
 	"github.com/saveio/themis/account"
+	cutils "github.com/saveio/themis/cmd/utils"
 	"github.com/saveio/themis/errors"
 )
 
@@ -241,7 +243,7 @@ func initialize(ctx *cli.Context) {
 	log.Info("start logging...")
 
 	// get account
-	acc, err := getDefaultAccount(ctx)
+	acc, balance, err := getDefaultAccount(ctx)
 	if err != nil {
 		log.Errorf("SCAN initialize getDefaultAccount FAILED, err: %v", err)
 		os.Exit(1)
@@ -302,44 +304,52 @@ func initialize(ctx *cli.Context) {
 	}
 	log.Info("SCAN initialize NewDNSSvr SUCCESS.")
 
-	// initEndpointReg
+	// setup dns and endpoint registry
 	if p2pNetwork.PublicAddr() != "" {
 		log.Infof("SCAN initialize External ListenAddr is %s", p2pNetwork.PublicAddr())
 		publicAddr, err := common.SplitHostAddr(p2pNetwork.PublicAddr())
 		if err != nil {
 			log.Fatal("SCAN initialize External ListenAddr Split FAILED, err", err)
+			os.Exit(1)
 		}
-		// dnsinfo, err := dns.GlbDNSSvr.GetDnsNodeByAddr(acc.Address)
-		// log.Infof("SCAN initialize DNS getbyaddr dnsinfo: %v, err: %v", dnsinfo, err)
-		// if dnsinfo != nil {
-		// 	_, err := dns.GlbDNSSvr.DNSNodeUpdate("10.0.1.208", strings.Split(p2pNetwork.PublicAddr(), ":")[2])
-		// 	if err != nil {
-		// 		log.Fatalf("SCAN initialize DNS update FAILED, err: %v", err)
-		// 	}
-		// } else {
-		if _, err = dns.GlbDNSSvr.DNSNodeReg(
-			publicAddr.Host,
-			publicAddr.Port,
-			config.DefaultConfig.DnsConfig.InitDeposit); err != nil {
-			log.Fatalf("SCAN initialize DNS register FAILED, err: %v", err)
+		dnsinfo, err := dns.GlbDNSSvr.GetDnsNodeByAddr(acc.Address)
+		log.Infof("SCAN initialize DNS getbyaddr dnsinfo: %v, err: %v", dnsinfo, err)
+		if dnsinfo != nil {
+			if _, err := dns.GlbDNSSvr.DNSNodeUpdate(publicAddr.Host, strings.Split(p2pNetwork.PublicAddr(), ":")[2]); err != nil {
+				log.Fatalf("SCAN initialize DNS update FAILED, err: %v", err)
+				os.Exit(1)
+			} else {
+				log.Infof("SCAN initialize DNS update hostinfo SUCCESS.")
+			}
 		} else {
-			log.Info("SCAN initialize DNS register SUCCESS.")
+			if _, err = dns.GlbDNSSvr.DNSNodeReg(
+				publicAddr.Host,
+				publicAddr.Port,
+				config.DefaultConfig.DnsConfig.InitDeposit); err != nil {
+				log.Infof("BalaceOf Default Wallet Address %s is: %s, DNS InitDeposit needs: %s",
+					acc.Address.ToBase58(),
+					cutils.FormatUsdt(balance),
+					cutils.FormatUsdt(config.DefaultConfig.DnsConfig.InitDeposit))
+				log.Fatalf("SCAN initialize DNS register FAILED, err: %v", err)
+				os.Exit(1)
+			} else {
+				log.Info("SCAN initialize DNS register SUCCESS.")
+			}
 		}
-		// }
-		if err = tracker.EndPointRegistry(
-			acc.Address.ToBase58(),
+		if err = tracker.EndPointRegistry(acc.Address.ToBase58(),
 			fmt.Sprintf("%s:%s", publicAddr.Host, publicAddr.Port)); err != nil {
 			log.Errorf("SCAN initialize EndPointRegistry FAILED, err:%v", err)
+			os.Exit(1)
 		} else {
 			log.Info("SCAN initialize EndPointRegistry SUCCESS.")
 		}
 	} else {
 		log.Error("SCAN initialize GET PublicAddr FAILED, can not acquire external ip")
+		os.Exit(1)
 	}
 
 	// start channel service
-	err = channel.GlbChannelSvr.StartChannelService()
-	if err != nil {
+	if err = channel.GlbChannelSvr.StartChannelService(); err != nil {
 		log.Errorf("SCAN initialize StartChannelService FAILED, err: %v", err)
 		os.Exit(1)
 	}
@@ -358,18 +368,33 @@ func initialize(ctx *cli.Context) {
 	}
 }
 
-func getDefaultAccount(ctx *cli.Context) (*account.Account, error) {
+func getDefaultAccount(ctx *cli.Context) (*account.Account, uint64, error) {
 	wallet, err := ccom.OpenWallet(ctx)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	pwd := []byte(config.DefaultConfig.CommonConfig.WalletPwd)
 
 	acc, err := wallet.GetDefaultAccount(pwd)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return acc, nil
+
+	// Check Balance
+	bal, err := cutils.GetBalance(acc.Address.ToBase58())
+	if err != nil {
+		return nil, 0, err
+	}
+	balance, err := strconv.ParseUint(bal.Usdt, 10, 64)
+	if err := cutils.CheckAssetAmount("usdt", balance); err != nil {
+		log.Errorf("BalanceOf default wallet address %s CheckAssetAmount err: %v, DNS NODE CAN NOT WORK.", acc.Address.ToBase58(), err)
+		return acc, 0, err
+	} else if balance <= 0 {
+		log.Errorf("BalanceOf default wallet address %s is: %d, DNS NODE CAN NOT WORK.", acc.Address.ToBase58(), balance)
+		return acc, 0, err
+	}
+
+	return acc, balance, nil
 }
 
 func initRpc(ctx *cli.Context) error {
