@@ -17,6 +17,7 @@ import (
 	pm "github.com/saveio/scan/messages/protoMessages"
 	"github.com/saveio/scan/storage"
 	"github.com/saveio/themis/common/log"
+	"github.com/saveio/themis/crypto/keypair"
 	"github.com/saveio/themis/errors"
 )
 
@@ -68,7 +69,7 @@ func GetTorrentPeers(infoHash common.MetaInfoHash, trackerUrl string, numWant in
 }
 
 // ---------Tracker client relative action------------
-func RegEndPoint(trackerUrl string, walletAddr [20]byte, nodeIP net.IP, port uint16) error {
+func RegEndPoint(trackerUrl string, sigData []byte, pubKey keypair.PublicKey, walletAddr [20]byte, nodeIP net.IP, port uint16) error {
 	id := common.PeerID{}
 	rand.Read(id[:])
 	announce := Announce{

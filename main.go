@@ -322,9 +322,7 @@ func initialize(ctx *cli.Context) {
 				log.Infof("SCAN initialize DNS update hostinfo SUCCESS.")
 			}
 		} else {
-			if _, err = dns.GlbDNSSvr.DNSNodeReg(
-				publicAddr.Host,
-				publicAddr.Port,
+			if _, err = dns.GlbDNSSvr.DNSNodeReg(publicAddr.Host, publicAddr.Port,
 				config.DefaultConfig.DnsConfig.InitDeposit); err != nil {
 				log.Infof("BalaceOf Default Wallet Address %s is: %s, DNS InitDeposit needs: %s",
 					acc.Address.ToBase58(),
