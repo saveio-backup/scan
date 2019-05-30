@@ -13,9 +13,9 @@ import (
 
 	"context"
 
-	"github.com/saveio/carrier/network/discovery"
-	"github.com/saveio/carrier/network/keepalive"
-	"github.com/saveio/carrier/network/proxy"
+	"github.com/saveio/carrier/network/components/discovery"
+	"github.com/saveio/carrier/network/components/keepalive"
+	"github.com/saveio/carrier/network/components/proxy"
 	act "github.com/saveio/pylons/actor/server"
 	"github.com/saveio/scan/common/config"
 	"github.com/saveio/themis/common/log"
