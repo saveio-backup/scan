@@ -10,6 +10,8 @@ _test
 test
 TrackerLevelDB
 Chain
+ttt
+chain.json
 
 
 # Architecture specific extensions/prefixes
