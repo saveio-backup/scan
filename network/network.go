@@ -17,7 +17,6 @@ import (
 	"github.com/saveio/carrier/network/components/keepalive"
 	"github.com/saveio/carrier/network/components/proxy"
 	act "github.com/saveio/pylons/actor/server"
-	"github.com/saveio/scan/common/config"
 	"github.com/saveio/themis/common/log"
 
 	//"github.com/golang/protobuf/proto"
@@ -29,7 +28,6 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/ontio/ontology-eventbus/actor"
 	pm "github.com/saveio/scan/messages/protoMessages"
-	"github.com/saveio/scan/tracker/common"
 )
 
 var DDNSP2P *Network
@@ -90,6 +88,7 @@ type Network struct {
 	kill                  chan struct{}
 	ActivePeers           *sync.Map
 	addressForHealthCheck *sync.Map
+	Bootstraps            []string
 }
 
 func NewP2P() *Network {
@@ -107,7 +106,7 @@ func (this *Network) SetProxyServer(address string) {
 	this.proxyAddr = address
 }
 
-func (this *Network) Start(address string) error {
+func (this *Network) Start(address string, bootstraps []string) error {
 	builder := network.NewBuilder()
 	if this.Keys != nil {
 		log.Debugf("channel use account key")
@@ -138,7 +137,8 @@ func (this *Network) Start(address string) error {
 	builder.AddComponent(component)
 
 	if len(this.proxyAddr) > 0 {
-		builder.AddComponent(new(proxy.UDPProxyComponent))
+		// builder.AddComponent(new(proxy.UDPProxyComponent))
+		builder.AddComponent(new(proxy.KCPProxyComponent))
 	}
 	var err error
 	this.P2p, err = builder.Build()
@@ -156,7 +156,6 @@ func (this *Network) Start(address string) error {
 		}
 	})
 
-	this.CompletNet()
 	if len(this.proxyAddr) > 0 {
 		this.P2p.SetProxyServer(this.proxyAddr)
 	}
@@ -166,15 +165,17 @@ func (this *Network) Start(address string) error {
 	this.P2p.BlockUntilListening()
 	log.Debugf("will BlockUntilProxyFinish...")
 	if len(this.proxyAddr) > 0 {
-		this.P2p.BlockUntilUDPProxyFinish()
+		// this.P2p.BlockUntilUDPProxyFinish()
+		this.P2p.BlockUntilKCPProxyFinish()
 	}
 	log.Debugf("finish BlockUntilProxyFinish...")
 
-	peers := config.DefaultConfig.P2PConfig.SeedList
-	if len(peers) > 0 {
-		this.P2p.Bootstrap(peers...)
-		log.Debug("had bootStraped peers: %v", peers)
+	if len(bootstraps) > 0 {
+		this.P2p.Bootstrap(bootstraps...)
+		log.Debug("had bootStraped peers: %v", bootstraps)
 	}
+
+	// time.Sleep(1 * time.Second)
 
 	return nil
 }
@@ -239,12 +240,13 @@ func (this *Network) Connect(tAddr string) error {
 	}
 	if _, ok := this.addressForHealthCheck.Load(tAddr); ok {
 		// already try to connect, donn't retry before we get a result
-		log.Info("already try to connect")
+		log.Infof("already try to connect %s", tAddr)
 		return nil
 	}
-
 	this.addressForHealthCheck.Store(tAddr, struct{}{})
+	log.Infof("Bootstraping %s", tAddr)
 	this.P2p.Bootstrap(tAddr)
+	time.Sleep(1 * time.Second)
 	return nil
 }
 
@@ -326,9 +328,11 @@ func (this *Network) syncPeerState(state *keepalive.PeerStateEvent) {
 	if state.State == keepalive.PEER_REACHABLE {
 		log.Debugf("[syncPeerState] addr: %s state: NetworkReachable, pubilc addr: %s\n", state.Address, this.P2p.ID.Address)
 		this.ActivePeers.LoadOrStore(state.Address, struct{}{})
+		this.addressForHealthCheck.Store(state.Address, struct{}{})
 		nodeNetworkState = transfer.NetworkReachable
 	} else {
 		this.ActivePeers.Delete(state.Address)
+		this.addressForHealthCheck.Delete(state.Address)
 		log.Debugf("[syncPeerState] addr: %s state: NetworkUnreachable, public addr: %s\n", state.Address, this.P2p.ID.Address)
 		nodeNetworkState = transfer.NetworkUnreachable
 	}
@@ -337,8 +341,7 @@ func (this *Network) syncPeerState(state *keepalive.PeerStateEvent) {
 
 //P2P network msg receive. torrent msg, reg msg, unReg msg
 func (this *Network) Receive(message proto.Message, from string) error {
-	log.Info("[P2pNetwork] Receive msgBus is accepting for syncNet messages ")
-	switch msg := message.(type) {
+	switch message.(type) {
 	case *messages.Processed:
 		act.OnBusinessMessage(message, from)
 	case *messages.Delivered:
@@ -376,15 +379,9 @@ func (this *Network) Receive(message proto.Message, from string) error {
 		this.OnBusinessMessage(message, from)
 
 	default:
-		log.Errorf("[MSB Receive] unknown message type:%s", msg.String())
-
+		// log.Errorf("[MSB Receive] unknown message type:%s", msg.String())
 	}
 	return nil
-}
-
-func (this *Network) CompletNet() {
-	//common.ListeningCh=make(chan struct{})
-	close(common.ListeningCh)
 }
 
 func (this *Network) OnBusinessMessage(message proto.Message, from string) error {

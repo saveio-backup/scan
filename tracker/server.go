@@ -203,14 +203,16 @@ func (s *Server) Accepted() (err error) {
 			IP:   ar.IPAddress[:],
 			Port: int(ar.Port),
 		}
+		log.Infof("nodeAddr: %v, %d", nodeAddr.IP, nodeAddr.Port)
 		nb, err := nodeAddr.MarshalBinary()
+		log.Infof("wall: %v, nb: %v", ar.Wallet.ToBase58(), nb)
 		if err != nil {
 			err = fmt.Errorf("nodeAddr marshal error")
 			return err
 		}
 		err = storage.TDB.Put(ar.Wallet[:], nb)
 		m := &pm.Registry{
-			WalletAddr: ar.Wallet.ToHexString(),
+			WalletAddr: ar.Wallet.ToBase58(),
 			HostPort:   nodeAddr.String(),
 			Type:       0,
 		}
@@ -291,7 +293,9 @@ func (s *Server) Accepted() (err error) {
 			return err
 		}
 		var nodeAddr krpc.NodeAddr
+		log.Infof("req wall: %v, nb: %v", ar.Wallet.ToBase58(), nb)
 		nodeAddr.UnmarshalBinary(nb)
+		log.Infof("nodeAddr: %v, %d", nodeAddr.IP, nodeAddr.Port)
 		ipAddr := ipconvert(nodeAddr.IP)
 		err = s.respond(addr, ResponseHeader{
 			TransactionId: h.TransactionId,

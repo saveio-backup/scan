@@ -51,7 +51,7 @@ func (this *P2PActor) SetNetwork(n *network.Network) {
 
 func (this *P2PActor) Start() (*actor.PID, error) {
 	this.props = actor.FromProducer(func() actor.Actor { return this })
-	localPid, err := actor.SpawnNamed(this.props, "net_server")
+	localPid, err := actor.SpawnNamed(this.props, "scan_net_server")
 	if err != nil {
 		return nil, fmt.Errorf("[P2PActor] start error:%v", err)
 	}

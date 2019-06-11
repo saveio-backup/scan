@@ -177,8 +177,8 @@ func logwithsideline(msg string) {
 func start(ctx *cli.Context) {
 	fmt.Print("\n")
 	config.SetupDefaultConfig()
-	// logwithsideline("CHAIN STARTING")
-	// startChain(ctx)
+	logwithsideline("CHAIN STARTING")
+	startChain(ctx)
 	logwithsideline("SCAN INITIALIZE STARTING")
 	initialize(ctx)
 	logwithsideline("SETUP DOWN, ENJOY!!!")
@@ -186,7 +186,7 @@ func start(ctx *cli.Context) {
 }
 
 func startChain(ctx *cli.Context) {
-	chain.InitLog(ctx)
+	// chain.InitLog(ctx)
 
 	_, err := chain.InitConfig(ctx)
 	if err != nil {
@@ -246,7 +246,7 @@ func initialize(ctx *cli.Context) {
 	acc, balance, err := getDefaultAccount(ctx)
 	if err != nil {
 		log.Errorf("SCAN initialize getDefaultAccount FAILED, err: %v", err)
-		os.Exit(1)
+		// os.Exit(1)
 	}
 
 	// setup actor
@@ -265,14 +265,6 @@ func initialize(ctx *cli.Context) {
 	}
 	log.Info("SCAN initialize TrackerDB SUCCESS.")
 
-	netSvr := netserver.NewNetServer()
-	netSvr.Tsvr.SetPID(p2pActor.GetLocalPID())
-	if err = netSvr.Run(); err != nil {
-		log.Errorf("SCAN Initialize TrackerServer Run FAILED, err: %v", err)
-		os.Exit(1)
-	}
-	log.Info("SCAN initialize TrackerServer Run SUCCESS.")
-
 	// setup channel
 	channel.GlbChannelSvr, err = channel.NewChannelSvr(acc, p2pActor.GetLocalPID())
 	if err != nil {
@@ -280,21 +272,6 @@ func initialize(ctx *cli.Context) {
 		os.Exit(1)
 	}
 	log.Info("SCAN initialize NewChannelSvr SUCCESS.")
-
-	// setup p2p network
-	p2pNetwork := network.NewP2P()
-	p2pNetwork.SetProxyServer(config.DefaultConfig.CommonConfig.P2PNATAddr)
-	p2pNetwork.SetPID(p2pActor.GetLocalPID())
-	p2pActor.SetNetwork(p2pNetwork)
-	network.DDNSP2P = p2pNetwork
-
-	if err := p2pNetwork.Start(common.FullHostAddr(
-		fmt.Sprintf("127.0.0.1:%d", config.DefaultConfig.P2PConfig.PortBase),
-		config.DefaultConfig.P2PConfig.Protocol)); err != nil {
-		log.Errorf("SCAN initialize Start P2P FAILED, err: %v", err)
-		os.Exit(1)
-	}
-	log.Info("SCAN initialize Start P2P SUCCESS.")
 
 	// setup dns
 	dns.GlbDNSSvr, err = dns.NewDNSSvr(acc)
@@ -304,42 +281,46 @@ func initialize(ctx *cli.Context) {
 	}
 	log.Info("SCAN initialize NewDNSSvr SUCCESS.")
 
+	// setup p2p network
+	p2pNetwork := network.NewP2P()
+	p2pNetwork.SetProxyServer(config.DefaultConfig.CommonConfig.P2PNATAddr)
+	p2pNetwork.SetPID(p2pActor.GetLocalPID())
+	p2pActor.SetNetwork(p2pNetwork)
+	network.DDNSP2P = p2pNetwork
+
+	// fetch all dns nodes for p2p bootstraps
+	var bootstraps []string
+	ns, err := dns.GlbDNSSvr.GetAllDnsNodes()
+	if err != nil {
+		log.Error(err)
+	} else {
+		for _, v := range ns {
+			bootstraps = append(bootstraps, fmt.Sprintf("%s://%s:%s", config.DefaultConfig.P2PConfig.Protocol, string(v.IP), string(v.Port)))
+		}
+	}
+
+	if err := p2pNetwork.Start(common.FullHostAddr(
+		fmt.Sprintf("127.0.0.1:%d", config.DefaultConfig.P2PConfig.PortBase),
+		config.DefaultConfig.P2PConfig.Protocol), bootstraps); err != nil {
+		log.Errorf("SCAN initialize Start P2P FAILED, err: %v", err)
+		os.Exit(1)
+	}
+	log.Info("SCAN initialize Start P2P SUCCESS.")
+
 	// setup dns and endpoint registry
 	if p2pNetwork.PublicAddr() != "" {
 		log.Infof("SCAN initialize External ListenAddr is %s", p2pNetwork.PublicAddr())
-		publicAddr, err := common.SplitHostAddr(p2pNetwork.PublicAddr())
-		if err != nil {
-			log.Fatal("SCAN initialize External ListenAddr Split FAILED, err", err)
+		// start tracker server
+		netSvr := netserver.NewNetServer()
+		netSvr.Tsvr.SetPID(p2pActor.GetLocalPID())
+		if err = netSvr.Run(); err != nil {
+			log.Errorf("SCAN Initialize TrackerServer Run FAILED, err: %v", err)
 			os.Exit(1)
 		}
-		dnsinfo, err := dns.GlbDNSSvr.GetDnsNodeByAddr(acc.Address)
-		log.Infof("SCAN initialize DNS getbyaddr dnsinfo: %v, err: %v", dnsinfo, err)
-		if dnsinfo != nil {
-			if _, err := dns.GlbDNSSvr.DNSNodeUpdate(publicAddr.Host, strings.Split(p2pNetwork.PublicAddr(), ":")[2]); err != nil {
-				log.Fatalf("SCAN initialize DNS update FAILED, err: %v", err)
-				os.Exit(1)
-			} else {
-				log.Infof("SCAN initialize DNS update hostinfo SUCCESS.")
-			}
-		} else {
-			if _, err = dns.GlbDNSSvr.DNSNodeReg(publicAddr.Host, publicAddr.Port,
-				config.DefaultConfig.DnsConfig.InitDeposit); err != nil {
-				log.Infof("BalaceOf Default Wallet Address %s is: %s, DNS InitDeposit needs: %s",
-					acc.Address.ToBase58(),
-					cutils.FormatUsdt(balance),
-					cutils.FormatUsdt(config.DefaultConfig.DnsConfig.InitDeposit))
-				log.Fatalf("SCAN initialize DNS register FAILED, err: %v", err)
-				os.Exit(1)
-			} else {
-				log.Info("SCAN initialize DNS register SUCCESS.")
-			}
-		}
-		if err = tracker.EndPointRegistry(acc.Address.ToBase58(),
-			fmt.Sprintf("%s:%s", publicAddr.Host, publicAddr.Port)); err != nil {
-			log.Errorf("SCAN initialize EndPointRegistry FAILED, err:%v", err)
-			os.Exit(1)
-		} else {
-			log.Info("SCAN initialize EndPointRegistry SUCCESS.")
+		log.Info("SCAN initialize TrackerServer Run SUCCESS.")
+
+		if config.DefaultConfig.DnsConfig.AutoSetupDNSRegisterEnable {
+			autoSetupDNSRegisterWorking(ctx, acc, p2pNetwork.PublicAddr(), balance)
 		}
 	} else {
 		log.Error("SCAN initialize GET PublicAddr FAILED, can not acquire external ip")
@@ -362,7 +343,7 @@ func initialize(ctx *cli.Context) {
 
 	// setup dns channel connect
 	if config.DefaultConfig.DnsConfig.AutoSetupDNSChannelsEnable {
-		go autoSetupDNSChannelsWorking(ctx, p2pActor.GetLocalPID())
+		autoSetupDNSChannelsWorking(ctx, p2pActor.GetLocalPID())
 	}
 }
 
@@ -458,6 +439,45 @@ func BlockUntilComplete() {
 	<-tcomm.ListeningCh
 }
 
+func autoSetupDNSRegisterWorking(ctx *cli.Context, acc *account.Account, p2pPublicAddr string, balance uint64) error {
+	publicAddr, err := common.SplitHostAddr(p2pPublicAddr)
+	if err != nil {
+		log.Fatal("SCAN initialize External ListenAddr Split FAILED, err", err)
+		os.Exit(1)
+	}
+
+	dnsinfo, err := dns.GlbDNSSvr.GetDnsNodeByAddr(acc.Address)
+	log.Infof("SCAN initialize DNS getbyaddr dnsinfo: %v, err: %v", dnsinfo, err)
+	if dnsinfo != nil {
+		if _, err := dns.GlbDNSSvr.DNSNodeUpdate(publicAddr.Host, strings.Split(p2pPublicAddr, ":")[2]); err != nil {
+			log.Fatalf("SCAN initialize DNS update FAILED, err: %v", err)
+			os.Exit(1)
+		} else {
+			log.Infof("SCAN initialize DNS update hostinfo SUCCESS.")
+		}
+	} else {
+		if _, err = dns.GlbDNSSvr.DNSNodeReg(publicAddr.Host, publicAddr.Port,
+			config.DefaultConfig.DnsConfig.InitDeposit); err != nil {
+			log.Infof("BalaceOf Default Wallet Address %s is: %s, DNS InitDeposit needs: %s",
+				acc.Address.ToBase58(),
+				cutils.FormatUsdt(balance),
+				cutils.FormatUsdt(config.DefaultConfig.DnsConfig.InitDeposit))
+			log.Fatalf("SCAN initialize DNS register FAILED, err: %v", err)
+			os.Exit(1)
+		} else {
+			log.Info("SCAN initialize DNS register SUCCESS.")
+		}
+	}
+	if err = tracker.EndPointRegistry(acc.Address.ToBase58(),
+		fmt.Sprintf("%s:%s", publicAddr.Host, publicAddr.Port)); err != nil {
+		log.Errorf("SCAN initialize EndPointRegistry FAILED, err:%v", err)
+		os.Exit(1)
+	} else {
+		log.Info("SCAN initialize EndPointRegistry SUCCESS.")
+	}
+	return nil
+}
+
 func autoSetupDNSChannelsWorking(ctx *cli.Context, p2pActor *actor.PID) error {
 	wallet, err := ccom.OpenWallet(ctx)
 	if err != nil {
@@ -517,11 +537,11 @@ func autoSetupDNSChannelsWorking(ctx *cli.Context, p2pActor *actor.PID) error {
 		log.Debugf("current deposited balance %d", bal)
 		log.Info("channel deposit success")
 
-		err := channel.GlbChannelSvr.Channel.CanTransfer(walletAddr, 1000)
+		err := channel.GlbChannelSvr.Channel.CanTransfer(walletAddr, 10)
 		if err == nil {
 			log.Info("loopTest can transfer!")
 			for i := 0; i < 10; i++ {
-				err := channel.GlbChannelSvr.Transfer(1, 100, walletAddr)
+				err := channel.GlbChannelSvr.Transfer(1, 1, walletAddr)
 				if err != nil {
 					log.Error("[loopTest] direct transfer failed:", err)
 				} else {
@@ -556,12 +576,11 @@ func autoSetupDNSChannelsWorking(ctx *cli.Context, p2pActor *actor.PID) error {
 			log.Errorf("autoSetupDNSChannelsWorking tracker.EndPointRegistry Failed. err:%v", err)
 		}
 
-		if v.WalletAddr.ToBase58() != acc.Address.ToBase58() {
+		if v.WalletAddr.ToBase58() != acc.Address.ToBase58() && v.WalletAddr.ToBase58() != "AXmXwiHPQESUKyxRbzMXhFjhb3wRn6iDkF" {
 			err = setDNSNodeFunc(dnsUrl, v.WalletAddr.ToBase58())
 			if err != nil {
 				continue
 			}
-			break
 		}
 	}
 	return err

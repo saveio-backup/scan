@@ -4,7 +4,6 @@ import (
 	"github.com/saveio/carrier/network"
 	"github.com/saveio/pylons/network/transport/messages"
 	pm "github.com/saveio/scan/messages/protoMessages"
-	"github.com/saveio/themis/common/log"
 )
 
 type NetComponent struct {
@@ -53,7 +52,7 @@ func (this *NetComponent) Receive(ctx *network.ComponentContext) error {
 	case *pm.UnRegistry:
 		this.Net.Receive(msg, addr)
 	default:
-		log.Errorf("[MSB Receive] unknown message type:%s", msg.String())
+		// log.Errorf("[MSB Receive] unknown message type:%s", msg.String())
 	}
 
 	return nil
