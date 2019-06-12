@@ -576,7 +576,14 @@ func autoSetupDNSChannelsWorking(ctx *cli.Context, p2pActor *actor.PID) error {
 			log.Errorf("autoSetupDNSChannelsWorking tracker.EndPointRegistry Failed. err:%v", err)
 		}
 
-		if v.WalletAddr.ToBase58() != acc.Address.ToBase58() && v.WalletAddr.ToBase58() != "AXmXwiHPQESUKyxRbzMXhFjhb3wRn6iDkF" {
+		// ignore items to connect
+		for _, ignoreAddrItem := range config.DefaultConfig.DnsConfig.IgnoreConnectDNSAddrs {
+			if v.WalletAddr.ToBase58() == ignoreAddrItem {
+				continue
+			}
+		}
+
+		if v.WalletAddr.ToBase58() != acc.Address.ToBase58() {
 			err = setDNSNodeFunc(dnsUrl, v.WalletAddr.ToBase58())
 			if err != nil {
 				continue

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/anacrolix/dht/krpc"
 	"github.com/ontio/ontology-eventbus/actor"
 	"github.com/saveio/dsp-go-sdk/channel"
 	dspCfg "github.com/saveio/dsp-go-sdk/config"
@@ -115,10 +116,15 @@ func (this *ChannelSvr) SetupPartnerHost(partners []string) {
 func (this *ChannelSvr) GetExternalIP(walletAddr string) string {
 	w, _ := common.WHPTobyte(walletAddr, "")
 	hpBytes, err := storage.TDB.Get(w)
+	var nodeAddr krpc.NodeAddr
+	log.Infof("Channel.GetExternalIP wallAddr: %v, hpBytes: %v", walletAddr, hpBytes)
+	nodeAddr.UnmarshalBinary(hpBytes)
+	log.Infof("Channel.GetExternalIP nodeAddr: %s:%d", nodeAddr.IP, nodeAddr.Port)
+
 	if err != nil {
 		return ""
 	} else {
-		return fmt.Sprintf("%s://%s", config.DefaultConfig.ChannelConfig.ChannelProtocol, string(hpBytes))
+		return fmt.Sprintf("%s://%s:%d", config.DefaultConfig.ChannelConfig.ChannelProtocol, nodeAddr.IP, nodeAddr.Port)
 	}
 }
 

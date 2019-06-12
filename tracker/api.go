@@ -120,5 +120,10 @@ func EndPointQuery(walletAddr string) (string, error) {
 	if hpBytes == nil {
 		return "", fmt.Errorf("not found")
 	}
-	return string(hpBytes), nil
+	var nodeAddr krpc.NodeAddr
+	log.Infof("EndPointQuery: %v, hpBytes: %v", walletAddr, hpBytes)
+	nodeAddr.UnmarshalBinary(hpBytes)
+	log.Infof("EndPointQuery nodeAddr: %s:%d", nodeAddr.IP, nodeAddr.Port)
+
+	return fmt.Sprintf("%s:%d", nodeAddr.IP, nodeAddr.Port), nil
 }

@@ -114,6 +114,7 @@ type DnsConfig struct {
 	InitDeposit                uint64
 	ChannelDeposit             uint64
 	Fee                        uint64 // Service fee
+	IgnoreConnectDNSAddrs      []string
 }
 
 type ChannelConfig struct {

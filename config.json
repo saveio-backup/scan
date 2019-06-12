@@ -18,8 +18,7 @@
         "Protocol": "kcp",
         "NetworkId": 1,
         "PortBase": 6699,
-        "SeedList": [
-	]
+        "SeedList": []
     },
     "DNS": {
         "AutoSetupDNSRegisterEnable": true,
@@ -27,7 +26,10 @@
         "Protocol": "kcp",
         "UdpPort": 11259,
         "InitDeposit": 1000000000,
-        "ChannelDeposit": 1000000
+        "ChannelDeposit": 1000000,
+        "IgnoreDNSAddrs": [
+            "AXmXwiHPQESUKyxRbzMXhFjhb3wRn6iDkF"
+        ]
     },
     "Tracker": {
         "UdpPort": 6369,
