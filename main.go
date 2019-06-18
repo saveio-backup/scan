@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"fmt"
 	"os"
 	"runtime"
@@ -16,6 +17,7 @@ import (
 	chaincmd "github.com/saveio/themis/cmd"
 	chainutils "github.com/saveio/themis/cmd/utils"
 	"github.com/saveio/themis/common/log"
+	"github.com/saveio/themis/crypto/keypair"
 
 	"github.com/saveio/scan/cmd"
 	chain "github.com/saveio/themis/start"
@@ -295,7 +297,19 @@ func initialize(ctx *cli.Context) {
 		log.Error(err)
 	} else {
 		for _, v := range ns {
-			bootstraps = append(bootstraps, fmt.Sprintf("%s://%s:%s", config.DefaultConfig.P2PConfig.Protocol, string(v.IP), string(v.Port)))
+			ignoreFlag := false
+			for _, ignoreAddrItem := range config.DefaultConfig.DnsConfig.IgnoreConnectDNSAddrs {
+				if v.WalletAddr.ToBase58() == ignoreAddrItem {
+					ignoreFlag = true
+				}
+			}
+			if _, err := dns.GlbDNSSvr.GetDnsPeerPoolItem(hex.EncodeToString(keypair.SerializePublicKey(acc.PublicKey))); err != nil {
+				ignoreFlag = true
+			}
+
+			if !ignoreFlag {
+				bootstraps = append(bootstraps, fmt.Sprintf("%s://%s:%s", config.DefaultConfig.P2PConfig.Protocol, string(v.IP), string(v.Port)))
+			}
 		}
 	}
 
@@ -343,7 +357,7 @@ func initialize(ctx *cli.Context) {
 
 	// setup dns channel connect
 	if config.DefaultConfig.DnsConfig.AutoSetupDNSChannelsEnable {
-		autoSetupDNSChannelsWorking(ctx, p2pActor.GetLocalPID())
+		go autoSetupDNSChannelsWorking(ctx, p2pActor.GetLocalPID())
 	}
 }
 
@@ -576,14 +590,23 @@ func autoSetupDNSChannelsWorking(ctx *cli.Context, p2pActor *actor.PID) error {
 			log.Errorf("autoSetupDNSChannelsWorking tracker.EndPointRegistry Failed. err:%v", err)
 		}
 
+		ignoreFlag := false
 		// ignore items to connect
 		for _, ignoreAddrItem := range config.DefaultConfig.DnsConfig.IgnoreConnectDNSAddrs {
 			if v.WalletAddr.ToBase58() == ignoreAddrItem {
-				continue
+				ignoreFlag = true
 			}
 		}
 
-		if v.WalletAddr.ToBase58() != acc.Address.ToBase58() {
+		if v.WalletAddr.ToBase58() == acc.Address.ToBase58() {
+			ignoreFlag = true
+		}
+
+		if _, err := dns.GlbDNSSvr.GetDnsPeerPoolItem(hex.EncodeToString(keypair.SerializePublicKey(acc.PublicKey))); err != nil {
+			ignoreFlag = true
+		}
+
+		if ignoreFlag == false {
 			err = setDNSNodeFunc(dnsUrl, v.WalletAddr.ToBase58())
 			if err != nil {
 				continue
