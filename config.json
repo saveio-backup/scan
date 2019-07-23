@@ -11,8 +11,8 @@
         "SeedInterval": 10,
         "DnsChannelDeposit": 1000000000,
         "WalletDir": "./wallet.dat",
-        "WalletPwd": "wwens",
-        "P2PNATAddr": "kcp://10.0.1.208:6009"
+        "WalletPwd": "pwd",
+        "P2PNATAddr": "kcp://40.73.100.114:6009"
     },
     "P2P": {
         "Protocol": "kcp",
@@ -21,8 +21,8 @@
         "SeedList": []
     },
     "DNS": {
-        "AutoSetupDNSRegisterEnable": true,
-        "AutoSetupDNSChannelsEnable": true,
+        "AutoSetupDNSRegisterEnable": false,
+        "AutoSetupDNSChannelsEnable": false,
         "Protocol": "kcp",
         "UdpPort": 11259,
         "InitDeposit": 1000000000,

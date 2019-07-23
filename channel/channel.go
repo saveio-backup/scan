@@ -18,6 +18,7 @@ import (
 	"github.com/saveio/scan/storage"
 	chain "github.com/saveio/themis-go-sdk"
 	"github.com/saveio/themis/account"
+	chainCom "github.com/saveio/themis/common"
 	"github.com/saveio/themis/common/log"
 )
 
@@ -63,7 +64,10 @@ func NewChannelSvr(acc *account.Account, p2pActor *actor.PID) (*ChannelSvr, erro
 
 	if len(cs.Config.ChannelListenAddr) > 0 && acc != nil {
 		var err error
-		cs.Channel, err = channel.NewChannelService(cs.Config, cs.Chain)
+		getHostCallBack := func(addr chainCom.Address) (string, error) {
+			return "", errors.New("getHostCallBack no address")
+		}
+		cs.Channel, err = channel.NewChannelService(cs.Config, cs.Chain, getHostCallBack)
 		if err != nil {
 			log.Errorf("init channel err %s", err)
 			return nil, err
@@ -128,8 +132,8 @@ func (this *ChannelSvr) GetExternalIP(walletAddr string) string {
 }
 
 //pylons api
-func (this *ChannelSvr) OpenChannel(partnerAddr string) (chanCom.ChannelID, error) {
-	return this.Channel.OpenChannel(partnerAddr)
+func (this *ChannelSvr) OpenChannel(partnerAddr string, amount uint64) (chanCom.ChannelID, error) {
+	return this.Channel.OpenChannel(partnerAddr, amount)
 }
 
 // func (this *ChannelSvr) CloseChannel(partnerAddr string) error {

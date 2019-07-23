@@ -908,7 +908,7 @@ func OpenChannel(params []interface{}) map[string]interface{} {
 		return responsePack(berr.INVALID_PARAMS, "")
 	}
 
-	id, err := channel.GlbChannelSvr.OpenChannel(partnerAddrstr)
+	id, err := channel.GlbChannelSvr.OpenChannel(partnerAddrstr, 0)
 	if err != nil {
 		log.Errorf("OpenChannel error: %s", err)
 		return responsePack(berr.INTERNAL_ERROR, err.Error())

@@ -517,9 +517,9 @@ func autoSetupDNSChannelsWorking(ctx *cli.Context, p2pActor *actor.PID) error {
 
 	setDNSNodeFunc := func(dnsUrl, walletAddr string) error {
 		log.Debugf("set dns node func %s %s", dnsUrl, walletAddr)
-		if err := client.P2pIsPeerListening(dnsUrl); err != nil {
-			return err
-		}
+		// if err := client.P2pIsPeerListening(dnsUrl); err != nil {
+		// 	return err
+		// }
 		if strings.Index(dnsUrl, "0.0.0.0:0") != -1 {
 			return errors.NewErr("invalid host addr")
 		}
@@ -527,7 +527,7 @@ func autoSetupDNSChannelsWorking(ctx *cli.Context, p2pActor *actor.PID) error {
 		if err != nil {
 			return err
 		}
-		_, err = channel.GlbChannelSvr.Channel.OpenChannel(walletAddr)
+		_, err = channel.GlbChannelSvr.Channel.OpenChannel(walletAddr, 0)
 		if err != nil {
 			log.Debugf("open channel err ")
 			return err
@@ -538,7 +538,7 @@ func autoSetupDNSChannelsWorking(ctx *cli.Context, p2pActor *actor.PID) error {
 			return err
 		}
 		log.Debugf("channel connected %s %s", walletAddr, err)
-		bal, _ := channel.GlbChannelSvr.Channel.GetAvaliableBalance(walletAddr)
+		bal, _ := channel.GlbChannelSvr.Channel.GetAvailableBalance(walletAddr)
 		log.Debugf("current balance %d", bal)
 		log.Infof("connect to dns node :%s, deposit %d", dnsUrl, config.DefaultConfig.DnsConfig.ChannelDeposit)
 		err = channel.GlbChannelSvr.Channel.SetDeposit(walletAddr, config.DefaultConfig.DnsConfig.ChannelDeposit)
@@ -547,7 +547,7 @@ func autoSetupDNSChannelsWorking(ctx *cli.Context, p2pActor *actor.PID) error {
 			// TODO: withdraw and close channel
 			return err
 		}
-		bal, _ = channel.GlbChannelSvr.Channel.GetAvaliableBalance(walletAddr)
+		bal, _ = channel.GlbChannelSvr.Channel.GetAvailableBalance(walletAddr)
 		log.Debugf("current deposited balance %d", bal)
 		log.Info("channel deposit success")
 
