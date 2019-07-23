@@ -2,7 +2,6 @@ package tracker
 
 import (
 	"bytes"
-	"encoding"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -12,11 +11,12 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/anacrolix/dht/krpc"
 	"github.com/anacrolix/missinggo"
 	"github.com/anacrolix/missinggo/pproffd"
 	"github.com/saveio/themis/common/log"
 	//"github.com/saveio/themis/common"
+	"encoding"
+	"github.com/anacrolix/dht/krpc"
 )
 
 type Action int32
@@ -31,7 +31,8 @@ const (
 	ActionUnReg
 	ActionReq
 	ActionUpdate
-
+	ActionRegNodeType
+	ActionGetNodesByType
 	connectRequestConnectionId = 0x41727101980
 
 	// BEP 41
@@ -112,7 +113,8 @@ func (c *udpAnnounce) ipv6() bool {
 func (c *udpAnnounce) Do(req AnnounceRequest) (res AnnounceResponse, err error) {
 	err = c.connect()
 	if err != nil {
-		return
+		log.Error("Do connect err: ", err.Error())
+		return AnnounceResponse{}, err
 	}
 	reqURI := c.url.RequestURI()
 	//if c.ipv6() {
@@ -125,15 +127,15 @@ func (c *udpAnnounce) Do(req AnnounceRequest) (res AnnounceResponse, err error) 
 	// Clearly this limits the request URI to 255 bytes. BEP 41 supports
 	// longer but I'm not fussed.
 	options := append([]byte{optionTypeURLData, byte(len(reqURI))}, []byte(reqURI)...)
-	flag := c.a.flag
 	var b *bytes.Buffer
+	flag := c.a.flag
 	if flag != 0 {
 		b, err = c.request(flag, req, options)
 	} else {
 		b, err = c.request(ActionAnnounce, req, options)
 	}
 	if err != nil {
-		return
+		return AnnounceResponse{}, err
 	}
 	var h AnnounceResponseHeader
 	err = readBody(b, &h)
@@ -142,7 +144,7 @@ func (c *udpAnnounce) Do(req AnnounceRequest) (res AnnounceResponse, err error) 
 			err = io.ErrUnexpectedEOF
 		}
 		err = fmt.Errorf("error parsing announce response: %s", err)
-		return
+		return AnnounceResponse{}, err
 	}
 	res.Interval = h.Interval
 	res.Leechers = h.Leechers
@@ -150,24 +152,31 @@ func (c *udpAnnounce) Do(req AnnounceRequest) (res AnnounceResponse, err error) 
 	res.IPAddress = h.IPAddress
 	res.Port = h.Port
 	res.Wallet = h.Wallet
-	nas := func() interface {
-		encoding.BinaryUnmarshaler
-		NodeAddrs() []krpc.NodeAddr
-	} {
-		if c.ipv6() {
-			return &krpc.CompactIPv6NodeAddrs{}
-		} else {
-			return &krpc.CompactIPv4NodeAddrs{}
+
+	if  c.a.flag == ActionAnnounce {
+		nas := func() interface {
+			encoding.BinaryUnmarshaler
+			NodeAddrs() []krpc.NodeAddr
+		} {
+			if c.ipv6() {
+				return &krpc.CompactIPv6NodeAddrs{}
+			} else {
+				return &krpc.CompactIPv4NodeAddrs{}
+			}
+		}()
+		err = nas.UnmarshalBinary(b.Bytes())
+		if err != nil {
+			return AnnounceResponse{}, err
 		}
-	}()
-	err = nas.UnmarshalBinary(b.Bytes())
-	if err != nil {
-		return
+		for _, cp := range nas.NodeAddrs() {
+			res.Peers = append(res.Peers, Peer{}.FromNodeAddr(cp))
+		}
+	} else if c.a.flag == ActionGetNodesByType {
+		log.Debugf("Client ActionGetNodesByType: %v", b.Bytes())
+		res.NodesInfo = &NodesInfoSt{}
+		err = res.NodesInfo.DeSerialize(b)
 	}
-	for _, cp := range nas.NodeAddrs() {
-		res.Peers = append(res.Peers, Peer{}.FromNodeAddr(cp))
-	}
-	return
+	return res, nil
 }
 
 // body is the binary serializable request body. trailer is optional data
@@ -294,19 +303,19 @@ func (c *udpAnnounce) connect() (err error) {
 		c.socket, err = net.Dial(c.dialNetwork(), hmp.String())
 		if err != nil {
 			log.Debugf("Net Dial error:%v", err)
-			return
+			return err
 		}
 		log.Debugf("Net Dial success,socket:%v", c.socket)
 		c.socket = pproffd.WrapNetConn(c.socket)
 	}
 	b, err := c.request(ActionConnect, nil, nil)
 	if err != nil {
-		return
+		return err
 	}
 	var res ConnectionResponse
 	err = readBody(b, &res)
 	if err != nil {
-		return
+		return err
 	}
 	c.connectionId = res.ConnectionId
 	c.connectionIdReceived = time.Now()

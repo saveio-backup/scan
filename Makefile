@@ -5,7 +5,7 @@ BUILD_DDNS_PAR = -ldflags "-X github.com/oniio/oniDNS/config/config.VERSION=$(VE
 
 SRC_FILES = $(shell git ls-files | grep -e .go$ | grep -v _test.go)
 
-ddns: 
+ddns: clean 
 	$(GC) $(BUILD_DDNS_PAR) -o ddns main.go
 
 

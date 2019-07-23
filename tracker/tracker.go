@@ -24,6 +24,7 @@ type AnnounceRequest struct {
 	NumWant   int32 // How many peer addresses are desired. -1 for default.
 	Port      uint16
 	Wallet    common.Address
+	NodeType  NodeType
 } // 82 bytes
 
 type AnnounceResponse struct {
@@ -34,6 +35,7 @@ type AnnounceResponse struct {
 	IPAddress [4]byte
 	Port      uint16
 	Wallet    [20]byte
+	NodesInfo *NodesInfoSt
 }
 
 type AnnounceEvent int32

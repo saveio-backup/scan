@@ -70,28 +70,33 @@ func (s *Server) Accepted() (err error) {
 	b := make([]byte, 0x10000)
 	n, addr, err := s.pc.ReadFrom(b)
 	if err != nil {
+		log.Error("[ReadFrom]: ", err.Error())
 		return
 	}
 	r := bytes.NewReader(b[:n])
 	var h RequestHeader
 	err = readBody(r, &h)
 	if err != nil {
+		log.Error("[readBody]: ", err.Error())
 		return
 	}
+
 	switch h.Action {
 	case ActionConnect:
+		log.Info("TrackerServer Accepted ActionConnect")
 		if h.ConnectionId != connectRequestConnectionId {
 			return
 		}
 		connId := s.newConn()
 		err = s.respond(addr, ResponseHeader{
-			ActionConnect,
-			h.TransactionId,
+			Action: ActionConnect,
+			TransactionId:h.TransactionId,
 		}, ConnectionResponse{
-			connId,
+			ConnectionId:connId,
 		})
 		return
 	case ActionAnnounce:
+		log.Info("TrackerServer Accepted ActionAnnounce")
 		if _, ok := s.conns[h.ConnectionId]; !ok {
 			s.respond(addr, ResponseHeader{
 				TransactionId: h.TransactionId,
@@ -181,6 +186,7 @@ func (s *Server) Accepted() (err error) {
 		}, b)
 		return
 	case ActionReg:
+		log.Info("TrackerServer Accepted ActionReg")
 		if _, ok := s.conns[h.ConnectionId]; !ok {
 			s.respond(addr, ResponseHeader{
 				TransactionId: h.TransactionId,
@@ -203,9 +209,9 @@ func (s *Server) Accepted() (err error) {
 			IP:   ar.IPAddress[:],
 			Port: int(ar.Port),
 		}
-		log.Infof("nodeAddr: %v, %d", nodeAddr.IP, nodeAddr.Port)
+		log.Infof("ActionReg nodeAddr: %v, %d", nodeAddr.IP, nodeAddr.Port)
 		nb, err := nodeAddr.MarshalBinary()
-		log.Infof("wall: %v, nb: %v", ar.Wallet.ToBase58(), nb)
+		log.Infof("ActionReg Wallet: %v, nb: %v", ar.Wallet.ToBase58(), nb)
 		if err != nil {
 			err = fmt.Errorf("nodeAddr marshal error")
 			return err
@@ -233,6 +239,7 @@ func (s *Server) Accepted() (err error) {
 		log.Infof("Tracker client  reg success,wallet:%s,nodeAddr:%s", Ccomon.ToHexString(ar.Wallet[:]), nodeAddr.String())
 		return err
 	case ActionUnReg:
+		log.Info("TrackerServer Accepted ActionUnReg")
 		if _, ok := s.conns[h.ConnectionId]; !ok {
 			s.respond(addr, ResponseHeader{
 				TransactionId: h.TransactionId,
@@ -269,8 +276,8 @@ func (s *Server) Accepted() (err error) {
 		})
 		log.Debugf("Tracker client  unReg success,wallet:%s", ar.Wallet)
 		return
-
 	case ActionReq:
+		log.Info("TrackerServer Accepted ActionReq")
 		if _, ok := s.conns[h.ConnectionId]; !ok {
 			s.respond(addr, ResponseHeader{
 				TransactionId: h.TransactionId,
@@ -306,10 +313,10 @@ func (s *Server) Accepted() (err error) {
 			Port:      uint16(nodeAddr.Port),
 		})
 
-		log.Debugf("Tracker client  req success,wallet:%s,nodeAddr:%s", ar.Wallet, string(nb))
+		log.Debugf("Tracker client req success,wallet:%s,nodeAddr:%s", ar.Wallet, string(nb))
 		return err
-
 	case ActionUpdate:
+		log.Info("TrackerServer Accepted ActionUpdate")
 		if _, ok := s.conns[h.ConnectionId]; !ok {
 			s.respond(addr, ResponseHeader{
 				TransactionId: h.TransactionId,
@@ -365,7 +372,79 @@ func (s *Server) Accepted() (err error) {
 			Port:      uint16(nodeAddr.Port),
 		})
 		return
+	case ActionRegNodeType:
+		log.Info("TrackerServer Accepted ActionRegNodeType")
+		if _, ok := s.conns[h.ConnectionId]; !ok {
+			s.respond(addr, ResponseHeader{
+				TransactionId: h.TransactionId,
+				Action:        ActionError,
+			}, []byte("not connected"))
+			return
+		}
+		var ar AnnounceRequest
+		err = readBody(r, &ar)
+		if err != nil {
+			return
+		}
+		if ar.Wallet == Ccomon.ADDRESS_EMPTY {
+			err = fmt.Errorf("nil walletAddr")
+			return
+		}
+		nodeAddr := krpc.NodeAddr{
+			IP:   ar.IPAddress[:],
+			Port: int(ar.Port),
+		}
+
+		err = SaveNodeInfo(ar.NodeType, ar.Wallet, nodeAddr.String())
+		if err != nil {
+			log.Errorf("SaveNodeInfo error: %s", err.Error())
+			return
+		}
+
+		ipAddr := ipconvert(nodeAddr.IP)
+		err = s.respond(addr, ResponseHeader{
+			TransactionId: h.TransactionId,
+			Action:        ActionReg,
+		}, AnnounceResponseHeader{
+			IPAddress: ipAddr,
+			Port:      ar.Port,
+			Wallet:    ar.Wallet,
+		})
+		log.Infof("Tracker client  reg success,wallet:%s,nodeAddr:%s,nodeType:%d", Ccomon.ToHexString(ar.Wallet[:]), nodeAddr.String(), ar.NodeType)
+		return err
+
+	case ActionGetNodesByType:
+		log.Info("TrackerServer Accepted ActionGetNodesByType")
+		if _, ok := s.conns[h.ConnectionId]; !ok {
+			s.respond(addr, ResponseHeader{
+				TransactionId: h.TransactionId,
+				Action:        ActionError,
+			}, []byte("not connected"))
+			return
+		}
+		var ar AnnounceRequest
+		err = readBody(r, &ar)
+		if err != nil {
+			return
+		}
+
+		var nodesInfo []byte
+		nodesInfo, err = GetNodesInfo(ar.NodeType)
+		if err != nil {
+			err = fmt.Errorf("SaveNodeInfo error: %s", err.Error())
+			return
+		}
+
+		err = s.respond(addr, ResponseHeader{
+			TransactionId: h.TransactionId,
+			Action:        ActionReg,
+		}, AnnounceResponseHeader{
+		}, nodesInfo)
+		log.Debugf("Server ActionGetNodesByType: %v", nodesInfo)
+		log.Info("Tracker client lookUp success")
+		return err
 	default:
+		log.Info("TrackerServer Accepted default")
 		err = fmt.Errorf("unhandled action: %d", h.Action)
 		s.respond(addr, ResponseHeader{
 			TransactionId: h.TransactionId,
@@ -381,8 +460,6 @@ func (s *Server) onAnnounceStarted(ar *AnnounceRequest, pi *peerInfo) {
 		return
 	}
 
-	//ip := make(net.IP, 4)
-	//binary.BigEndian.PutUint32(ip, ar.IPAddress)
 	peer := krpc.NodeAddr{
 		IP:   ar.IPAddress[:],
 		Port: int(ar.Port),

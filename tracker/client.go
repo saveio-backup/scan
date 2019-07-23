@@ -25,6 +25,7 @@ func CompleteTorrent(infoHash common.MetaInfoHash, trackerUrl string, nodeIP net
 			Port:      port,
 			Event:     AnnounceEventCompleted,
 		},
+		flag: ActionAnnounce,
 	}
 	ret, err := announce.Do()
 	if err != nil {
@@ -47,6 +48,7 @@ func GetTorrentPeers(infoHash common.MetaInfoHash, trackerUrl string, numWant in
 			InfoHash: infoHash,
 			NumWant:  numWant,
 		},
+		flag: ActionAnnounce,
 	}
 	ret, err := announce.Do()
 	if err != nil {
@@ -128,6 +130,7 @@ func ReqEndPoint(trackerUrl string, walletAddr [20]byte) ([]byte, error) {
 
 	return nb, nil
 }
+
 func UpdateEndPoint(trackerUrl string, walletAddr [20]byte, nodeIP net.IP, port uint16) error {
 	id := common.PeerID{}
 	rand.Read(id[:])
@@ -148,4 +151,48 @@ func UpdateEndPoint(trackerUrl string, walletAddr [20]byte, nodeIP net.IP, port 
 	}
 	log.Debugf("[UpdateEndPoint]  wallet:%s, ip:%v, port:%d\n", ret.Wallet, ret.IPAddress, ret.Port)
 	return nil
+}
+
+func RegNodeType(trackerUrl string, walletAddr [20]byte, nodeIP net.IP, port uint16, nodeType NodeType) error {
+	id := common.PeerID{}
+	rand.Read(id[:])
+	announce := Announce{
+		TrackerUrl: trackerUrl,
+		Request: AnnounceRequest{
+			PeerId:    id,
+			Wallet:    walletAddr,
+			IPAddress: ipconvert(nodeIP),
+			Port:      port,
+			NodeType:  nodeType,
+		},
+		flag: ActionRegNodeType,
+	}
+	ret, err := announce.Do()
+	if err != nil {
+		log.Errorf("RegEndPoint failed err:%s\n", err)
+		return err
+	}
+	log.Debugf("[UpdateEndPoint]  wallet:%s, ip:%v, port:%d\n", ret.Wallet, ret.IPAddress, ret.Port)
+	return nil
+}
+
+func GetNodesByType(trackerUrl string, nodeType NodeType) (*NodesInfoSt, error) {
+	id := common.PeerID{}
+	rand.Read(id[:])
+	announce := Announce{
+		TrackerUrl: trackerUrl,
+		Request: AnnounceRequest{
+			PeerId:   id,
+			NodeType: nodeType,
+		},
+		flag: ActionGetNodesByType,
+	}
+
+	ret, err := announce.Do()
+	if err != nil {
+		log.Errorf("RegEndPoint failed err:%s\n", err)
+		return nil, err
+	}
+	log.Debugf("[UpdateEndPoint]  wallet:%s, ip:%v, port:%d\n", ret.Wallet, ret.IPAddress, ret.Port)
+	return ret.NodesInfo, nil
 }
