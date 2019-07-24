@@ -69,6 +69,7 @@ type CommonConfig struct {
 	WalletDir string `json:"WalletDir"`
 
 	P2PNATAddr string `json:"P2PNATAddr`
+	NetworkId  uint32 `json:"NetworkID`
 }
 
 type FsConfig struct {

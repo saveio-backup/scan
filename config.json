@@ -12,10 +12,11 @@
         "DnsChannelDeposit": 1000000000,
         "WalletDir": "./wallet.dat",
         "WalletPwd": "pwd",
-        "P2PNATAddr": "kcp://40.73.100.114:6009"
+	"P2PNATAddr": "tcp://40.73.100.114:6007",
+	"NetworkId": 1563935261 
     },
     "P2P": {
-        "Protocol": "kcp",
+        "Protocol": "tcp",
         "NetworkId": 1,
         "PortBase": 6699,
         "SeedList": []

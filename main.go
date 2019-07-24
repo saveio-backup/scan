@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"os"
@@ -8,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/saveio/carrier/crypto"
+	"github.com/saveio/carrier/crypto/ed25519"
 	"github.com/saveio/dsp-go-sdk/actor/client"
 	"github.com/saveio/scan/channel"
 	"github.com/saveio/scan/dns"
@@ -284,7 +287,19 @@ func initialize(ctx *cli.Context) {
 	log.Info("SCAN initialize NewDNSSvr SUCCESS.")
 
 	// setup p2p network
+	bPub := keypair.SerializePublicKey(acc.PubKey())
 	p2pNetwork := network.NewP2P()
+	channelPubKey, channelPrivateKey, err := ed25519.GenerateKey(&accountReader{
+		PublicKey: append(bPub, []byte("channel")...),
+	})
+	if err != nil {
+		log.Errorf("SCAN initialize p2p network GenerateKey faield, err: %v", err)
+		os.Exit(1)
+	}
+	p2pNetwork.Keys = &crypto.KeyPair{
+		PublicKey:  channelPubKey,
+		PrivateKey: channelPrivateKey,
+	}
 	p2pNetwork.SetProxyServer(config.DefaultConfig.CommonConfig.P2PNATAddr)
 	p2pNetwork.SetPID(p2pActor.GetLocalPID())
 	p2pActor.SetNetwork(p2pNetwork)
@@ -313,12 +328,14 @@ func initialize(ctx *cli.Context) {
 		}
 	}
 
+	fmt.Println("p2pNetwork Strat")
 	if err := p2pNetwork.Start(common.FullHostAddr(
 		fmt.Sprintf("127.0.0.1:%d", config.DefaultConfig.P2PConfig.PortBase),
 		config.DefaultConfig.P2PConfig.Protocol), bootstraps); err != nil {
 		log.Errorf("SCAN initialize Start P2P FAILED, err: %v", err)
 		os.Exit(1)
 	}
+	fmt.Println("p2pNetwork Strated")
 	log.Info("SCAN initialize Start P2P SUCCESS.")
 
 	// setup dns and endpoint registry
@@ -632,4 +649,23 @@ func GetExternalIP(walletAddr string) (string, error) {
 		return "", errors.NewErr("host addr format wrong")
 	}
 	return hostAddrStr, nil
+}
+
+type accountReader struct {
+	PublicKey []byte
+}
+
+func (this accountReader) Read(buf []byte) (int, error) {
+	bufs := make([]byte, 0)
+	hash := sha256.Sum256(this.PublicKey)
+	bufs = append(bufs, hash[:]...)
+	log.Debugf("bufs :%s", hex.EncodeToString(bufs))
+	for i, _ := range buf {
+		if i < len(bufs) {
+			buf[i] = bufs[i]
+			continue
+		}
+		buf[i] = 0
+	}
+	return len(buf), nil
 }

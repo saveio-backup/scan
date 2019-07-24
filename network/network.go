@@ -1,32 +1,32 @@
 package network
 
 import (
+	"context"
 	"errors"
+	"fmt"
+	"strings"
 	"sync"
+	"time"
 
 	"github.com/saveio/carrier/crypto"
 	"github.com/saveio/carrier/crypto/ed25519"
 	"github.com/saveio/carrier/network"
-	"github.com/saveio/carrier/types/opcode"
-	"github.com/saveio/pylons/common/constants"
-	"github.com/saveio/pylons/transfer"
-
-	"context"
-
-	"github.com/saveio/carrier/network/components/discovery"
+	"github.com/saveio/carrier/network/components/backoff"
 	"github.com/saveio/carrier/network/components/keepalive"
 	"github.com/saveio/carrier/network/components/proxy"
+	"github.com/saveio/carrier/types/opcode"
+	"github.com/saveio/dsp-go-sdk/network/common"
 	act "github.com/saveio/pylons/actor/server"
 	"github.com/saveio/themis/common/log"
 
-	//"github.com/golang/protobuf/proto"
+	"github.com/saveio/pylons/common/constants"
 	"github.com/saveio/pylons/network/transport/messages"
+	"github.com/saveio/pylons/transfer"
 
-	"fmt"
-	"time"
-
+	//"github.com/golang/protobuf/proto"
 	"github.com/gogo/protobuf/proto"
 	"github.com/ontio/ontology-eventbus/actor"
+	"github.com/saveio/scan/common/config"
 	pm "github.com/saveio/scan/messages/protoMessages"
 )
 
@@ -106,12 +106,27 @@ func (this *Network) SetProxyServer(address string) {
 	this.proxyAddr = address
 }
 
+func (this *Network) Protocol() string {
+	idx := strings.Index(this.PublicAddr(), "://")
+	if idx == -1 {
+		return "tcp"
+	}
+	return this.PublicAddr()[:idx]
+}
+
 func (this *Network) Start(address string, bootstraps []string) error {
-	builder := network.NewBuilder()
+	protocolIndex := strings.Index(address, "://")
+	if protocolIndex == -1 {
+		return errors.New("invalid address")
+	}
+	protocol := address[:protocolIndex]
+	log.Debugf("channel protocol %s", protocol)
+	builder := network.NewBuilderWithOptions(network.WriteFlushLatency(1 * time.Millisecond))
 	if this.Keys != nil {
 		log.Debugf("channel use account key")
 		builder.SetKeys(this.Keys)
 	} else {
+		log.Debugf("channel use RandomKeyPair key")
 		builder.SetKeys(ed25519.RandomKeyPair())
 	}
 
@@ -127,18 +142,33 @@ func (this *Network) Start(address string, bootstraps []string) error {
 		keepalive.WithKeepaliveTimeout(this.keepaliveTimeout),
 		keepalive.WithPeerStateChan(this.peerStateChan),
 	}
-
-	builder.AddComponent(keepalive.New(options...))
-	// Register peer discovery Component.
-	builder.AddComponent(new(discovery.Component))
-
 	component := new(NetComponent)
 	component.Net = this
 	builder.AddComponent(component)
+	builder.AddComponent(keepalive.New(options...))
+	backoff_options := []backoff.ComponentOption{
+		backoff.WithInitialDelay(3 * time.Second),
+		backoff.WithMaxAttempts(10),
+		backoff.WithPriority(10),
+	}
+	builder.AddComponent(backoff.New(backoff_options...))
+	fmt.Println(protocol, this.proxyAddr)
 
 	if len(this.proxyAddr) > 0 {
-		// builder.AddComponent(new(proxy.UDPProxyComponent))
-		builder.AddComponent(new(proxy.KCPProxyComponent))
+		switch protocol {
+		case "udp":
+			fmt.Println("UDPProxyComponent")
+			builder.AddComponent(new(proxy.UDPProxyComponent))
+		case "kcp":
+			fmt.Println("KCPProxyComponent")
+			builder.AddComponent(new(proxy.KCPProxyComponent))
+		case "quic":
+			fmt.Println("QuicProxyComponent")
+			builder.AddComponent(new(proxy.QuicProxyComponent))
+		case "tcp":
+			fmt.Println("TcpProxyComponent")
+			builder.AddComponent(new(proxy.TcpProxyComponent))
+		}
 	}
 	var err error
 	this.P2p, err = builder.Build()
@@ -155,28 +185,33 @@ func (this *Network) Start(address string, bootstraps []string) error {
 			}
 		}
 	})
-
 	if len(this.proxyAddr) > 0 {
+		this.P2p.EnableProxyMode(true)
 		this.P2p.SetProxyServer(this.proxyAddr)
 	}
+	this.P2p.SetNetworkID(config.DefaultConfig.CommonConfig.NetworkId)
 	go this.P2p.Listen()
 	go this.PeerStateChange(this.syncPeerState)
 
 	this.P2p.BlockUntilListening()
-	log.Debugf("will BlockUntilProxyFinish...")
+	log.Debugf("channel will BlockUntilProxyFinish..., networkid %d", config.DefaultConfig.CommonConfig.NetworkId)
 	if len(this.proxyAddr) > 0 {
-		// this.P2p.BlockUntilUDPProxyFinish()
-		this.P2p.BlockUntilKCPProxyFinish()
+		switch protocol {
+		case "udp":
+			this.P2p.BlockUntilUDPProxyFinish()
+		case "kcp":
+			this.P2p.BlockUntilKCPProxyFinish()
+		case "quic":
+			this.P2p.BlockUntilQuicProxyFinish()
+		case "tcp":
+			this.P2p.BlockUntilTcpProxyFinish()
+
+		}
 	}
 	log.Debugf("finish BlockUntilProxyFinish...")
-
-	if len(bootstraps) > 0 {
-		this.P2p.Bootstrap(bootstraps...)
-		log.Debug("had bootStraped peers: %v", bootstraps)
+	if len(this.P2p.ID.Address) == 6 {
+		return errors.New("invalid address")
 	}
-
-	// time.Sleep(1 * time.Second)
-
 	return nil
 }
 
@@ -244,9 +279,7 @@ func (this *Network) Connect(tAddr string) error {
 		return nil
 	}
 	this.addressForHealthCheck.Store(tAddr, struct{}{})
-	log.Infof("Bootstraping %s", tAddr)
 	this.P2p.Bootstrap(tAddr)
-	time.Sleep(1 * time.Second)
 	return nil
 }
 
@@ -271,7 +304,9 @@ func (this *Network) Send(msg proto.Message, toAddr string) error {
 	if err != nil {
 		return fmt.Errorf("failed to sign message")
 	}
+	log.Debugf("write msg to %s", toAddr)
 	err = this.P2p.Write(toAddr, signed)
+	log.Debugf("write msg done to %s", toAddr)
 	if err != nil {
 		return fmt.Errorf("failed to send message to %s", toAddr)
 	}
@@ -304,6 +339,38 @@ func (this *Network) GetPID() *actor.PID {
 	return this.pid
 }
 
+func (this *Network) Request(msg proto.Message, peer string) (proto.Message, error) {
+	client := this.P2p.GetPeerClient(peer)
+	if client == nil {
+		return nil, fmt.Errorf("get peer client is nil %s", peer)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(common.REQUEST_MSG_TIMEOUT)*time.Second)
+	defer cancel()
+	return client.Request(ctx, msg)
+}
+
+func (this *Network) RequestWithRetry(msg proto.Message, peer string, retry int) (proto.Message, error) {
+	client := this.P2p.GetPeerClient(peer)
+	if client == nil {
+		return nil, fmt.Errorf("get peer client is nil %s", peer)
+	}
+	var res proto.Message
+	var err error
+	for i := 0; i < retry; i++ {
+		log.Debugf("send request msg to %s with retry %d", peer, retry)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(common.REQUEST_MSG_TIMEOUT)*time.Second)
+		defer cancel()
+		res, err = client.Request(ctx, msg)
+		if err == nil || err.Error() != "context deadline exceeded" {
+			break
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
 func (this *Network) PeerStateChange(fn func(*keepalive.PeerStateEvent)) {
 	ka, reg := this.P2p.Component(keepalive.ComponentID)
 	if !reg {
@@ -325,18 +392,21 @@ func (this *Network) PeerStateChange(fn func(*keepalive.PeerStateEvent)) {
 }
 func (this *Network) syncPeerState(state *keepalive.PeerStateEvent) {
 	var nodeNetworkState string
-	if state.State == keepalive.PEER_REACHABLE {
-		log.Debugf("[syncPeerState] addr: %s state: NetworkReachable, pubilc addr: %s\n", state.Address, this.P2p.ID.Address)
+	log.Debugf("[syncPeerState] addr: %s state: %v", state.Address, state.State)
+	switch state.State {
+	case keepalive.PEER_REACHABLE:
+		log.Debugf("[syncPeerState] addr: %s state: NetworkReachable\n", state.Address)
 		this.ActivePeers.LoadOrStore(state.Address, struct{}{})
-		this.addressForHealthCheck.Store(state.Address, struct{}{})
 		nodeNetworkState = transfer.NetworkReachable
-	} else {
+		act.SetNodeNetworkState(state.Address, nodeNetworkState)
+	case keepalive.PEER_UNKNOWN:
+		log.Debugf("[syncPeerState] addr: %s state: PEER_UNKNOWN\n", state.Address)
+	case keepalive.PEER_UNREACHABLE:
 		this.ActivePeers.Delete(state.Address)
-		this.addressForHealthCheck.Delete(state.Address)
-		log.Debugf("[syncPeerState] addr: %s state: NetworkUnreachable, public addr: %s\n", state.Address, this.P2p.ID.Address)
+		log.Debugf("[syncPeerState] addr: %s state: NetworkUnreachable\n", state.Address)
 		nodeNetworkState = transfer.NetworkUnreachable
+		act.SetNodeNetworkState(state.Address, nodeNetworkState)
 	}
-	act.SetNodeNetworkState(state.Address, nodeNetworkState)
 }
 
 //P2P network msg receive. torrent msg, reg msg, unReg msg
