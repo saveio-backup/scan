@@ -65,8 +65,9 @@ func NewChannelSvr(acc *account.Account, p2pActor *actor.PID) (*ChannelSvr, erro
 	if len(cs.Config.ChannelListenAddr) > 0 && acc != nil {
 		var err error
 		getHostCallBack := func(addr chainCom.Address) (string, error) {
-			return "", errors.New("getHostCallBack no address")
+			return GetExternalIP(addr.ToBase58())
 		}
+
 		cs.Channel, err = channel.NewChannelService(cs.Config, cs.Chain, getHostCallBack)
 		if err != nil {
 			log.Errorf("init channel err %s", err)
@@ -108,8 +109,8 @@ func (this *ChannelSvr) StartChannelService() error {
 // SetupPartnerHost. setup host addr for partners
 func (this *ChannelSvr) SetupPartnerHost(partners []string) {
 	for _, addr := range partners {
-		host := this.GetExternalIP(addr)
-		if host != "" {
+		host, err := GetExternalIP(addr)
+		if err != nil && host != "" {
 			log.Infof("SetHostAddr partners, addr: %s host: %s", addr, host)
 			this.Channel.SetHostAddr(addr, host)
 		}
@@ -117,17 +118,17 @@ func (this *ChannelSvr) SetupPartnerHost(partners []string) {
 }
 
 // GetExternalIP. get external ip of wallet from dns nodes
-func (this *ChannelSvr) GetExternalIP(walletAddr string) string {
+func GetExternalIP(walletAddr string) (string, error) {
 	w, _ := common.WHPTobyte(walletAddr, "")
 	hpBytes, err := storage.TDB.Get(w)
 	if err != nil {
-		return ""
+		return "", err
 	} else {
 		var nodeAddr krpc.NodeAddr
 		log.Infof("Channel.GetExternalIP wallAddr: %v, hpBytes: %v", walletAddr, hpBytes)
 		nodeAddr.UnmarshalBinary(hpBytes)
 		log.Infof("Channel.GetExternalIP nodeAddr: %s:%d", nodeAddr.IP, nodeAddr.Port)
-		return fmt.Sprintf("%s://%s:%d", config.DefaultConfig.ChannelConfig.ChannelProtocol, nodeAddr.IP, nodeAddr.Port)
+		return fmt.Sprintf("%s://%s:%d", config.DefaultConfig.ChannelConfig.ChannelProtocol, nodeAddr.IP, nodeAddr.Port), nil
 	}
 }
 

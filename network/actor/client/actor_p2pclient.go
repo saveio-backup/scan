@@ -1,8 +1,11 @@
 package client
 
-import "github.com/gogo/protobuf/proto"
+import (
+	"github.com/ontio/ontology-eventbus/actor"
+)
 
-type RecvMsg struct {
-	From    string
-	Message proto.Message
+var ChannelServerPid *actor.PID
+
+func SetChannelPid(conPid *actor.PID) {
+	ChannelServerPid = conPid
 }

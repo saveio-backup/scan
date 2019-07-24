@@ -72,17 +72,32 @@ func (this *P2PActor) Receive(ctx actor.Context) {
 	case *actor.Restart:
 		log.Warn("[P2p]actor restart")
 	case *act.ConnectReq:
-		log.Warn("[P2p]actor ConnectReq Address: %s", msg.Address)
-		err := this.net.Connect(msg.Address)
-		ctx.Sender().Request(&act.P2pResp{err}, ctx.Self())
+		go func() {
+			msg.Ret.Err = this.net.Connect(msg.Address)
+			msg.Ret.Done <- true
+		}()
 	case *act.CloseReq:
-		log.Warn("[P2p]actor CloseReq")
-		err := this.net.Close(msg.Address)
-		ctx.Sender().Request(&act.P2pResp{err}, ctx.Self())
+		go func() {
+			msg.Ret.Err = this.net.Close(msg.Address)
+			msg.Ret.Done <- true
+		}()
 	case *act.SendReq:
-		log.Warn("[P2p]actor SendReq")
-		err := this.net.Send(msg.Data, msg.Address)
-		ctx.Sender().Request(&act.P2pResp{err}, ctx.Self())
+		go func() {
+			msg.Ret.Err = this.net.Send(msg.Data, msg.Address)
+			msg.Ret.Done <- true
+		}()
+	// case *act.ConnectReq:
+	// 	log.Warn("[P2p]actor ConnectReq Address: %s", msg.Address)
+	// 	err := this.net.Connect(msg.Address)
+	// 	ctx.Sender().Request(&act.P2pResp{err}, ctx.Self())
+	// case *act.CloseReq:
+	// 	log.Warn("[P2p]actor CloseReq")
+	// 	err := this.net.Close(msg.Address)
+	// 	ctx.Sender().Request(&act.P2pResp{err}, ctx.Self())
+	// case *act.SendReq:
+	// 	log.Warn("[P2p]actor SendReq")
+	// 	err := this.net.Send(msg.Data, msg.Address)
+	// 	ctx.Sender().Request(&act.P2pResp{err}, ctx.Self())
 	case *messages.Ping:
 		log.Warn("[P2p]actor Ping")
 		ctx.Sender().Tell(&messages.Pong{})
