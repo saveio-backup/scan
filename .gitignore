@@ -39,3 +39,4 @@ torrentdb/*
 .DS_Store
 ddns
 *.recent
+scan

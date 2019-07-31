@@ -2,9 +2,9 @@ package tracker
 
 import (
 	"crypto/rand"
+	"fmt"
 	"net"
 
-	"github.com/anacrolix/dht/krpc"
 	"github.com/saveio/scan/common"
 	"github.com/saveio/themis/common/log"
 	"github.com/saveio/themis/crypto/keypair"
@@ -103,7 +103,7 @@ func UnRegEndPoint(trackerUrl string, walletAddr [20]byte) error {
 	return nil
 }
 
-func ReqEndPoint(trackerUrl string, walletAddr [20]byte) ([]byte, error) {
+func ReqEndPoint(trackerUrl string, walletAddr [20]byte) (string, error) {
 	id := common.PeerID{}
 	rand.Read(id[:])
 	announce := Announce{
@@ -117,18 +117,10 @@ func ReqEndPoint(trackerUrl string, walletAddr [20]byte) ([]byte, error) {
 	ret, err := announce.Do()
 	if err != nil {
 		log.Errorf("ReqEndPoint failed err:%s\n", err)
-		return nil, err
+		return "", err
 	}
-	var nodeAddr krpc.NodeAddr
-	nodeAddr.IP = ret.IPAddress[:]
-	nodeAddr.Port = int(ret.Port)
-	nb, err := nodeAddr.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	log.Debugf("[ReqEndPoint ]wallet:%s,ip:%v, port:%d\n", ret.Wallet, ret.IPAddress, ret.Port)
-
-	return nb, nil
+	hostIP := net.IP(ret.IPAddress[:])
+	return fmt.Sprintf("%s:%d", hostIP.String(), ret.Port), nil
 }
 
 func UpdateEndPoint(trackerUrl string, walletAddr [20]byte, nodeIP net.IP, port uint16) error {
