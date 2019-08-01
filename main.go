@@ -290,6 +290,7 @@ func initialize(ctx *cli.Context) {
 	bPub := keypair.SerializePublicKey(acc.PubKey())
 	p2pNetwork := network.NewP2P()
 	p2pNetwork.P2p.SetNetworkID(config.DefaultConfig.P2PConfig.NetworkId)
+	log.Debugf("network id :%d", p2pNetwork.P2p.GetNetworkID())
 	channelPubKey, channelPrivateKey, err := ed25519.GenerateKey(&accountReader{
 		PublicKey: append(bPub, []byte("channel")...),
 	})
@@ -331,7 +332,7 @@ func initialize(ctx *cli.Context) {
 
 	fmt.Println("p2pNetwork Strat")
 	if err := p2pNetwork.Start(common.FullHostAddr(
-		fmt.Sprintf("127.0.0.1:%d", config.DefaultConfig.P2PConfig.PortBase),
+		fmt.Sprintf("40.73.96.40:%d", config.DefaultConfig.P2PConfig.PortBase),
 		config.DefaultConfig.P2PConfig.Protocol), bootstraps); err != nil {
 		log.Errorf("SCAN initialize Start P2P FAILED, err: %v", err)
 		os.Exit(1)
