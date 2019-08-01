@@ -28,7 +28,7 @@ func NewDNSSvr(Account *account.Account) (*DNSSvr, error) {
 		Chain: themisSdk.NewChain(),
 	}
 	chainRpcAddr := fmt.Sprintf("http://127.0.0.1:%d", config.DefaultConfig.CommonConfig.ChainRpcAddr)
-	ds.Chain.NewRpcClient().SetAddress(chainRpcAddr)
+	ds.Chain.NewRpcClient().SetAddress([]string{chainRpcAddr})
 
 	ds.Account = Account
 	ds.Chain.SetDefaultAccount(ds.Account)

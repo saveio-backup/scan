@@ -47,7 +47,7 @@ func NewChannelSvr(acc *account.Account, p2pActor *actor.PID) (*ChannelSvr, erro
 		ChannelDBPath:        config.DefaultConfig.ChannelConfig.ChannelDBPath,
 	}
 	cs.Chain = chain.NewChain()
-	cs.Chain.NewRpcClient().SetAddress(cs.Config.ChainRpcAddr)
+	cs.Chain.NewRpcClient().SetAddress([]string{cs.Config.ChainRpcAddr})
 	if acc != nil {
 		cs.Chain.SetDefaultAccount(acc)
 	}
