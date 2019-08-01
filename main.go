@@ -289,6 +289,7 @@ func initialize(ctx *cli.Context) {
 	// setup p2p network
 	bPub := keypair.SerializePublicKey(acc.PubKey())
 	p2pNetwork := network.NewP2P()
+	p2pNetwork.P2p.SetNetworkID(config.DefaultConfig.P2PConfig.NetworkId)
 	channelPubKey, channelPrivateKey, err := ed25519.GenerateKey(&accountReader{
 		PublicKey: append(bPub, []byte("channel")...),
 	})
