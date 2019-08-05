@@ -331,9 +331,7 @@ func initialize(ctx *cli.Context) {
 	}
 
 	fmt.Println("p2pNetwork Strat")
-	if err := p2pNetwork.Start(common.FullHostAddr(
-		fmt.Sprintf("40.73.96.40:%d", config.DefaultConfig.P2PConfig.PortBase),
-		config.DefaultConfig.P2PConfig.Protocol), bootstraps); err != nil {
+	if err := p2pNetwork.Start(common.FullHostAddr(fmt.Sprintf("%s:%d", config.DefaultConfig.P2PConfig.PublicIp, config.DefaultConfig.P2PConfig.PortBase), config.DefaultConfig.P2PConfig.Protocol), bootstraps); err != nil {
 		log.Errorf("SCAN initialize Start P2P FAILED, err: %v", err)
 		os.Exit(1)
 	}

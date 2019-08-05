@@ -81,6 +81,7 @@ type FsConfig struct {
 type P2PConfig struct {
 	Protocol  string   `json:"Protocol"`
 	NetworkId uint32   `json:"NetworkId"`
+	PublicIp  string   `json:"PublicIp"`
 	PortBase  uint     `json:"PortBase"`
 	SeedList  []string `json:"SeedList"`
 }

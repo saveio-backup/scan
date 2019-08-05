@@ -12,12 +12,13 @@
         "DnsChannelDeposit": 1000000000,
         "WalletDir": "./wallet.dat",
         "WalletPwd": "pwd",
-	"P2PNATAddr": "",
-	"NetworkId": 1563935261 
+        "P2PNATAddr": "tcp://40.73.100.114:6007",
+        "NetworkId": 1563935261
     },
     "P2P": {
         "Protocol": "tcp",
         "NetworkId": 1,
+        "PublicIp": "127.0.0.1",
         "PortBase": 6699,
         "SeedList": []
     },
