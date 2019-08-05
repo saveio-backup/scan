@@ -57,6 +57,13 @@ type EndPointRsp struct {
 	Host   string `json:"host"`
 }
 
+type FilterBlockProgress struct {
+	Progress float32
+	Start    uint32
+	End      uint32
+	Now      uint32
+}
+
 type ChannelRsp struct {
 	Id uint32
 }

@@ -418,6 +418,30 @@ func ReqEndPoint(waddr string) (*httpComm.EndPointRsp, *httpComm.FailedRsp) {
 	return endPoint, nil
 }
 
+func CheckChannelInitProgress() (*httpComm.FilterBlockProgress, *httpComm.FailedRsp) {
+	result, ontErr := sendRpcRequest("initprogress", []interface{}{})
+	if ontErr != nil {
+		return nil, &httpComm.FailedRsp{
+			ErrCode:   ontErr.ErrorCode,
+			ErrMsg:    "",
+			FailedMsg: ontErr.Error.Error(),
+		}
+	}
+
+	progress := &httpComm.FilterBlockProgress{}
+	err := json.Unmarshal(result, progress)
+	if err != nil {
+		return nil, &httpComm.FailedRsp{
+			ErrCode:   berr.JSON_UNMARSHAL_ERROR,
+			ErrMsg:    berr.ErrMap[berr.JSON_UNMARSHAL_ERROR],
+			FailedMsg: err.Error(),
+		}
+	}
+	log.Debugf("openchannel success")
+	log.Debugf("OpenChannel result :%s", result)
+	return progress, nil
+}
+
 func OpenChannel(partnerAddr string) (*httpComm.ChannelRsp, *httpComm.FailedRsp) {
 	result, ontErr := sendRpcRequest("openchannel", []interface{}{partnerAddr})
 	if ontErr != nil {

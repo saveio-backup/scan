@@ -15,6 +15,14 @@ var ChannelCommand = cli.Command{
 	Description: "Manage channel",
 	Subcommands: []cli.Command{
 		{
+			Action:      initProgress,
+			Name:        "initprogress",
+			Usage:       "Get channel init progress",
+			ArgsUsage:   " ",
+			Flags:       []cli.Flag{},
+			Description: "Get channel init progress",
+		},
+		{
 			Action:    openChannel,
 			Name:      "open",
 			Usage:     "Open a payment channel",
@@ -117,6 +125,18 @@ var ChannelCommand = cli.Command{
 			Description: "settle cooperatively of channel which belong to owner and partner",
 		},
 	},
+}
+
+func initProgress(ctx *cli.Context) error {
+	SetRpcPort(ctx)
+	progress, failed := utils.CheckChannelInitProgress()
+	if failed != nil {
+		PrintErrorMsg("\nCheck channel init progress failed. Failed message:")
+		PrintJsonObject(failed)
+		return nil
+	}
+	PrintInfoMsg("\nCheck chennal init preogress success. Progress:\n %+v", progress)
+	return nil
 }
 
 func openChannel(ctx *cli.Context) error {

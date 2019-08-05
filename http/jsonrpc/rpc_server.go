@@ -85,6 +85,7 @@ func StartRPCServer() error {
 	// rpc.HandleFunc("getcurrentbalance", rpc.GetCurrentBalance)
 	rpc.HandleFunc("querychanneldeposit", rpc.QueryChannelDeposit)
 	rpc.HandleFunc("queryhostinfo", rpc.QueryHostInfo)
+	rpc.HandleFunc("initprogress", rpc.GetChannelInitProgress)
 	err := http.ListenAndServe(":"+strconv.Itoa(int(cfg.DefaultConfig.RpcConfig.HttpJsonPort)), nil)
 	if err != nil {
 		return fmt.Errorf("ListenAndServe error:%s", err)

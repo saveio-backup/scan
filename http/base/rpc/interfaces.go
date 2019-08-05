@@ -1118,3 +1118,17 @@ func QueryHostInfo(params []interface{}) map[string]interface{} {
 	}
 	return responseSuccess(&endpointRsp)
 }
+
+func GetChannelInitProgress(params []interface{}) map[string]interface{} {
+	progress, err := channel.GlbChannelSvr.GetFilterBlockProgress()
+	if err != nil {
+		return responsePack(berr.INTERNAL_ERROR, err.Error())
+	}
+	progressRsp := httpComm.FilterBlockProgress{
+		Progress: progress.Progress,
+		Start:    progress.Start,
+		End:      progress.End,
+		Now:      progress.Now,
+	}
+	return responseSuccess(&progressRsp)
+}

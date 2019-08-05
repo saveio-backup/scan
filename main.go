@@ -358,19 +358,20 @@ func initialize(ctx *cli.Context) {
 		os.Exit(1)
 	}
 
-	// start channel service
-	if err = channel.GlbChannelSvr.StartChannelService(); err != nil {
-		log.Errorf("SCAN initialize StartChannelService FAILED, err: %v", err)
-		os.Exit(1)
-	}
-	log.Info("SCAN initialize StartChannelService SUCCESS.")
-
 	// setup rpc & restful server
 	if err := initRpc(ctx); err != nil {
 		log.Errorf("SCAN initialize initRpc FAILED, err: %v", err.Error())
 		os.Exit(1)
 	}
 	initRestful(ctx)
+	log.Info("SCAN initialize Restful interface SUCCESS.")
+
+	// start channel service
+	if err = channel.GlbChannelSvr.StartChannelService(); err != nil {
+		log.Errorf("SCAN initialize StartChannelService FAILED, err: %v", err)
+		os.Exit(1)
+	}
+	log.Info("SCAN initialize StartChannelService SUCCESS.")
 
 	// setup dns channel connect
 	if config.DefaultConfig.DnsConfig.AutoSetupDNSChannelsEnable {

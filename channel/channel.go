@@ -178,3 +178,45 @@ func (this *ChannelSvr) ChannelWithdraw(partnerAddr string, amount uint64) error
 func (this *ChannelSvr) QueryHostInfo(partnerAddr string) (string, error) {
 	return this.Channel.GetHostAddr(partnerAddr)
 }
+
+var startChannelHeight uint32
+
+type FilterBlockProgress struct {
+	Progress float32
+	Start    uint32
+	End      uint32
+	Now      uint32
+}
+
+func (this *ChannelSvr) GetFilterBlockProgress() (*FilterBlockProgress, error) {
+	progress := &FilterBlockProgress{}
+	if this.Channel == nil {
+		return progress, nil
+	}
+	endChannelHeight, err := this.Chain.GetCurrentBlockHeight()
+	if err != nil {
+		log.Debugf("get channel err %s", err)
+		return progress, err
+	}
+	if endChannelHeight == 0 {
+		return progress, nil
+	}
+	progress.Start = startChannelHeight
+	progress.End = endChannelHeight
+	now := this.Channel.GetCurrentFilterBlockHeight()
+	progress.Now = now
+	log.Debugf("endChannelHeight %d, start %d", endChannelHeight, startChannelHeight)
+	if endChannelHeight <= startChannelHeight {
+		progress.Progress = 1.0
+		return progress, nil
+	}
+	rangeHeight := endChannelHeight - startChannelHeight
+	if now >= rangeHeight+startChannelHeight {
+		progress.Progress = 1.0
+		return progress, nil
+	}
+	p := float32(now-startChannelHeight) / float32(rangeHeight)
+	progress.Progress = p
+	log.Debugf("GetFilterBlockProgress start %d, now %d, end %d, progress %v", startChannelHeight, now, endChannelHeight, progress)
+	return progress, nil
+}
