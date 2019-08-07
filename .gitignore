@@ -12,6 +12,7 @@ TrackerLevelDB
 Chain
 ttt
 chain.json
+DB
 
 
 # Architecture specific extensions/prefixes

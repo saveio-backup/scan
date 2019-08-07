@@ -1,61 +1,41 @@
 {
-    "Common": {
-        "LogLevel": 2,
-        "LogStderr": false,
-        "CommonDBPath": "./TrackerLevelDB",
-        "ConfPath": "",
-        "ChainRestAddr": 20334,
-        "ChainRpcAddr": 20336,
-        "DBPath": "./DspDB",
+    "Base": {
+        "BaseDir": ".",
+        "LogLevel": 0,
+        "NetworkId": 1564141146,
+        "PublicIP": "127.0.0.1",
+        "PortBase": 10000,
+        "LocalRpcPortOffset": 338,
+        "EnableLocalRpc": false,
+        "JsonRpcPortOffset": 336,
+        "EnableJsonrpc": true,
+        "HttpRestPortOffset": 335,
+        "HttpCertPath": "",
+        "HttpKeyPath": "",
+        "EnableRest": true,
+        "ChainRpcAddr": "http://127.0.0.1:20336",
+        "ChainRestAddr": "http://127.0.0.1:20334",
+        "ChannelPortOffset": 3005,
+        "ChannelProtocol": "tcp",
+        "ChannelClientType": "rpc",
+        "ChannelRevealTimeout": "50",
+        "ChannelDBPath": "./ChannelDB",
+        "TrackerPortOffset": 6369,
+        "NATProxyServerAddr": "tcp://40.73.103.72:6007",
+        "WalletDir": "./wallet.dat",
+        "WalletPwd": "pwd",
+	"DBPath": "DB",
         "DnsNodeMaxNum": 100,
         "SeedInterval": 10,
         "DnsChannelDeposit": 1000000000,
-        "WalletDir": "./wallet.dat",
-        "WalletPwd": "pwd",
-        "NetworkId": 1563935261
-    },
-    "P2P": {
-        "Protocol": "tcp",
-        "NetworkId": 1,
-        "PublicIp": "127.0.0.1",
-        "PortBase": 6699,
-        "SeedList": []
-    },
-    "DNS": {
         "AutoSetupDNSRegisterEnable": false,
         "AutoSetupDNSChannelsEnable": false,
-        "Protocol": "kcp",
+        "Protocol": "tcp",
         "UdpPort": 11259,
         "InitDeposit": 1000000000,
         "ChannelDeposit": 1000000,
         "IgnoreConnectDNSAddrs": [
             "AXmXwiHPQESUKyxRbzMXhFjhb3wRn6iDkF"
         ]
-    },
-    "Tracker": {
-        "UdpPort": 6369,
-        "Fee": 0,
-        "SeedLists": []
-    },
-    "Channel": {
-        "ChannelPortOffset": 11259,
-        "ChannelProtocol": "kcp",
-        "ChannelClientType": "rpc",
-        "ChannelRevealTimeout": "50",
-        "ChannelDBPath": "./ChannelDB"
-    },
-    "Rpc": {
-        "EnableHttpJsonRpc": true,
-        "HttpJsonPort": 20448,
-        "HttpLocalPort": 20449
-    },
-    "Restful": {
-        "EnableHttpRestful": true,
-        "HttpRestPort": 20445
-    },
-    "Fs": {
-        "FsRepoRoot": "./Fs",
-        "FsFileRoot": "./Downloads",
-        "FsType": 1
     }
 }

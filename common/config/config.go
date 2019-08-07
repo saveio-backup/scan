@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"path/filepath"
 
 	"github.com/saveio/themis/common/log"
 	//"os"
@@ -50,26 +51,52 @@ const (
 	DEFAULT_REST_PORT      = uint(20445)
 )
 
-type CommonConfig struct {
-	LogLevel     uint   `json:"LogLevel"`
-	LogStderr    bool   `json:"LogStderr"`
-	CommonDBPath string `json:"CommonDBPath"`
-	ConfPath     string `json:"ConfPath"`
+type BaseConfig struct {
+	BaseDir            string `json:"BaseDir"`
+	LogLevel           uint   `json:"LogLevel"`
+	LogStderr          bool   `json:"LogStderr"`
+	NetworkId          uint32 `json:"NetworkId"`
+	PublicIP           string `json:"PublicIP"`
+	PortBase           uint   `json:"PortBase"`
+	LocalRpcPortOffset uint   `json:"LocalRpcPortOffset"`
+	EnableLocalRpc     bool   `json:"EnableLocalRpc"`
+	JsonRpcPortOffset  uint   `json:"JsonRpcPortOffset"`
+	EnableJsonRpc      bool   `json:"EnableJsonRpc"`
+	HttpRestPortOffset uint   `json:"HttpRestPortOffset"`
+	HttpCertPath       string `json:"HttpCertPath"`
+	HttpKeyPath        string `json:"HttpKeyPath"`
+	EnableRest         bool   `json:"EnableRest"`
 
-	ChainRestAddr uint `json:"ChainRestAddr"`
-	ChainRpcAddr  uint `json:"ChainRpcAddr"`
+	ChainRpcAddr  string `json:"ChainRpcAddr"`
+	ChainRestAddr string `json:"ChainRestAddr"`
 
-	DBPath string `json:"DBPath"`
+	ChannelPortOffset    uint   `json:"ChannelPortOffset"`
+	ChannelProtocol      string `json:"ChannelProtocol"`
+	ChannelClientType    string `json:"ChannelClientType"`
+	ChannelRevealTimeout string `json:"ChannelRevealTimeout"`
+	ChannelSettleTimeout string `json:"ChannelSettleTimeout"`
 
-	DnsNodeMaxNum     int    `json:"DnsNodeMaxNum"`
-	SeedInterval      int    `json:"SeedInterval"`
-	DnsChannelDeposit uint64 `json:"DnsChannelDeposit"`
+	TrackerPortOffset  uint     `json:"TrackerPortOffset"`
+	TrackerFee         int      `json:"TrackerFee`
+	TrackerSeedList    []string `json:"TrackerSeedList"`
+	NATProxyServerAddr string   `json:"NATProxyServerAddr"`
 
 	WalletPwd string `json:"WalletPwd"`
 	WalletDir string `json:"WalletDir"`
 
-	P2PNATAddr string `json:"P2PNATAddr`
-	NetworkId  uint32 `json:"NetworkID`
+	DBPath string `json:"DBPath"`
+
+	DnsNodeMaxNum              int      `json:"DnsNodeMaxNum"`
+	SeedInterval               int      `json:"SeedInterval"`
+	DnsChannelDeposit          uint64   `json:"DnsChannelDeposit"`
+	AutoSetupDNSRegisterEnable bool     `json:"AutoSetupDNSRegisterEnable"`
+	AutoSetupDNSChannelsEnable bool     `json:"AutoSetupDNSChannelsEnable"`
+	Protocol                   string   `json:"Protocol"`
+	UdpPort                    uint     `json:"UdpPort"`
+	InitDeposit                uint64   `json:"InitDeposit"`
+	ChannelDeposit             uint64   `json:"ChannelDeposit"`
+	Fee                        uint64   `json:"Fee"`
+	IgnoreConnectDNSAddrs      []string `json:"IgnoreConnectDNSAddrs"`
 }
 
 type FsConfig struct {
@@ -78,105 +105,41 @@ type FsConfig struct {
 	FsType     int    `json:"FsType"`
 }
 
-type P2PConfig struct {
-	Protocol  string   `json:"Protocol"`
-	NetworkId uint32   `json:"NetworkId"`
-	PublicIp  string   `json:"PublicIp"`
-	PortBase  uint     `json:"PortBase"`
-	SeedList  []string `json:"SeedList"`
-}
-
-type RpcConfig struct {
-	EnableHttpJsonRpc bool
-	HttpJsonPort      uint
-	HttpLocalPort     uint
-	RpcServer         string
-}
-
-type RestfulConfig struct {
-	EnableHttpRestful bool
-	HttpRestPort      uint
-	HttpCertPath      string
-	HttpKeyPath       string
-}
-
-// TrackerConfig config
-type TrackerConfig struct {
-	UdpPort   uint   // UDP server listen port
-	Fee       uint64 // Service fee
-	SeedLists []string
-}
-
-// DnsConfig dns config
-type DnsConfig struct {
-	AutoSetupDNSRegisterEnable bool
-	AutoSetupDNSChannelsEnable bool
-	Protocol                   string
-	UdpPort                    uint // UDP server port
-	InitDeposit                uint64
-	ChannelDeposit             uint64
-	Fee                        uint64 // Service fee
-	IgnoreConnectDNSAddrs      []string
-}
-
-type ChannelConfig struct {
-	ChannelPortOffset    int    `json:"ChannelPortOffset"`
-	ChannelProtocol      string `json:"ChannelProtocol"`
-	ChannelClientType    string `json:"ChannelClientType"`
-	ChannelRevealTimeout string `json:"ChannelRevealTimeout"`
-	ChannelDBPath        string `json:"ChannelDBPath`
-}
-
 type DDNSConfig struct {
-	CommonConfig  CommonConfig  `json:"Common"`
-	P2PConfig     P2PConfig     `json:"P2P"`
-	TrackerConfig TrackerConfig `json:"Tracker"`
-	DnsConfig     DnsConfig     `json:"Dns"`
-	ChannelConfig ChannelConfig `json:"Channel"`
-	RpcConfig     RpcConfig     `json:"Rpc"`
-	RestfulConfig RestfulConfig `json:"Restful"`
-	FsConfig      FsConfig      `json:"Fs"`
+	Base     BaseConfig `json:"Base"`
+	FsConfig FsConfig   `json:"Fs"`
 }
 
 func DefDDNSConfig() *DDNSConfig {
 	return &DDNSConfig{
-		CommonConfig: CommonConfig{
-			LogLevel:     DEFAULT_LOG_LEVEL,
-			LogStderr:    false,
-			CommonDBPath: DEFAULT_DB_PATH,
-		},
-		P2PConfig: P2PConfig{
-			NetworkId: NETWORK_ID_MAIN_NET,
-			PortBase:  DEFAULT_P2P_PORT,
-			SeedList:  nil,
-		},
-		DnsConfig: DnsConfig{
+		Base: BaseConfig{
+			BaseDir:                    DEFAULT_DB_PATH,
+			LogLevel:                   DEFAULT_LOG_LEVEL,
+			LogStderr:                  false,
+			NetworkId:                  NETWORK_ID_MAIN_NET,
+			PublicIP:                   "127.0.0.1",
+			EnableJsonRpc:              true,
+			JsonRpcPortOffset:          DEFAULT_RPC_PORT,
+			EnableLocalRpc:             false,
+			LocalRpcPortOffset:         DEFAULT_RPC_LOCAL_PORT,
+			EnableRest:                 true,
+			HttpRestPortOffset:         DEFAULT_REST_PORT,
+			TrackerPortOffset:          DEFAULT_TRACKER_PORT,
+			TrackerFee:                 DEFAULT_TRACKER_FEE,
+			TrackerSeedList:            nil,
 			AutoSetupDNSRegisterEnable: false,
-			AutoSetupDNSChannelsEnable: true,
+			AutoSetupDNSChannelsEnable: false,
+			UdpPort:                    DEFAULT_P2P_PORT,
 		},
-		TrackerConfig: TrackerConfig{
-			UdpPort:   DEFAULT_TRACKER_PORT,
-			Fee:       DEFAULT_TRACKER_FEE,
-			SeedLists: nil,
-		},
-		RpcConfig: RpcConfig{
-			EnableHttpJsonRpc: true,
-			HttpJsonPort:      DEFAULT_RPC_PORT,
-			HttpLocalPort:     DEFAULT_RPC_LOCAL_PORT,
-		},
-		RestfulConfig: RestfulConfig{
-			EnableHttpRestful: true,
-			HttpRestPort:      DEFAULT_REST_PORT,
-		},
-		ChannelConfig: ChannelConfig{},
 	}
 }
 
 //current default config
-var DefaultConfig *DDNSConfig
+var Parameters *DDNSConfig
+var curUsrWalAddr string
 
 func SetupDefaultConfig() {
-	DefaultConfig = GenDefConfig()
+	Parameters = GenDefConfig()
 }
 
 func GenDefConfig() *DDNSConfig {
@@ -216,4 +179,23 @@ func Save() error {
 	//	return err
 	//}
 	return ioutil.WriteFile(ConfigDir, data, 0666)
+}
+
+func SetCurrentUserWalletAddress(addr string) {
+	curUsrWalAddr = addr
+}
+
+// DspDBPath. dsp database path
+func DspDBPath() string {
+	return filepath.Join(Parameters.Base.BaseDir, Parameters.Base.DBPath, curUsrWalAddr, "dsp")
+}
+
+// TrackerDBPath. tracker database path
+func TrackerDBPath() string {
+	return filepath.Join(Parameters.Base.BaseDir, Parameters.Base.DBPath, curUsrWalAddr, "tracker")
+}
+
+// ChannelDBPath. channel database path
+func ChannelDBPath() string {
+	return filepath.Join(Parameters.Base.BaseDir, Parameters.Base.DBPath, curUsrWalAddr, "channel")
 }

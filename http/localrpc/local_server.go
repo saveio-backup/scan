@@ -24,9 +24,10 @@ import (
 	"strconv"
 
 	"fmt"
-	"github.com/saveio/themis/common/log"
+
 	cfg "github.com/saveio/scan/common/config"
 	"github.com/saveio/scan/http/base/rpc"
+	"github.com/saveio/themis/common/log"
 )
 
 const (
@@ -42,7 +43,7 @@ func StartLocalServer() error {
 	//rpc.HandleFunc("regendpoint",rpc.EndPointReg)
 
 	// TODO: only listen to local host
-	err := http.ListenAndServe(":"+strconv.Itoa(int(cfg.DefaultConfig.RpcConfig.HttpLocalPort)), nil)
+	err := http.ListenAndServe(":"+strconv.Itoa(int(cfg.Parameters.Base.PortBase+cfg.Parameters.Base.LocalRpcPortOffset)), nil)
 	if err != nil {
 		return fmt.Errorf("ListenAndServe error:%s", err)
 	}

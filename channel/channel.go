@@ -34,17 +34,15 @@ type ChannelSvr struct {
 func NewChannelSvr(acc *account.Account, p2pActor *actor.PID) (*ChannelSvr, error) {
 	cs := &ChannelSvr{}
 
-	chainRpcAddr := fmt.Sprintf("http://127.0.0.1:%d", config.DefaultConfig.CommonConfig.ChainRpcAddr)
-	channelListenAddr := fmt.Sprintf("127.0.0.1:%d", config.DefaultConfig.ChannelConfig.ChannelPortOffset)
-
+	channelListenAddr := fmt.Sprintf("127.0.0.1:%d", config.Parameters.Base.ChannelPortOffset)
 	cs.Config = &dspCfg.DspConfig{
-		DBPath:               config.DefaultConfig.CommonConfig.DBPath,
-		ChainRpcAddr:         chainRpcAddr,
-		ChannelClientType:    config.DefaultConfig.ChannelConfig.ChannelClientType,
+		DBPath:               config.DspDBPath(),
+		ChainRpcAddr:         config.Parameters.Base.ChainRpcAddr,
+		ChannelClientType:    config.Parameters.Base.ChannelClientType,
 		ChannelListenAddr:    channelListenAddr,
-		ChannelProtocol:      config.DefaultConfig.ChannelConfig.ChannelProtocol,
-		ChannelRevealTimeout: config.DefaultConfig.ChannelConfig.ChannelRevealTimeout,
-		ChannelDBPath:        config.DefaultConfig.ChannelConfig.ChannelDBPath,
+		ChannelProtocol:      config.Parameters.Base.ChannelProtocol,
+		ChannelRevealTimeout: config.Parameters.Base.ChannelRevealTimeout,
+		ChannelDBPath:        config.ChannelDBPath(),
 	}
 	cs.Chain = chain.NewChain()
 	cs.Chain.NewRpcClient().SetAddress([]string{cs.Config.ChainRpcAddr})
@@ -128,7 +126,7 @@ func GetExternalIP(walletAddr string) (string, error) {
 		log.Infof("Channel.GetExternalIP wallAddr: %v, hpBytes: %v", walletAddr, hpBytes)
 		nodeAddr.UnmarshalBinary(hpBytes)
 		log.Infof("Channel.GetExternalIP nodeAddr: %s:%d", nodeAddr.IP, nodeAddr.Port)
-		return fmt.Sprintf("%s://%s:%d", config.DefaultConfig.ChannelConfig.ChannelProtocol, nodeAddr.IP, nodeAddr.Port), nil
+		return fmt.Sprintf("%s://%s:%d", config.Parameters.Base.ChannelProtocol, nodeAddr.IP, nodeAddr.Port), nil
 	}
 }
 

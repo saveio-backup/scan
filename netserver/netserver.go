@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/saveio/themis/common/log"
 	"github.com/saveio/scan/common/config"
 	"github.com/saveio/scan/dns"
 	"github.com/saveio/scan/tracker"
+	"github.com/saveio/themis/common/log"
 )
 
 var (
@@ -35,7 +35,7 @@ func (ns *NetServer) Run() error {
 
 // startTrackerListening start tracker listen
 func (ns *NetServer) startTrackerListening() error {
-	pc, err := net.ListenPacket("udp", fmt.Sprintf(":%d", config.DefaultConfig.TrackerConfig.UdpPort))
+	pc, err := net.ListenPacket("udp", fmt.Sprintf(":%d", config.Parameters.Base.TrackerPortOffset))
 	if err != nil {
 		log.Errorf("start tracker service net.ListenPacket err:%s", err)
 		return err

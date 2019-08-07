@@ -253,6 +253,7 @@ func initialize(ctx *cli.Context) {
 		log.Errorf("SCAN initialize getDefaultAccount FAILED, err: %v", err)
 		// os.Exit(1)
 	}
+	config.SetCurrentUserWalletAddress(acc.Address.ToBase58())
 
 	// setup actor
 	p2pActor, err := server.NewP2PActor()
@@ -263,7 +264,7 @@ func initialize(ctx *cli.Context) {
 	log.Info("SCAN initialize NewP2pActor SUCCESS.")
 
 	// setup tracker service
-	storage.TDB, err = storage.NewLevelDBStore(config.DefaultConfig.CommonConfig.CommonDBPath)
+	storage.TDB, err = storage.NewLevelDBStore(config.TrackerDBPath())
 	if err != nil {
 		log.Errorf("SCAN Initialize TrackerDB FAILED, err: %v", err)
 		os.Exit(1)
@@ -289,7 +290,7 @@ func initialize(ctx *cli.Context) {
 	// setup p2p network
 	bPub := keypair.SerializePublicKey(acc.PubKey())
 	p2pNetwork := network.NewP2P()
-	p2pNetwork.P2p.SetNetworkID(config.DefaultConfig.P2PConfig.NetworkId)
+	p2pNetwork.P2p.SetNetworkID(config.Parameters.Base.NetworkId)
 	log.Debugf("network id :%d", p2pNetwork.P2p.GetNetworkID())
 	channelPubKey, channelPrivateKey, err := ed25519.GenerateKey(&accountReader{
 		PublicKey: append(bPub, []byte("channel")...),
@@ -302,7 +303,7 @@ func initialize(ctx *cli.Context) {
 		PublicKey:  channelPubKey,
 		PrivateKey: channelPrivateKey,
 	}
-	p2pNetwork.SetProxyServer(config.DefaultConfig.CommonConfig.P2PNATAddr)
+	p2pNetwork.SetProxyServer(config.Parameters.Base.NATProxyServerAddr)
 	p2pNetwork.SetPID(p2pActor.GetLocalPID())
 	p2pActor.SetNetwork(p2pNetwork)
 	network.DDNSP2P = p2pNetwork
@@ -315,7 +316,7 @@ func initialize(ctx *cli.Context) {
 	} else {
 		for _, v := range ns {
 			ignoreFlag := false
-			for _, ignoreAddrItem := range config.DefaultConfig.DnsConfig.IgnoreConnectDNSAddrs {
+			for _, ignoreAddrItem := range config.Parameters.Base.IgnoreConnectDNSAddrs {
 				if v.WalletAddr.ToBase58() == ignoreAddrItem {
 					ignoreFlag = true
 				}
@@ -325,13 +326,13 @@ func initialize(ctx *cli.Context) {
 			}
 
 			if !ignoreFlag {
-				bootstraps = append(bootstraps, fmt.Sprintf("%s://%s:%s", config.DefaultConfig.P2PConfig.Protocol, string(v.IP), string(v.Port)))
+				bootstraps = append(bootstraps, fmt.Sprintf("%s://%s:%s", config.Parameters.Base.Protocol, string(v.IP), string(v.Port)))
 			}
 		}
 	}
 
-	fmt.Println("p2pNetwork Strat")
-	if err := p2pNetwork.Start(common.FullHostAddr(fmt.Sprintf("%s:%d", config.DefaultConfig.P2PConfig.PublicIp, config.DefaultConfig.P2PConfig.PortBase), config.DefaultConfig.P2PConfig.Protocol), bootstraps); err != nil {
+	channelListenPort := int(config.Parameters.Base.PortBase + config.Parameters.Base.ChannelPortOffset)
+	if err := p2pNetwork.Start(common.FullHostAddr(fmt.Sprintf("%s:%d", config.Parameters.Base.PublicIP, channelListenPort), config.Parameters.Base.ChannelProtocol), bootstraps); err != nil {
 		log.Errorf("SCAN initialize Start P2P FAILED, err: %v", err)
 		os.Exit(1)
 	}
@@ -350,7 +351,7 @@ func initialize(ctx *cli.Context) {
 		}
 		log.Info("SCAN initialize TrackerServer Run SUCCESS.")
 
-		if config.DefaultConfig.DnsConfig.AutoSetupDNSRegisterEnable {
+		if config.Parameters.Base.AutoSetupDNSRegisterEnable {
 			autoSetupDNSRegisterWorking(ctx, acc, p2pNetwork.PublicAddr(), balance)
 		}
 	} else {
@@ -374,7 +375,7 @@ func initialize(ctx *cli.Context) {
 	log.Info("SCAN initialize StartChannelService SUCCESS.")
 
 	// setup dns channel connect
-	if config.DefaultConfig.DnsConfig.AutoSetupDNSChannelsEnable {
+	if config.Parameters.Base.AutoSetupDNSChannelsEnable {
 		go autoSetupDNSChannelsWorking(ctx, p2pActor.GetLocalPID())
 	}
 }
@@ -384,7 +385,7 @@ func getDefaultAccount(ctx *cli.Context) (*account.Account, uint64, error) {
 	if err != nil {
 		return nil, 0, err
 	}
-	pwd := []byte(config.DefaultConfig.CommonConfig.WalletPwd)
+	pwd := []byte(config.Parameters.Base.WalletPwd)
 
 	acc, err := wallet.GetDefaultAccount(pwd)
 	if err != nil {
@@ -409,7 +410,7 @@ func getDefaultAccount(ctx *cli.Context) (*account.Account, uint64, error) {
 }
 
 func initRpc(ctx *cli.Context) error {
-	if !config.DefaultConfig.RpcConfig.EnableHttpJsonRpc {
+	if !config.Parameters.Base.EnableJsonRpc {
 		return nil
 	}
 	var err error
@@ -459,7 +460,7 @@ func initLocalRpc(ctx *cli.Context) error {
 }
 
 func initRestful(ctx *cli.Context) {
-	if !config.DefaultConfig.RestfulConfig.EnableHttpRestful {
+	if !config.Parameters.Base.EnableRest {
 		return
 	}
 	go restful.StartServer()
@@ -489,11 +490,11 @@ func autoSetupDNSRegisterWorking(ctx *cli.Context, acc *account.Account, p2pPubl
 		}
 	} else {
 		if _, err = dns.GlbDNSSvr.DNSNodeReg(publicAddr.Host, publicAddr.Port,
-			config.DefaultConfig.DnsConfig.InitDeposit); err != nil {
+			config.Parameters.Base.InitDeposit); err != nil {
 			log.Infof("BalaceOf Default Wallet Address %s is: %s, DNS InitDeposit needs: %s",
 				acc.Address.ToBase58(),
 				cutils.FormatUsdt(balance),
-				cutils.FormatUsdt(config.DefaultConfig.DnsConfig.InitDeposit))
+				cutils.FormatUsdt(config.Parameters.Base.InitDeposit))
 			log.Fatalf("SCAN initialize DNS register FAILED, err: %v", err)
 			os.Exit(1)
 		} else {
@@ -515,7 +516,7 @@ func autoSetupDNSChannelsWorking(ctx *cli.Context, p2pActor *actor.PID) error {
 	if err != nil {
 		return err
 	}
-	pwd := []byte(config.DefaultConfig.CommonConfig.WalletPwd)
+	pwd := []byte(config.Parameters.Base.WalletPwd)
 
 	acc, err := wallet.GetDefaultAccount(pwd)
 	if err != nil {
@@ -558,8 +559,8 @@ func autoSetupDNSChannelsWorking(ctx *cli.Context, p2pActor *actor.PID) error {
 		log.Debugf("channel connected %s %s", walletAddr, err)
 		bal, _ := channel.GlbChannelSvr.Channel.GetAvailableBalance(walletAddr)
 		log.Debugf("current balance %d", bal)
-		log.Infof("connect to dns node :%s, deposit %d", dnsUrl, config.DefaultConfig.DnsConfig.ChannelDeposit)
-		err = channel.GlbChannelSvr.Channel.SetDeposit(walletAddr, config.DefaultConfig.DnsConfig.ChannelDeposit)
+		log.Infof("connect to dns node :%s, deposit %d", dnsUrl, config.Parameters.Base.ChannelDeposit)
+		err = channel.GlbChannelSvr.Channel.SetDeposit(walletAddr, config.Parameters.Base.ChannelDeposit)
 		if err != nil && strings.Index(err.Error(), "totalDeposit must big than contractBalance") == -1 {
 			log.Debugf("deposit result %s", err)
 			// TODO: withdraw and close channel
@@ -595,13 +596,13 @@ func autoSetupDNSChannelsWorking(ctx *cli.Context, p2pActor *actor.PID) error {
 		// dnsUrl, _ := GetExternalIP(v.WalletAddr.ToBase58())
 		var dnsUrl string
 		if dnsInfo, err := dns.GlbDNSSvr.GetDnsNodeByAddr(v.WalletAddr); dnsInfo != nil {
-			dnsUrl = common.FullHostAddr(fmt.Sprintf("%s:%s", dnsInfo.IP, dnsInfo.Port), config.DefaultConfig.DnsConfig.Protocol)
+			dnsUrl = common.FullHostAddr(fmt.Sprintf("%s:%s", dnsInfo.IP, dnsInfo.Port), config.Parameters.Base.Protocol)
 		} else {
 			log.Errorf("autoSetupDNSChannelsWorking GetDnsNodeByAddr Failed. err:%v", err)
 		}
 
 		if len(dnsUrl) == 0 {
-			dnsUrl = fmt.Sprintf("%s://%s:%s", config.DefaultConfig.DnsConfig.Protocol, v.IP, v.Port)
+			dnsUrl = fmt.Sprintf("%s://%s:%s", config.Parameters.Base.Protocol, v.IP, v.Port)
 		}
 
 		if err = tracker.EndPointRegistry(v.WalletAddr.ToBase58(), strings.Split(dnsUrl, "://")[1]); err != nil {
@@ -610,7 +611,7 @@ func autoSetupDNSChannelsWorking(ctx *cli.Context, p2pActor *actor.PID) error {
 
 		ignoreFlag := false
 		// ignore items to connect
-		for _, ignoreAddrItem := range config.DefaultConfig.DnsConfig.IgnoreConnectDNSAddrs {
+		for _, ignoreAddrItem := range config.Parameters.Base.IgnoreConnectDNSAddrs {
 			if v.WalletAddr.ToBase58() == ignoreAddrItem {
 				ignoreFlag = true
 			}

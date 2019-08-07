@@ -56,7 +56,7 @@ func EndPointRegistry(walletAddr, hostPort string) error {
 	// 	log.Errorf("This wallet:%s had already registerd! Do not multiple registration", walletAddr)
 	// 	return nil
 	// }
-	channel.GlbChannelSvr.Channel.SetHostAddr(walletAddr, fmt.Sprintf("%s://%s", config.DefaultConfig.ChannelConfig.ChannelProtocol, fmt.Sprintf("%s:%s", host, port)))
+	channel.GlbChannelSvr.Channel.SetHostAddr(walletAddr, fmt.Sprintf("%s://%s", config.Parameters.Base.ChannelProtocol, fmt.Sprintf("%s:%s", host, port)))
 	m := &pm.Registry{
 		WalletAddr: walletAddr,
 		HostPort:   fmt.Sprintf("%s:%s", host, port),

@@ -89,10 +89,10 @@ func (s *Server) Accepted() (err error) {
 		}
 		connId := s.newConn()
 		err = s.respond(addr, ResponseHeader{
-			Action: ActionConnect,
-			TransactionId:h.TransactionId,
+			Action:        ActionConnect,
+			TransactionId: h.TransactionId,
 		}, ConnectionResponse{
-			ConnectionId:connId,
+			ConnectionId: connId,
 		})
 		return
 	case ActionAnnounce:
@@ -235,7 +235,7 @@ func (s *Server) Accepted() (err error) {
 			Port:      ar.Port,
 			Wallet:    ar.Wallet,
 		})
-		channel.GlbChannelSvr.Channel.SetHostAddr(m.WalletAddr, fmt.Sprintf("%s://%s", config.DefaultConfig.ChannelConfig.ChannelProtocol, m.HostPort))
+		channel.GlbChannelSvr.Channel.SetHostAddr(m.WalletAddr, fmt.Sprintf("%s://%s", config.Parameters.Base.ChannelProtocol, m.HostPort))
 		log.Infof("Tracker client  reg success,wallet:%s,nodeAddr:%s", Ccomon.ToHexString(ar.Wallet[:]), nodeAddr.String())
 		return err
 	case ActionUnReg:
@@ -438,8 +438,7 @@ func (s *Server) Accepted() (err error) {
 		err = s.respond(addr, ResponseHeader{
 			TransactionId: h.TransactionId,
 			Action:        ActionReg,
-		}, AnnounceResponseHeader{
-		}, nodesInfo)
+		}, AnnounceResponseHeader{}, nodesInfo)
 		log.Debugf("Server ActionGetNodesByType: %v", nodesInfo)
 		log.Info("Tracker client lookUp success")
 		return err

@@ -1,8 +1,6 @@
 package dns
 
 import (
-	"fmt"
-
 	"github.com/saveio/scan/common/config"
 	themisSdk "github.com/saveio/themis-go-sdk"
 	"github.com/saveio/themis/account"
@@ -11,7 +9,6 @@ import (
 	"github.com/saveio/themis/smartcontract/service/native/dns"
 )
 
-// 全局指针变量GlbDNSSvr可能存在数据竞争问题
 var GlbDNSSvr *DNSSvr
 
 type DNSSvr struct {
@@ -27,8 +24,7 @@ func NewDNSSvr(Account *account.Account) (*DNSSvr, error) {
 	ds := &DNSSvr{
 		Chain: themisSdk.NewChain(),
 	}
-	chainRpcAddr := fmt.Sprintf("http://127.0.0.1:%d", config.DefaultConfig.CommonConfig.ChainRpcAddr)
-	ds.Chain.NewRpcClient().SetAddress([]string{chainRpcAddr})
+	ds.Chain.NewRpcClient().SetAddress([]string{config.Parameters.Base.ChainRpcAddr})
 
 	ds.Account = Account
 	ds.Chain.SetDefaultAccount(ds.Account)
