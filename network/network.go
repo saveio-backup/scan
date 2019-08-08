@@ -11,7 +11,6 @@ import (
 	"github.com/saveio/carrier/crypto"
 	"github.com/saveio/carrier/crypto/ed25519"
 	"github.com/saveio/carrier/network"
-	"github.com/saveio/carrier/network/components/backoff"
 	"github.com/saveio/carrier/network/components/keepalive"
 	"github.com/saveio/carrier/network/components/proxy"
 	"github.com/saveio/carrier/types/opcode"
@@ -88,7 +87,6 @@ type Network struct {
 	ActivePeers           *sync.Map
 	addressForHealthCheck *sync.Map
 	keepalive             *keepalive.Component
-	backOff               *backoff.Component
 }
 
 func NewP2P() *Network {
@@ -149,13 +147,6 @@ func (this *Network) Start(address string, bootstraps []string) error {
 	this.keepalive = keepalive.New(options...)
 
 	builder.AddComponent(this.keepalive)
-	backoff_options := []backoff.ComponentOption{
-		backoff.WithInitialDelay(3 * time.Second),
-		backoff.WithMaxAttempts(10),
-		backoff.WithPriority(65535),
-	}
-	this.backOff = backoff.New(backoff_options...)
-	builder.AddComponent(this.backOff)
 
 	if len(this.proxyAddr) > 0 {
 		switch protocol {
@@ -506,7 +497,6 @@ func (this *Network) healthCheckProxyServer() error {
 	if client == nil {
 		return fmt.Errorf("get peer client is nil: %s", this.proxyAddr)
 	}
-	this.backOff.PeerDisconnect(client)
 	proxyState, err = this.GetPeerStateByAddress(this.proxyAddr)
 	if err != nil || proxyState != keepalive.PEER_REACHABLE {
 		return fmt.Errorf("back off proxy failed state: %d, err: %s", proxyState, err)
