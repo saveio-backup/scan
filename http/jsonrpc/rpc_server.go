@@ -25,7 +25,6 @@ import (
 
 	"fmt"
 
-	"github.com/saveio/scan/common/config"
 	cfg "github.com/saveio/scan/common/config"
 	"github.com/saveio/scan/http/base/rpc"
 	"github.com/saveio/themis/common/log"
@@ -87,10 +86,10 @@ func StartRPCServer() error {
 	rpc.HandleFunc("querychanneldeposit", rpc.QueryChannelDeposit)
 	rpc.HandleFunc("queryhostinfo", rpc.QueryHostInfo)
 	rpc.HandleFunc("initprogress", rpc.GetChannelInitProgress)
-	err := http.ListenAndServe(":"+strconv.Itoa(int(config.Parameters.Base.PortBase+cfg.Parameters.Base.JsonRpcPortOffset)), nil)
+	err := http.ListenAndServe(":"+strconv.Itoa(int(cfg.Parameters.Base.PortBase+cfg.Parameters.Base.JsonRpcPortOffset)), nil)
 	if err != nil {
 		return fmt.Errorf("ListenAndServe error:%s", err)
 	}
-	log.Info("Rpc Listen at port: ", int(config.Parameters.Base.PortBase+cfg.Parameters.Base.JsonRpcPortOffset))
+	log.Info("Rpc Listen at port: ", strconv.Itoa(int(cfg.Parameters.Base.PortBase+cfg.Parameters.Base.JsonRpcPortOffset)))
 	return nil
 }

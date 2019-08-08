@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/saveio/edge/cmd/flags"
+	"github.com/saveio/scan/cmd/flags"
 	"github.com/saveio/scan/cmd/utils"
 
 	//"github.com/saveio/scan/config"
@@ -28,7 +28,7 @@ var ChannelCommand = cli.Command{
 			Usage:     "Open a payment channel",
 			ArgsUsage: " ",
 			Flags: []cli.Flag{
-				utils.PartnerAddressFlag,
+				flags.PartnerAddressFlag,
 			},
 			Description: "Open a payment channel with partner",
 		},
@@ -38,7 +38,7 @@ var ChannelCommand = cli.Command{
 		// 	Usage:     "Close a payment channel",
 		// 	ArgsUsage: " ",
 		// 	Flags: []cli.Flag{
-		// 		utils.PartnerAddressFlag,
+		// 		flags.PartnerAddressFlag,
 		// 	},
 		// 	Description: "Close a payment channel with partner",
 		// },
@@ -48,8 +48,8 @@ var ChannelCommand = cli.Command{
 			Usage:     "Deposit token to channel",
 			ArgsUsage: " ",
 			Flags: []cli.Flag{
-				utils.PartnerAddressFlag,
-				utils.TotalDepositFlag,
+				flags.PartnerAddressFlag,
+				flags.TotalDepositFlag,
 			},
 			Description: "Deposit token to channel with specified partner",
 		},
@@ -59,8 +59,8 @@ var ChannelCommand = cli.Command{
 			Usage:     "Withdraw channel deposit",
 			ArgsUsage: " ",
 			Flags: []cli.Flag{
-				utils.PartnerAddressFlag,
-				utils.AmountFlag,
+				flags.PartnerAddressFlag,
+				flags.AmountFlag,
 			},
 			Description: "Withdraw deposit of channel which belong to owner and partner",
 		},
@@ -70,9 +70,9 @@ var ChannelCommand = cli.Command{
 			Usage:     "Make payment through channel",
 			ArgsUsage: " ",
 			Flags: []cli.Flag{
-				utils.TargetAddressFlag,
-				utils.AmountFlag,
-				utils.PaymentIDFlag,
+				flags.TargetAddressFlag,
+				flags.AmountFlag,
+				flags.PaymentIDFlag,
 			},
 			Description: "Transfer some token from owner to target with specified payment ID",
 		},
@@ -90,7 +90,7 @@ var ChannelCommand = cli.Command{
 		// 	Usage:     "Get current balance",
 		// 	ArgsUsage: " ",
 		// 	Flags: []cli.Flag{
-		// 		utils.PartnerAddressFlag,
+		// 		flags.PartnerAddressFlag,
 		// 	},
 		// 	Description: "Get current channel balance which belong to current owner",
 		// },
@@ -100,7 +100,7 @@ var ChannelCommand = cli.Command{
 			Usage:     "Query channel deposit",
 			ArgsUsage: " ",
 			Flags: []cli.Flag{
-				utils.PartnerAddressFlag,
+				flags.PartnerAddressFlag,
 			},
 			Description: "Query deposit of channel which belong to owner and partner",
 		},
@@ -110,7 +110,7 @@ var ChannelCommand = cli.Command{
 			Usage:     "Query host info",
 			ArgsUsage: " ",
 			Flags: []cli.Flag{
-				utils.PartnerAddressFlag,
+				flags.PartnerAddressFlag,
 			},
 			Description: "Query host info of partner",
 		},
@@ -120,7 +120,7 @@ var ChannelCommand = cli.Command{
 			Usage:     "Cooperative settle",
 			ArgsUsage: " ",
 			Flags: []cli.Flag{
-				utils.PartnerAddressFlag,
+				flags.PartnerAddressFlag,
 			},
 			Description: "settle cooperatively of channel which belong to owner and partner",
 		},

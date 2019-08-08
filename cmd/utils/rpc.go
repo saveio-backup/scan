@@ -27,6 +27,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/saveio/scan/common/config"
 	rpcerr "github.com/saveio/scan/http/base/error"
 )
 
@@ -84,7 +85,7 @@ func sendRpcRequest(method string, params []interface{}) ([]byte, *OntologyError
 		return nil, NewOntologyError(fmt.Errorf("JsonRpcRequest json.Marshal error:%s", err))
 	}
 
-	addr := fmt.Sprintf("http://localhost:%d/dns", 20448)
+	addr := fmt.Sprintf("http://localhost:%d/dns", int(config.Parameters.Base.PortBase+config.Parameters.Base.JsonRpcPortOffset))
 	resp, err := http.Post(addr, "application/json", strings.NewReader(string(data)))
 	if err != nil {
 		return nil, NewOntologyError(err)

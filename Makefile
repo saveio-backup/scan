@@ -5,8 +5,8 @@ BUILD_SCAN_PAR = -ldflags "-X github.com/oniio/oniDNS/config/config.VERSION=$(VE
 
 SRC_FILES = $(shell git ls-files | grep -e .go$ | grep -v _test.go)
 
-scan: clean 
-	$(GC) $(BUILD_SCAN_PAR) -o scan main.go
+client: clean 
+	$(GC) $(BUILD_SCAN_PAR) -o scan ./bin/scan/main.go
 
 
 all: wddns lddns mdns

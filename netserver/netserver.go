@@ -50,15 +50,3 @@ func (ns *NetServer) startTrackerListening() error {
 	}
 	return err
 }
-
-// startDnsListening start dns listen
-/*
-func (ns *NetServer) startDnsListening() error {
-	pc, err := net.ListenPacket("udp", fmt.Sprintf(":%d", config.DefaultConfig.Dns.UdpPort))
-	defer pc.Close()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-*/

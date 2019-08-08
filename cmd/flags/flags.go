@@ -1,4 +1,4 @@
-package utils
+package flags
 
 import (
 	"strings"
@@ -7,6 +7,10 @@ import (
 )
 
 var (
+	ScanConfigFlag = cli.StringFlag{
+		Name:  "scanconfig",
+		Usage: "Use `<filename>` to specifies the config file to connect to cunstomize network.",
+	}
 	//commmon
 	LogStderrFlag = cli.BoolFlag{
 		Name:  "logstderr",

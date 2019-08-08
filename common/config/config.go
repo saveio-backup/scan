@@ -5,9 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 
+	"github.com/saveio/edge/common"
+	"github.com/saveio/scan/cmd/flags"
 	"github.com/saveio/themis/common/log"
+	"github.com/urfave/cli"
 	//"os"
 )
 
@@ -22,7 +26,7 @@ var (
 //default common parameter
 const (
 	WALLET_FILE              = "./wallet.dat"
-	DEFAULT_CONFIG_FILE      = "./config.json"
+	DEFAULT_CONFIG_FILE      = "/scan_config.json"
 	DEFAULT_LOG_DIR          = "./log/"
 	DEFAULT_LOG_LEVEL        = 2 //INFO
 	DEFAULT_DB_PATH          = "./TrackerLevelDB"
@@ -91,8 +95,6 @@ type BaseConfig struct {
 	DnsChannelDeposit          uint64   `json:"DnsChannelDeposit"`
 	AutoSetupDNSRegisterEnable bool     `json:"AutoSetupDNSRegisterEnable"`
 	AutoSetupDNSChannelsEnable bool     `json:"AutoSetupDNSChannelsEnable"`
-	Protocol                   string   `json:"Protocol"`
-	UdpPort                    uint     `json:"UdpPort"`
 	InitDeposit                uint64   `json:"InitDeposit"`
 	ChannelDeposit             uint64   `json:"ChannelDeposit"`
 	Fee                        uint64   `json:"Fee"`
@@ -105,13 +107,13 @@ type FsConfig struct {
 	FsType     int    `json:"FsType"`
 }
 
-type DDNSConfig struct {
+type ScanConfig struct {
 	Base     BaseConfig `json:"Base"`
 	FsConfig FsConfig   `json:"Fs"`
 }
 
-func DefDDNSConfig() *DDNSConfig {
-	return &DDNSConfig{
+func TestConfig() *ScanConfig {
+	return &ScanConfig{
 		Base: BaseConfig{
 			BaseDir:                    DEFAULT_DB_PATH,
 			LogLevel:                   DEFAULT_LOG_LEVEL,
@@ -129,27 +131,25 @@ func DefDDNSConfig() *DDNSConfig {
 			TrackerSeedList:            nil,
 			AutoSetupDNSRegisterEnable: false,
 			AutoSetupDNSChannelsEnable: false,
-			UdpPort:                    DEFAULT_P2P_PORT,
 		},
 	}
 }
 
 //current default config
-var Parameters *DDNSConfig
+var Parameters = DefaultConfig()
+var configDir string
 var curUsrWalAddr string
 
-func SetupDefaultConfig() {
-	Parameters = GenDefConfig()
-}
-
-func GenDefConfig() *DDNSConfig {
-	var defConf *DDNSConfig
-
-	err := GetJsonObjectFromFile("./config.json", &defConf)
-	if err != nil {
-		log.Fatalf("GetDefConfig err: ", err)
+func DefaultConfig() *ScanConfig {
+	configDir = "." + DEFAULT_CONFIG_FILE
+	existed := common.FileExisted(configDir)
+	if !existed {
+		log.Debugf("%s config is not existed", configDir)
+		return TestConfig()
 	}
-	return defConf
+	cfg := &ScanConfig{}
+	GetJsonObjectFromFile(configDir, cfg)
+	return cfg
 }
 
 func GetJsonObjectFromFile(filePath string, jsonObject interface{}) error {
@@ -159,7 +159,6 @@ func GetJsonObjectFromFile(filePath string, jsonObject interface{}) error {
 	}
 	// Remove the UTF-8 Byte Order Mark
 	data = bytes.TrimPrefix(data, []byte("\xef\xbb\xbf"))
-
 	err = json.Unmarshal(data, jsonObject)
 	if err != nil {
 		return fmt.Errorf("json.Unmarshal %s error:%s", data, err)
@@ -167,17 +166,41 @@ func GetJsonObjectFromFile(filePath string, jsonObject interface{}) error {
 	return nil
 }
 
-var DefaultDDnsConfig = DefDDNSConfig()
+func setConfigByCommandParams(scanConfig *ScanConfig, ctx *cli.Context) {
+	///////////////////// protocol setting ///////////////////////////
+	if ctx.GlobalIsSet(flags.GetFlagName(flags.LogLevelFlag)) {
+		scanConfig.Base.LogLevel = ctx.Uint(flags.GetFlagName(flags.LogLevelFlag))
+	}
+}
+
+func SetScanConfig(ctx *cli.Context) {
+	setConfigByCommandParams(Parameters, ctx)
+}
+
+func Init(ctx *cli.Context) {
+	if ctx.GlobalIsSet(flags.GetFlagName(flags.ScanConfigFlag)) {
+		configDir = ctx.String(flags.GetFlagName(flags.ScanConfigFlag)) + DEFAULT_CONFIG_FILE
+	} else {
+		configDir = "." + DEFAULT_CONFIG_FILE
+	}
+	log.Infof("scan config path %s\n", configDir)
+	existed := common.FileExisted(configDir)
+	if !existed {
+		log.Infof("config file is not exist: %s, use default config", configDir)
+		return
+	}
+	GetJsonObjectFromFile(configDir, Parameters)
+}
 
 func Save() error {
-	data, err := json.MarshalIndent(DefaultDDnsConfig, "", "  ")
+	data, err := json.MarshalIndent(Parameters, "", "  ")
 	if err != nil {
 		return err
 	}
-	//err = os.Remove(ConfigDir)
-	//if err != nil {
-	//	return err
-	//}
+	err = os.Remove(ConfigDir)
+	if err != nil {
+		return err
+	}
 	return ioutil.WriteFile(ConfigDir, data, 0666)
 }
 

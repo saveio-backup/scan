@@ -7,7 +7,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/saveio/scan/cmd/utils"
+
+	"github.com/saveio/scan/cmd/flags"
 	"github.com/urfave/cli"
 )
 
@@ -67,8 +68,8 @@ var AppHelpFlagGroups = []flagGroup{
 	{
 		Name: "Seeds",
 		Flags: []cli.Flag{
-			utils.LogStderrFlag,
-			utils.LogLevelFlag,
+			flags.LogStderrFlag,
+			flags.LogLevelFlag,
 		},
 	},
 	{

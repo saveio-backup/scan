@@ -7,6 +7,7 @@ package cmd
 
 import (
 	"github.com/saveio/scan/cmd/common"
+	"github.com/saveio/scan/cmd/flags"
 	"github.com/saveio/scan/cmd/utils"
 
 	//"github.com/saveio/scan/config"
@@ -26,8 +27,8 @@ var EndPointCommand = cli.Command{
 			Usage:     "Reg wallet address and host",
 			ArgsUsage: "[sub-command options]",
 			Flags: []cli.Flag{
-				utils.WalletFlag,
-				utils.HostFlag,
+				flags.WalletFlag,
+				flags.HostFlag,
 			},
 		},
 		{
@@ -36,8 +37,8 @@ var EndPointCommand = cli.Command{
 			Usage:     "Update the host of your wallet address",
 			ArgsUsage: "[sub-command options]",
 			Flags: []cli.Flag{
-				utils.WalletFlag,
-				utils.HostFlag,
+				flags.WalletFlag,
+				flags.HostFlag,
 			},
 		},
 		{
@@ -46,7 +47,7 @@ var EndPointCommand = cli.Command{
 			Usage:     "UnReg wallet address and host",
 			ArgsUsage: "[sub-command options]",
 			Flags: []cli.Flag{
-				utils.WalletFlag,
+				flags.WalletFlag,
 			},
 		},
 		{
@@ -55,7 +56,7 @@ var EndPointCommand = cli.Command{
 			Usage:     "query the host of your wallet address or others",
 			ArgsUsage: "[sub-command options]",
 			Flags: []cli.Flag{
-				utils.WalletFlag,
+				flags.WalletFlag,
 			},
 		},
 	},
@@ -86,8 +87,8 @@ func regEndPoint(ctx *cli.Context) error {
 		return err
 	}
 
-	wAddr = ctx.String(utils.GetFlagName(utils.WalletFlag))
-	host := ctx.String(utils.GetFlagName(utils.HostFlag))
+	wAddr = ctx.String(flags.GetFlagName(flags.WalletFlag))
+	host := ctx.String(flags.GetFlagName(flags.HostFlag))
 
 	endpoint, failed := utils.RegEndPoint(wAddr, host)
 	if failed != nil {
@@ -126,8 +127,8 @@ func updateEndPoint(ctx *cli.Context) error {
 		return err
 	}
 
-	wAddr = ctx.String(utils.GetFlagName(utils.WalletFlag))
-	host := ctx.String(utils.GetFlagName(utils.HostFlag))
+	wAddr = ctx.String(flags.GetFlagName(flags.WalletFlag))
+	host := ctx.String(flags.GetFlagName(flags.HostFlag))
 
 	endpoint, failed := utils.UpdateEndPoint(wAddr, host)
 	if failed != nil {
@@ -166,7 +167,7 @@ func unRegEndPoint(ctx *cli.Context) error {
 		return err
 	}
 
-	wAddr = ctx.String(utils.GetFlagName(utils.WalletFlag))
+	wAddr = ctx.String(flags.GetFlagName(flags.WalletFlag))
 
 	endpoint, failed := utils.UnRegEndPoint(wAddr)
 	if failed != nil {
@@ -206,7 +207,7 @@ func reqEndPoint(ctx *cli.Context) error {
 		return err
 	}
 
-	wAddr = ctx.String(utils.GetFlagName(utils.WalletFlag))
+	wAddr = ctx.String(flags.GetFlagName(flags.WalletFlag))
 
 	endpoint, failed := utils.ReqEndPoint(wAddr)
 	if failed != nil {

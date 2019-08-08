@@ -120,7 +120,7 @@ func (this *Network) Start(address string, bootstraps []string) error {
 		return errors.New("invalid address")
 	}
 	protocol := address[:protocolIndex]
-	log.Debugf("channel protocol %s", protocol)
+	log.Debugf("channel address: %s", address)
 	builder := network.NewBuilderWithOptions(network.WriteFlushLatency(1 * time.Millisecond))
 	if this.Keys != nil {
 		log.Debugf("channel use account key")
@@ -160,16 +160,12 @@ func (this *Network) Start(address string, bootstraps []string) error {
 	if len(this.proxyAddr) > 0 {
 		switch protocol {
 		case "udp":
-			fmt.Println("UDPProxyComponent")
 			builder.AddComponent(new(proxy.UDPProxyComponent))
 		case "kcp":
-			fmt.Println("KCPProxyComponent")
 			builder.AddComponent(new(proxy.KCPProxyComponent))
 		case "quic":
-			fmt.Println("QuicProxyComponent")
 			builder.AddComponent(new(proxy.QuicProxyComponent))
 		case "tcp":
-			fmt.Println("TcpProxyComponent")
 			builder.AddComponent(new(proxy.TcpProxyComponent))
 		}
 	}

@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"github.com/saveio/edge/cmd/flags"
 	"github.com/saveio/scan/cmd/common"
+	"github.com/saveio/scan/cmd/flags"
 	"github.com/saveio/scan/cmd/utils"
 	httpComm "github.com/saveio/scan/http/base/common"
 	"github.com/urfave/cli"
@@ -21,9 +21,9 @@ var DNSCommand = cli.Command{
 			Usage:     "Register dns candidate",
 			ArgsUsage: " ",
 			Flags: []cli.Flag{
-				utils.DnsIpFlag,
-				utils.DnsPortFlag,
-				utils.InitDepositFlag,
+				flags.DnsIpFlag,
+				flags.DnsPortFlag,
+				flags.InitDepositFlag,
 			},
 			Description: "Request register as dns candidate",
 		},
@@ -47,7 +47,7 @@ var DNSCommand = cli.Command{
 			Usage:     "Increase init deposit",
 			ArgsUsage: " ",
 			Flags: []cli.Flag{
-				utils.DeltaDepositFlag,
+				flags.DeltaDepositFlag,
 			},
 			Description: "Increase init deposit",
 		},
@@ -57,7 +57,7 @@ var DNSCommand = cli.Command{
 			Usage:     "Reduce init deposit",
 			ArgsUsage: " ",
 			Flags: []cli.Flag{
-				utils.DeltaDepositFlag,
+				flags.DeltaDepositFlag,
 			},
 			Description: "Reduce init deposit",
 		},
@@ -67,8 +67,8 @@ var DNSCommand = cli.Command{
 			Usage:     "Display all or specified Dns register info",
 			ArgsUsage: " ",
 			Flags: []cli.Flag{
-				utils.DnsAllFlag,
-				utils.PeerPubkeyFlag,
+				flags.DnsAllFlag,
+				flags.PeerPubkeyFlag,
 			},
 			Description: "Display all or specified Dns register info",
 		},
@@ -78,8 +78,8 @@ var DNSCommand = cli.Command{
 			Usage:     "Display all or specified Dns host info including ip, port",
 			ArgsUsage: " ",
 			Flags: []cli.Flag{
-				utils.DnsAllFlag,
-				utils.DnsWalletFlag,
+				flags.DnsAllFlag,
+				flags.DnsWalletFlag,
 			},
 			Description: "Display all or specified Dns host info including ip, port",
 		},
