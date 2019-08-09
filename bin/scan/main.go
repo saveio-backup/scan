@@ -632,24 +632,6 @@ func autoSetupDNSChannelsWorking(ctx *cli.Context, p2pActor *actor.PID) error {
 	return err
 }
 
-//GetExternalIP. get external ip of wallet from dns nodes
-func GetExternalIP(walletAddr string) (string, error) {
-	hostAddr, err := tracker.EndPointQuery(walletAddr)
-	if err != nil {
-		log.Errorf("address from req failed %s", err)
-		return "", err
-	}
-	log.Debugf("GetExternalIP %s :%v", walletAddr, string(hostAddr))
-	if len(string(hostAddr)) == 0 {
-		return "", errors.NewErr("host addr not found")
-	}
-	hostAddrStr := hostAddr
-	if strings.Index(hostAddrStr, "0.0.0.0:0") != -1 {
-		return "", errors.NewErr("host addr format wrong")
-	}
-	return hostAddrStr, nil
-}
-
 type accountReader struct {
 	PublicKey []byte
 }

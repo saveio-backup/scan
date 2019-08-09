@@ -1051,7 +1051,11 @@ func WithdrawChannel(params []interface{}) map[string]interface{} {
 }
 
 func GetAllChannels(params []interface{}) map[string]interface{} {
-	channelInfos := channel.GlbChannelSvr.GetAllChannels()
+	channelInfos, err := channel.GlbChannelSvr.GetAllChannels()
+	if err != nil {
+		log.Errorf("GetAllChannels error: %s", err)
+		return responsePack(berr.INTERNAL_ERROR, err.Error())
+	}
 	return responseSuccess(channelInfos)
 }
 

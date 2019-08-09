@@ -12,6 +12,7 @@ import (
 	dspCfg "github.com/saveio/dsp-go-sdk/config"
 	"github.com/saveio/dsp-go-sdk/store"
 	chActorClient "github.com/saveio/pylons/actor/client"
+	ch_actor "github.com/saveio/pylons/actor/server"
 	chanCom "github.com/saveio/pylons/common"
 	"github.com/saveio/scan/common"
 	"github.com/saveio/scan/common/config"
@@ -147,7 +148,7 @@ func (this *ChannelSvr) DepositToChannel(partnerAddr string, totalDeposit uint64
 	return this.Channel.SetDeposit(partnerAddr, totalDeposit)
 }
 
-func (this *ChannelSvr) GetAllChannels() *channel.ChannelInfosResp {
+func (this *ChannelSvr) GetAllChannels() (*ch_actor.ChannelsInfoResp, error) {
 	return this.Channel.AllChannels()
 }
 

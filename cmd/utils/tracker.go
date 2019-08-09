@@ -9,7 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/saveio/dsp-go-sdk/channel"
+	ch_actor "github.com/saveio/pylons/actor/server"
 	httpComm "github.com/saveio/scan/http/base/common"
 	berr "github.com/saveio/scan/http/base/error"
 	"github.com/saveio/themis/common/log"
@@ -645,7 +645,7 @@ func WithdrawChannel(partnerAddr string, totalDeposit uint64) (*httpComm.Success
 	return nil, nil
 }
 
-func GetAllChannels() (*channel.ChannelInfosResp, *httpComm.FailedRsp) {
+func GetAllChannels() (*ch_actor.ChannelsInfoResp, *httpComm.FailedRsp) {
 	result, ontErr := sendRpcRequest("getallchannels", []interface{}{})
 	if ontErr != nil {
 		switch ontErr.ErrorCode {
@@ -663,7 +663,7 @@ func GetAllChannels() (*channel.ChannelInfosResp, *httpComm.FailedRsp) {
 		}
 	}
 
-	channelInfos := &channel.ChannelInfosResp{}
+	channelInfos := &ch_actor.ChannelsInfoResp{}
 	err := json.Unmarshal(result, channelInfos)
 	if err != nil {
 		return nil, &httpComm.FailedRsp{
