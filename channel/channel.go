@@ -34,7 +34,7 @@ type ChannelSvr struct {
 func NewChannelSvr(acc *account.Account, p2pActor *actor.PID) (*ChannelSvr, error) {
 	cs := &ChannelSvr{}
 
-	channelListenAddr := fmt.Sprintf("127.0.0.1:%d", config.Parameters.Base.ChannelPortOffset)
+	channelListenAddr := fmt.Sprintf("127.0.0.1:%d", int(config.Parameters.Base.PortBase+config.Parameters.Base.ChannelPortOffset))
 	cs.Config = &dspCfg.DspConfig{
 		DBPath:               config.DspDBPath(),
 		ChainRpcAddr:         config.Parameters.Base.ChainRpcAddr,

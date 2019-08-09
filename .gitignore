@@ -5,3 +5,12 @@ Chain
 DB
 Log
 
+chain_config.json
+cp_necessary_files.sh
+main.go
+scan
+scan_config.json
+start_mainnet.sh
+start_testnet.sh
+viewlog.sh
+wallet.dat
