@@ -105,7 +105,7 @@ func (this *P2PActor) Receive(ctx actor.Context) {
 		log.Debugf("is peer listening %s, ret %t, err %s", msg.Address, ret, err)
 		ctx.Sender().Request(&dspact.P2pResp{Error: err}, ctx.Self())
 	case *pm.Registry:
-		log.Debugf("tracker client registry or update msg:%s", msg.String())
+		// log.Debugf("tracker client registry or update msg:%s", msg.String())
 		if msg.WalletAddr == "" || msg.HostPort == "" {
 			log.Errorf("[MSB Receive] receive from peer:%s, nil Reg message", ctx.Sender().Address)
 			break
@@ -115,7 +115,7 @@ func (this *P2PActor) Receive(ctx actor.Context) {
 		hpBytes, err := storage.TDB.Get(k)
 		if msg.Type == 0 {
 			msg.Type = 1
-			go this.Broadcast(msg)
+			// go this.Broadcast(msg)
 		} else if msg.Type == 1 && string(hpBytes) != string(v) {
 			err = storage.TDB.Put(k, v)
 			if err != nil {
