@@ -4,6 +4,7 @@
 Chain
 DB
 Log
+testdata
 
 chain_config.json
 cp_necessary_files.sh
@@ -14,3 +15,5 @@ start_mainnet.sh
 start_testnet.sh
 viewlog.sh
 wallet.dat
+peers.recent
+Heap.prof*

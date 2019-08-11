@@ -59,7 +59,6 @@ type BaseConfig struct {
 	BaseDir            string `json:"BaseDir"`
 	LogLevel           uint   `json:"LogLevel"`
 	LogStderr          bool   `json:"LogStderr"`
-	NetworkId          uint32 `json:"NetworkId"`
 	PublicIP           string `json:"PublicIP"`
 	PortBase           uint   `json:"PortBase"`
 	LocalRpcPortOffset uint   `json:"LocalRpcPortOffset"`
@@ -73,12 +72,18 @@ type BaseConfig struct {
 
 	ChainRpcAddr  string `json:"ChainRpcAddr"`
 	ChainRestAddr string `json:"ChainRestAddr"`
+	DisableChain  bool   `json:"DisableChain"`
 
-	ChannelPortOffset    uint   `json:"ChannelPortOffset"`
+	ChannelNetworkId     uint32 `json:"ChannelNetworkId"`
 	ChannelProtocol      string `json:"ChannelProtocol"`
+	ChannelPortOffset    uint   `json:"ChannelPortOffset"`
 	ChannelClientType    string `json:"ChannelClientType"`
 	ChannelRevealTimeout string `json:"ChannelRevealTimeout"`
 	ChannelSettleTimeout string `json:"ChannelSettleTimeout"`
+
+	DnsNetworkId  uint32 `json:"DnsNetworkId"`
+	DnsProtocol   string `json:"DnsProtocol"`
+	DnsPortOffset uint   `json:"DnsPortOffset"`
 
 	TrackerPortOffset  uint     `json:"TrackerPortOffset"`
 	TrackerFee         int      `json:"TrackerFee`
@@ -99,6 +104,8 @@ type BaseConfig struct {
 	ChannelDeposit             uint64   `json:"ChannelDeposit"`
 	Fee                        uint64   `json:"Fee"`
 	IgnoreConnectDNSAddrs      []string `json:"IgnoreConnectDNSAddrs"`
+
+	DumpMemory bool `json:"DumpMemory"`
 }
 
 type FsConfig struct {
@@ -118,7 +125,6 @@ func TestConfig() *ScanConfig {
 			BaseDir:                    DEFAULT_DB_PATH,
 			LogLevel:                   DEFAULT_LOG_LEVEL,
 			LogStderr:                  false,
-			NetworkId:                  NETWORK_ID_MAIN_NET,
 			PublicIP:                   "127.0.0.1",
 			EnableJsonRpc:              true,
 			JsonRpcPortOffset:          DEFAULT_RPC_PORT,
@@ -216,6 +222,10 @@ func DspDBPath() string {
 // TrackerDBPath. tracker database path
 func TrackerDBPath() string {
 	return filepath.Join(Parameters.Base.BaseDir, Parameters.Base.DBPath, curUsrWalAddr, "tracker")
+}
+
+func EndpointDBPath() string {
+	return filepath.Join(Parameters.Base.BaseDir, Parameters.Base.DBPath, curUsrWalAddr, "endpoint")
 }
 
 // ChannelDBPath. channel database path

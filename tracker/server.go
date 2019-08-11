@@ -13,9 +13,7 @@ import (
 	"github.com/anacrolix/dht/krpc"
 	"github.com/anacrolix/missinggo"
 	"github.com/ontio/ontology-eventbus/actor"
-	"github.com/saveio/scan/channel"
 	"github.com/saveio/scan/common"
-	"github.com/saveio/scan/common/config"
 	pm "github.com/saveio/scan/messages/protoMessages"
 	"github.com/saveio/scan/storage"
 	Ccomon "github.com/saveio/themis/common"
@@ -235,7 +233,8 @@ func (s *Server) Accepted() (err error) {
 			Port:      ar.Port,
 			Wallet:    ar.Wallet,
 		})
-		channel.GlbChannelSvr.Channel.SetHostAddr(m.WalletAddr, fmt.Sprintf("%s://%s", config.Parameters.Base.ChannelProtocol, m.HostPort))
+		go storage.EDB.PutEndpoint(m.WalletAddr, nodeAddr.IP, nodeAddr.Port)
+		// service.ScanNode.Channel.SetHostAddr(m.WalletAddr, fmt.Sprintf("%s://%s", config.Parameters.Base.ChannelProtocol, m.HostPort))
 		log.Infof("Tracker client  reg success,wallet:%s,nodeAddr:%s", Ccomon.ToHexString(ar.Wallet[:]), nodeAddr.String())
 		return err
 	case ActionUnReg:

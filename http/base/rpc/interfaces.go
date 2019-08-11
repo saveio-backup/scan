@@ -22,8 +22,8 @@ import (
 	"bytes"
 	"encoding/hex"
 
-	"github.com/saveio/scan/channel"
-	"github.com/saveio/scan/dns"
+	"github.com/saveio/scan/service"
+
 	"github.com/saveio/scan/tracker"
 
 	"fmt"
@@ -707,7 +707,7 @@ func RegisterDns(params []interface{}) map[string]interface{} {
 		return responsePack(berr.INVALID_PARAMS, "")
 	}
 
-	ret, err := dns.GlbDNSSvr.DNSNodeReg(ipstr, portstr, initDeposituint64)
+	ret, err := service.ScanNode.DNSNodeReg(ipstr, portstr, initDeposituint64)
 	if err != nil {
 		log.Errorf("RegisterDns error: %s", err)
 		return responsePack(berr.INTERNAL_ERROR, err.Error())
@@ -720,7 +720,7 @@ func RegisterDns(params []interface{}) map[string]interface{} {
 }
 
 func UnregisterDns(params []interface{}) map[string]interface{} {
-	ret, err := dns.GlbDNSSvr.DNSNodeUnreg()
+	ret, err := service.ScanNode.DNSNodeUnreg()
 	if err != nil {
 		log.Errorf("UnRegisterDns error: %s", err)
 		return responsePack(berr.INTERNAL_ERROR, err.Error())
@@ -733,7 +733,7 @@ func UnregisterDns(params []interface{}) map[string]interface{} {
 }
 
 func QuitDns(params []interface{}) map[string]interface{} {
-	ret, err := dns.GlbDNSSvr.DNSNodeQuit()
+	ret, err := service.ScanNode.DNSNodeQuit()
 	if err != nil {
 		log.Errorf("QuitDns error: %s", err)
 		return responsePack(berr.INTERNAL_ERROR, err.Error())
@@ -757,7 +757,7 @@ func AddDnsPos(params []interface{}) map[string]interface{} {
 		return responsePack(berr.INVALID_PARAMS, "")
 	}
 
-	ret, err := dns.GlbDNSSvr.DNSAddPos(deltaDeposit)
+	ret, err := service.ScanNode.DNSAddPos(deltaDeposit)
 	if err != nil {
 		log.Errorf("AddDnsPos error: %s", err)
 		return responsePack(berr.INTERNAL_ERROR, err.Error())
@@ -781,7 +781,7 @@ func ReduceDnsPos(params []interface{}) map[string]interface{} {
 		return responsePack(berr.INVALID_PARAMS, "")
 	}
 
-	ret, err := dns.GlbDNSSvr.DNSReducePos(deltaDeposit)
+	ret, err := service.ScanNode.DNSReducePos(deltaDeposit)
 	if err != nil {
 		log.Errorf("AddDnsPos error: %s", err)
 		return responsePack(berr.INTERNAL_ERROR, err.Error())
@@ -810,7 +810,7 @@ func GetRegisterDnsInfo(params []interface{}) map[string]interface{} {
 	}
 
 	if dnsAll {
-		m, err := dns.GlbDNSSvr.GetDnsPeerPoolMap()
+		m, err := service.ScanNode.GetDnsPeerPoolMap()
 		if err != nil {
 			log.Errorf("Get all dns register info err:%s\n", err)
 			return responsePack(berr.INTERNAL_ERROR, err.Error())
@@ -827,7 +827,7 @@ func GetRegisterDnsInfo(params []interface{}) map[string]interface{} {
 		}
 		return responseSuccess(&dnsPPRsp)
 	} else if peerPubkey != "" {
-		item, err := dns.GlbDNSSvr.GetDnsPeerPoolItem(peerPubkey)
+		item, err := service.ScanNode.GetDnsPeerPoolItem(peerPubkey)
 		if err != nil {
 			log.Errorf("Get all dns register info err:%s\n", err)
 			return responsePack(berr.INTERNAL_ERROR, err.Error())
@@ -859,7 +859,7 @@ func GetDnsHostInfo(params []interface{}) map[string]interface{} {
 	}
 
 	if dnsAll {
-		m, err := dns.GlbDNSSvr.GetAllDnsNodes()
+		m, err := service.ScanNode.GetAllDnsNodes()
 		if err != nil {
 			log.Errorf("Get all dns register info err:%s\n", err)
 			return responsePack(berr.INTERNAL_ERROR, err.Error())
@@ -882,7 +882,7 @@ func GetDnsHostInfo(params []interface{}) map[string]interface{} {
 			return responsePack(berr.INTERNAL_ERROR, err.Error())
 		}
 
-		item, err := dns.GlbDNSSvr.GetDnsNodeByAddr(addr)
+		item, err := service.ScanNode.GetDnsNodeByAddr(addr)
 		if err != nil {
 			log.Errorf("Get all dns register info err:%s\n", err)
 			return responsePack(berr.INTERNAL_ERROR, err.Error())
@@ -908,7 +908,7 @@ func OpenChannel(params []interface{}) map[string]interface{} {
 		return responsePack(berr.INVALID_PARAMS, "")
 	}
 
-	id, err := channel.GlbChannelSvr.OpenChannel(partnerAddrstr, 0)
+	id, err := service.ScanNode.OpenChannel(partnerAddrstr, 0)
 	if err != nil {
 		log.Errorf("OpenChannel error: %s", err)
 		return responsePack(berr.INTERNAL_ERROR, err.Error())
@@ -929,7 +929,7 @@ func OpenChannel(params []interface{}) map[string]interface{} {
 // 		return responsePack(berr.INVALID_PARAMS, "")
 // 	}
 
-// 	err := channel.GlbChannelSvr.CloseChannel(partnerAddrstr)
+// 	err := service.ScanNode.CloseChannel(partnerAddrstr)
 // 	if err != nil {
 // 		log.Errorf("OpenChannel error: %s", err)
 // 		return responsePack(berr.INTERNAL_ERROR, err.Error())
@@ -960,7 +960,7 @@ func DepositToChannel(params []interface{}) map[string]interface{} {
 		return responsePack(berr.INVALID_PARAMS, "")
 	}
 
-	err := channel.GlbChannelSvr.DepositToChannel(partnerAddrstr, totalDeposituint64)
+	err := service.ScanNode.DepositToChannel(partnerAddrstr, totalDeposituint64)
 	if err != nil {
 		log.Errorf("DepositToChannel error: %s", err)
 		return responsePack(berr.INTERNAL_ERROR, err.Error())
@@ -1000,13 +1000,13 @@ func TransferToSomebody(params []interface{}) map[string]interface{} {
 		return responsePack(berr.INVALID_PARAMS, "")
 	}
 
-	host, err := channel.GlbChannelSvr.QueryHostInfo(partnerAddrstr)
+	host, err := service.ScanNode.QueryHostInfo(partnerAddrstr)
 	if host == "" {
 		log.Errorf("WithdrawChannel hostinfo is null, error: %s", err)
 		return responsePack(berr.CHANNEL_TARGET_HOST_INFO_NOT_FOUND, "")
 	}
 
-	err = channel.GlbChannelSvr.Transfer(paymentIduint, amountuint64, partnerAddrstr)
+	err = service.ScanNode.Transfer(paymentIduint, amountuint64, partnerAddrstr)
 	if err != nil {
 		log.Errorf("TransferToSomebody error: %s", err)
 		return responsePack(berr.INTERNAL_ERROR, err.Error())
@@ -1035,13 +1035,13 @@ func WithdrawChannel(params []interface{}) map[string]interface{} {
 		return responsePack(berr.INVALID_PARAMS, "")
 	}
 
-	host, err := channel.GlbChannelSvr.QueryHostInfo(partnerAddrstr)
+	host, err := service.ScanNode.QueryHostInfo(partnerAddrstr)
 	if host == "" {
 		log.Errorf("WithdrawChannel hostinfo is null, error: %s", err)
 		return responsePack(berr.CHANNEL_TARGET_HOST_INFO_NOT_FOUND, "")
 	}
 
-	err = channel.GlbChannelSvr.ChannelWithdraw(partnerAddrstr, amountuint64)
+	err = service.ScanNode.ChannelWithdraw(partnerAddrstr, amountuint64)
 	if err != nil {
 		log.Errorf("WithdrawChannel error: %s", err)
 		return responsePack(berr.INTERNAL_ERROR, err.Error())
@@ -1051,7 +1051,7 @@ func WithdrawChannel(params []interface{}) map[string]interface{} {
 }
 
 func GetAllChannels(params []interface{}) map[string]interface{} {
-	channelInfos, err := channel.GlbChannelSvr.GetAllChannels()
+	channelInfos, err := service.ScanNode.GetAllChannels()
 	if err != nil {
 		log.Errorf("GetAllChannels error: %s", err)
 		return responsePack(berr.INTERNAL_ERROR, err.Error())
@@ -1068,7 +1068,7 @@ func GetAllChannels(params []interface{}) map[string]interface{} {
 // 		return responsePack(berr.INVALID_PARAMS, "")
 // 	}
 
-// 	balance, err := channel.GlbChannelSvr.GetCurrentBalance(partnerAddrstr)
+// 	balance, err := service.ScanNode.GetCurrentBalance(partnerAddrstr)
 // 	if err != nil {
 // 		log.Errorf("GetCurrentBalance error: %s", err)
 // 		return responsePack(berr.INTERNAL_ERROR, err.Error())
@@ -1089,7 +1089,7 @@ func QueryChannelDeposit(params []interface{}) map[string]interface{} {
 		return responsePack(berr.INVALID_PARAMS, "")
 	}
 
-	balance, err := channel.GlbChannelSvr.QuerySpecialChannelDeposit(partnerAddrstr)
+	balance, err := service.ScanNode.QuerySpecialChannelDeposit(partnerAddrstr)
 	if err != nil {
 		log.Errorf("QueryChannelDeposit error: %s", err)
 		return responsePack(berr.INTERNAL_ERROR, err.Error())
@@ -1110,7 +1110,7 @@ func QueryHostInfo(params []interface{}) map[string]interface{} {
 		return responsePack(berr.INVALID_PARAMS, "")
 	}
 
-	host, err := channel.GlbChannelSvr.QueryHostInfo(partnerAddrstr)
+	host, err := service.ScanNode.QueryHostInfo(partnerAddrstr)
 	if err != nil {
 		log.Errorf("QueryHostInfo error: %s", err)
 		return responsePack(berr.INTERNAL_ERROR, err.Error())
@@ -1124,7 +1124,7 @@ func QueryHostInfo(params []interface{}) map[string]interface{} {
 }
 
 func GetChannelInitProgress(params []interface{}) map[string]interface{} {
-	progress, err := channel.GlbChannelSvr.GetFilterBlockProgress()
+	progress, err := service.ScanNode.GetFilterBlockProgress()
 	if err != nil {
 		return responsePack(berr.INTERNAL_ERROR, err.Error())
 	}

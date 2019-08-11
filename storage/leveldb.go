@@ -1,8 +1,3 @@
-/**
- * Description:
- * Author: LiYong Zhang
- * Create: 2019-02-18
- */
 package storage
 
 import (
@@ -30,23 +25,17 @@ const BITSPERKEY = 10
 
 //NewLevelDBStore return LevelDBStore instance
 func NewLevelDBStore(file string) (*LevelDBStore, error) {
-
-	// default Options
 	o := opt.Options{
 		NoSync: false,
 		Filter: filter.NewBloomFilter(BITSPERKEY),
 	}
-
 	db, err := leveldb.OpenFile(file, &o)
-
 	if _, corrupted := err.(*errors.ErrCorrupted); corrupted {
 		db, err = leveldb.RecoverFile(file, nil)
 	}
-
 	if err != nil {
 		return nil, err
 	}
-
 	return &LevelDBStore{
 		db:    db,
 		batch: nil,

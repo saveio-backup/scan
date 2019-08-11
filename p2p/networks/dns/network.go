@@ -1,4 +1,4 @@
-package network
+package dns
 
 import (
 	"context"
@@ -15,11 +15,9 @@ import (
 	"github.com/saveio/carrier/network/components/proxy"
 	"github.com/saveio/carrier/types/opcode"
 	"github.com/saveio/dsp-go-sdk/network/common"
-	act "github.com/saveio/pylons/actor/server"
 	"github.com/saveio/themis/common/log"
 
 	"github.com/saveio/pylons/common/constants"
-	"github.com/saveio/pylons/network/transport/messages"
 
 	//"github.com/golang/protobuf/proto"
 	"github.com/gogo/protobuf/proto"
@@ -28,46 +26,20 @@ import (
 	pm "github.com/saveio/scan/messages/protoMessages"
 )
 
-var DDNSP2P *Network
+var DnsP2p *Network
 
 var once sync.Once
 
 const (
-	OpCodeProcessed opcode.Opcode = 1000 + iota
-	OpCodeDelivered
-	OpCodeSecretRequest
-	OpCodeRevealSecret
-	OpCodeSecretMsg
-	OpCodeDirectTransfer
-	OpCodeLockedTransfer
-	OpCodeRefundTransfer
-	OpCodeLockExpired
-	OpCodeWithdrawRequest
-	OpCodeWithdraw
-	OpCodeCooperativeSettleRequest
-	OpCodeCooperativeSettle
+	OpCodeTorrent opcode.Opcode = 2000 + iota
 	OpCodeRegistry
 	OpCodeUnRegistry
-	OpCodeTorrent
 )
 
 var opCodes = map[opcode.Opcode]proto.Message{
-	OpCodeRegistry:                 &pm.Registry{},
-	OpCodeUnRegistry:               &pm.UnRegistry{},
-	OpCodeTorrent:                  &pm.Torrent{},
-	OpCodeProcessed:                &messages.Processed{},
-	OpCodeDelivered:                &messages.Delivered{},
-	OpCodeSecretRequest:            &messages.SecretRequest{},
-	OpCodeRevealSecret:             &messages.RevealSecret{},
-	OpCodeSecretMsg:                &messages.Secret{},
-	OpCodeDirectTransfer:           &messages.DirectTransfer{},
-	OpCodeLockedTransfer:           &messages.LockedTransfer{},
-	OpCodeRefundTransfer:           &messages.RefundTransfer{},
-	OpCodeLockExpired:              &messages.LockExpired{},
-	OpCodeWithdrawRequest:          &messages.WithdrawRequest{},
-	OpCodeWithdraw:                 &messages.Withdraw{},
-	OpCodeCooperativeSettleRequest: &messages.CooperativeSettleRequest{},
-	OpCodeCooperativeSettle:        &messages.CooperativeSettle{},
+	OpCodeTorrent:    &pm.Torrent{},
+	OpCodeRegistry:   &pm.Registry{},
+	OpCodeUnRegistry: &pm.UnRegistry{},
 }
 
 type Network struct {
@@ -104,6 +76,10 @@ func (this *Network) SetProxyServer(address string) {
 	this.proxyAddr = address
 }
 
+func (this *Network) SetNetworkKey(key *crypto.KeyPair) {
+	this.Keys = key
+}
+
 func (this *Network) Protocol() string {
 	idx := strings.Index(this.PublicAddr(), "://")
 	if idx == -1 {
@@ -112,7 +88,7 @@ func (this *Network) Protocol() string {
 	return this.PublicAddr()[:idx]
 }
 
-func (this *Network) Start(address string, bootstraps []string) error {
+func (this *Network) Start(address string) error {
 	protocolIndex := strings.Index(address, "://")
 	if protocolIndex == -1 {
 		return errors.New("invalid address")
@@ -179,12 +155,12 @@ func (this *Network) Start(address string, bootstraps []string) error {
 		this.P2p.EnableProxyMode(true)
 		this.P2p.SetProxyServer(this.proxyAddr)
 	}
-	this.P2p.SetNetworkID(config.Parameters.Base.NetworkId)
+	this.P2p.SetNetworkID(config.Parameters.Base.DnsNetworkId)
 	go this.P2p.Listen()
 	// go this.PeerStateChange(this.syncPeerState)
 
 	this.P2p.BlockUntilListening()
-	log.Debugf("channel will BlockUntilProxyFinish..., networkid %d", config.Parameters.Base.NetworkId)
+	log.Debugf("channel will BlockUntilProxyFinish..., networkid %d", config.Parameters.Base.DnsNetworkId)
 	if len(this.proxyAddr) > 0 {
 		switch protocol {
 		case "udp":
@@ -421,32 +397,6 @@ func (this *Network) RequestWithRetry(msg proto.Message, peer string, retry int)
 //P2P network msg receive. torrent msg, reg msg, unReg msg
 func (this *Network) Receive(message proto.Message, from string) error {
 	switch message.(type) {
-	case *messages.Processed:
-		act.OnBusinessMessage(message, from)
-	case *messages.Delivered:
-		act.OnBusinessMessage(message, from)
-	case *messages.SecretRequest:
-		act.OnBusinessMessage(message, from)
-	case *messages.RevealSecret:
-		act.OnBusinessMessage(message, from)
-	case *messages.Secret:
-		act.OnBusinessMessage(message, from)
-	case *messages.DirectTransfer:
-		act.OnBusinessMessage(message, from)
-	case *messages.LockedTransfer:
-		act.OnBusinessMessage(message, from)
-	case *messages.RefundTransfer:
-		act.OnBusinessMessage(message, from)
-	case *messages.LockExpired:
-		act.OnBusinessMessage(message, from)
-	case *messages.WithdrawRequest:
-		act.OnBusinessMessage(message, from)
-	case *messages.Withdraw:
-		act.OnBusinessMessage(message, from)
-	case *messages.CooperativeSettleRequest:
-		act.OnBusinessMessage(message, from)
-	case *messages.CooperativeSettle:
-		act.OnBusinessMessage(message, from)
 	case *pm.Torrent:
 		log.Errorf("[MSB Receive] receive from peer:%s, nil Torrent message", from)
 		this.OnBusinessMessage(message, from)
