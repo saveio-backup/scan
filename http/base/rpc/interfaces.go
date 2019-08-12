@@ -1002,7 +1002,7 @@ func TransferToSomebody(params []interface{}) map[string]interface{} {
 
 	host, err := service.ScanNode.QueryHostInfo(partnerAddrstr)
 	if host == "" {
-		log.Errorf("WithdrawChannel hostinfo is null, error: %s", err)
+		log.Errorf("TransferToSomebody hostinfo is null, error: %s", err)
 		return responsePack(berr.CHANNEL_TARGET_HOST_INFO_NOT_FOUND, "")
 	}
 

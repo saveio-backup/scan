@@ -186,191 +186,61 @@ func (s *Server) Accepted() (err error) {
 	case ActionReg:
 		log.Info("TrackerServer Accepted ActionReg")
 		if _, ok := s.conns[h.ConnectionId]; !ok {
-			s.respond(addr, ResponseHeader{
-				TransactionId: h.TransactionId,
-				Action:        ActionError,
-			}, []byte("not connected"))
-			return
+			return s.respond(addr, ResponseHeader{TransactionId: h.TransactionId, Action: ActionError}, []byte("not connected"))
 		}
 		var ar AnnounceRequest
 		err = readBody(r, &ar)
+		if err != nil || ar.Wallet == Ccomon.ADDRESS_EMPTY {
+			return s.respond(addr, ResponseHeader{TransactionId: h.TransactionId, Action: ActionError}, []byte("read announce request buffer failed"))
+		}
+		nodeAddr := krpc.NodeAddr{IP: ar.IPAddress[:], Port: int(ar.Port)}
+		err = storage.EDB.PutEndpoint(ar.Wallet.ToBase58(), nodeAddr.IP, int(ar.Port))
 		if err != nil {
-			return
+			return s.respond(addr, ResponseHeader{TransactionId: h.TransactionId, Action: ActionError}, []byte("db put endpoint failed"))
 		}
-		if ar.Wallet == Ccomon.ADDRESS_EMPTY {
-			err = fmt.Errorf("nil walletAddr")
-			return
-		}
-		//ip := make(net.IP, 4)
-		//binary.BigEndian.PutUint32(ip, ar.IPAddress)
-		nodeAddr := krpc.NodeAddr{
-			IP:   ar.IPAddress[:],
-			Port: int(ar.Port),
-		}
-		log.Infof("ActionReg nodeAddr: %v, %d", nodeAddr.IP, nodeAddr.Port)
-		nb, err := nodeAddr.MarshalBinary()
-		log.Infof("ActionReg Wallet: %v, nb: %v", ar.Wallet.ToBase58(), nb)
-		if err != nil {
-			err = fmt.Errorf("nodeAddr marshal error")
-			return err
-		}
-		err = storage.TDB.Put(ar.Wallet[:], nb)
-		m := &pm.Registry{
-			WalletAddr: ar.Wallet.ToBase58(),
-			HostPort:   nodeAddr.String(),
-			Type:       0,
-		}
-		s.p2p.Tell(m)
-		if err != nil {
-			return err
-		}
-		ipAddr := ipconvert(nodeAddr.IP)
-		err = s.respond(addr, ResponseHeader{
-			TransactionId: h.TransactionId,
-			Action:        ActionReg,
-		}, AnnounceResponseHeader{
-			IPAddress: ipAddr,
-			Port:      ar.Port,
-			Wallet:    ar.Wallet,
-		})
-		go storage.EDB.PutEndpoint(m.WalletAddr, nodeAddr.IP, nodeAddr.Port)
-		// service.ScanNode.Channel.SetHostAddr(m.WalletAddr, fmt.Sprintf("%s://%s", config.Parameters.Base.ChannelProtocol, m.HostPort))
-		log.Infof("Tracker client  reg success,wallet:%s,nodeAddr:%s", Ccomon.ToHexString(ar.Wallet[:]), nodeAddr.String())
-		return err
+		s.p2p.Tell(&pm.Registry{WalletAddr: ar.Wallet.ToBase58(), HostPort: nodeAddr.String(), Type: 0})
+		log.Infof("ActionReg wallAddr:%s, nodeAddr:%s", ar.Wallet.ToBase58(), nodeAddr.String())
+		return s.respond(addr, ResponseHeader{TransactionId: h.TransactionId, Action: ActionReg}, AnnounceResponseHeader{IPAddress: ipAddr, Port: ar.Port, Wallet: ar.Wallet})
 	case ActionUnReg:
 		log.Info("TrackerServer Accepted ActionUnReg")
 		if _, ok := s.conns[h.ConnectionId]; !ok {
-			s.respond(addr, ResponseHeader{
-				TransactionId: h.TransactionId,
-				Action:        ActionError,
-			}, []byte("not connected"))
-			return
+			return s.respond(addr, ResponseHeader{TransactionId: h.TransactionId, Action: ActionError}, []byte("not connected"))
 		}
 		var ar AnnounceRequest
 		err = readBody(r, &ar)
+		if err != nil || ar.Wallet == Ccomon.ADDRESS_EMPTY {
+			return s.respond(addr, ResponseHeader{TransactionId: h.TransactionId, Action: ActionError}, []byte("read announce request buffer failed"))
+		}
+
+		exist, err := storage.EDB.GetEndpoint(ar.Wallet.ToBase58())
+		if exist == nil || err != nil {
+			return s.respond(addr, ResponseHeader{TransactionId: h.TransactionId, Action: ActionError}, []byte("not exists"))
+		}
+
+		err = storage.EDB.DelEndpoint(ar.Wallet.ToBase58())
 		if err != nil {
-			return
+			return s.respond(addr, ResponseHeader{TransactionId: h.TransactionId, Action: ActionError}, []byte("db del endpoint failed"))
 		}
-		if ar.Wallet == Ccomon.ADDRESS_EMPTY {
-			err = fmt.Errorf("nil walletAddr")
-			return
-		}
-		var exist bool
-		exist, err = storage.TDB.Has(ar.Wallet[:])
-		if !exist || err != nil {
-			log.Errorf("This wallet:%s is not exist!", ar.Wallet)
-			return
-		}
-		err = storage.TDB.Delete(ar.Wallet[:])
-		m := &pm.UnRegistry{
-			WalletAddr: ar.Wallet.ToHexString(),
-			Type:       0,
-		}
-		s.p2p.Tell(m)
-		s.respond(addr, ResponseHeader{
-			TransactionId: h.TransactionId,
-			Action:        ActionUnReg,
-		}, AnnounceResponseHeader{
-			Wallet: ar.Wallet,
-		})
-		log.Debugf("Tracker client  unReg success,wallet:%s", ar.Wallet)
-		return
+		s.p2p.Tell(&pm.UnRegistry{WalletAddr: ar.Wallet.ToBase58(), Type: 0})
+		return s.respond(addr, ResponseHeader{TransactionId: h.TransactionId, Action: ActionUnReg}, AnnounceResponseHeader{Wallet: ar.Wallet})
 	case ActionReq:
 		log.Info("TrackerServer Accepted ActionReq")
 		if _, ok := s.conns[h.ConnectionId]; !ok {
-			s.respond(addr, ResponseHeader{
-				TransactionId: h.TransactionId,
-				Action:        ActionError,
-			}, []byte("not connected"))
-			return
+			return s.respond(addr, ResponseHeader{TransactionId: h.TransactionId, Action: ActionError}, []byte("not connected"))
 		}
 		var ar AnnounceRequest
 		err = readBody(r, &ar)
 		if err != nil {
-			return
+			return s.respond(addr, ResponseHeader{TransactionId: h.TransactionId, Action: ActionError}, []byte("read announce request buffer failed"))
 		}
-
-		if ar.Wallet == Ccomon.ADDRESS_EMPTY {
-			err = fmt.Errorf("nil walletAddr")
-			return
+		nodeAddr, err := storage.EDB.GetEndpoint(ar.Wallet.ToBase58())
+		if ar.Wallet == Ccomon.ADDRESS_EMPTY || err != nil || nodeAddr == nil {
+			// return s.respond(addr, ResponseHeader{TransactionId: h.TransactionId, Action: ActionReq}, AnnounceResponseHeader{Wallet: ar.Wallet})
+			return s.respond(addr, ResponseHeader{TransactionId: h.TransactionId, Action: ActionError}, []byte("endpoint not found"))
 		}
-		nb, err := storage.TDB.Get(ar.Wallet[:])
-		if err != nil {
-			return err
-		}
-		var nodeAddr krpc.NodeAddr
-		log.Infof("req wall: %v, nb: %v", ar.Wallet.ToBase58(), nb)
-		nodeAddr.UnmarshalBinary(nb)
-		log.Infof("nodeAddr: %v, %d", nodeAddr.IP, nodeAddr.Port)
-		ipAddr := ipconvert(nodeAddr.IP)
-		err = s.respond(addr, ResponseHeader{
-			TransactionId: h.TransactionId,
-			Action:        ActionReq,
-		}, AnnounceResponseHeader{
-			Wallet:    ar.Wallet,
-			IPAddress: ipAddr,
-			Port:      uint16(nodeAddr.Port),
-		})
-
-		log.Debugf("Tracker client req success,wallet:%s,nodeAddr:%s", ar.Wallet, string(nb))
-		return err
-	case ActionUpdate:
-		log.Info("TrackerServer Accepted ActionUpdate")
-		if _, ok := s.conns[h.ConnectionId]; !ok {
-			s.respond(addr, ResponseHeader{
-				TransactionId: h.TransactionId,
-				Action:        ActionError,
-			}, []byte("not connected"))
-			return
-		}
-		var ar AnnounceRequest
-		err = readBody(r, &ar)
-		if err != nil {
-			return
-		}
-
-		if ar.Wallet == Ccomon.ADDRESS_EMPTY {
-			err = fmt.Errorf("nil walletAddr")
-			return
-		}
-		//ip := make(net.IP, 4)
-		//binary.BigEndian.PutUint32(ip, ar.IPAddress)
-		nodeAddr := krpc.NodeAddr{
-			IP:   ar.IPAddress[:],
-			Port: int(ar.Port),
-		}
-		var exist bool
-		exist, err = storage.TDB.Has(ar.Wallet[:])
-		if !exist || err != nil {
-			log.Errorf("This wallet:%s is not exist!", ar.Wallet)
-			return
-		}
-		var nb []byte
-		nb, err = nodeAddr.MarshalBinary()
-		if err != nil {
-			return err
-		}
-		err = storage.TDB.Put(ar.Wallet[:], nb)
-		if err != nil {
-			return err
-		}
-		m := &pm.Registry{
-			WalletAddr: ar.Wallet.ToHexString(),
-			HostPort:   nodeAddr.String(),
-			Type:       0,
-		}
-		s.p2p.Tell(m)
-		ipAddr := ipconvert(nodeAddr.IP)
-		log.Debugf("Tracker client  update success,wallet:%s,nodeAddr:%s", ar.Wallet, nodeAddr.String())
-		s.respond(addr, ResponseHeader{
-			TransactionId: h.TransactionId,
-			Action:        ActionUpdate,
-		}, AnnounceResponseHeader{
-			Wallet:    ar.Wallet,
-			IPAddress: ipAddr,
-			Port:      uint16(nodeAddr.Port),
-		})
-		return
+		ipAddr := ipconvert(nodeAddr.NodeAddr.IP.To4())
+		log.Infof("ActionReq wallAddr: %s, nodeAddr: %s", ar.Wallet.ToBase58(), nodeAddr.NodeAddr.String())
+		return s.respond(addr, ResponseHeader{TransactionId: h.TransactionId, Action: ActionReq}, AnnounceResponseHeader{Wallet: ar.Wallet, IPAddress: ipAddr, Port: uint16(nodeAddr.NodeAddr.Port)})
 	case ActionRegNodeType:
 		log.Info("TrackerServer Accepted ActionRegNodeType")
 		if _, ok := s.conns[h.ConnectionId]; !ok {

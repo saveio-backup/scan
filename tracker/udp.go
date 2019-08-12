@@ -14,8 +14,10 @@ import (
 	"github.com/anacrolix/missinggo"
 	"github.com/anacrolix/missinggo/pproffd"
 	"github.com/saveio/themis/common/log"
+
 	//"github.com/saveio/themis/common"
 	"encoding"
+
 	"github.com/anacrolix/dht/krpc"
 )
 
@@ -30,7 +32,6 @@ const (
 	ActionReg
 	ActionUnReg
 	ActionReq
-	ActionUpdate
 	ActionRegNodeType
 	ActionGetNodesByType
 	connectRequestConnectionId = 0x41727101980
@@ -153,7 +154,7 @@ func (c *udpAnnounce) Do(req AnnounceRequest) (res AnnounceResponse, err error) 
 	res.Port = h.Port
 	res.Wallet = h.Wallet
 
-	if  c.a.flag == ActionAnnounce {
+	if c.a.flag == ActionAnnounce {
 		nas := func() interface {
 			encoding.BinaryUnmarshaler
 			NodeAddrs() []krpc.NodeAddr

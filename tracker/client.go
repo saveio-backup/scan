@@ -2,6 +2,7 @@ package tracker
 
 import (
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"net"
 
@@ -79,7 +80,8 @@ func RegEndPoint(trackerUrl string, sigData []byte, pubKey keypair.PublicKey, wa
 		log.Errorf("RegEndPoint failed err:%s\n", err)
 		return err
 	}
-	log.Debugf("[RegEndPoint ]ip:%v, port:%d, wallet:%s\n", ret.IPAddress, ret.Port, ret.Wallet)
+	hostIP := net.IP(ret.IPAddress[:])
+	log.Infof("tracker client [RegEndPoint] wallet:%s, nodeAddr %s:%d\n", ret.Wallet, hostIP.String(), ret.Port)
 	return nil
 }
 
@@ -99,7 +101,7 @@ func UnRegEndPoint(trackerUrl string, walletAddr [20]byte) error {
 		log.Errorf("UnRegEndPoint failed err:%s\n", err)
 		return err
 	}
-	log.Debugf("[UnRegEndPoint ]wallet:%s\n", ret.Wallet)
+	log.Infof("tracker client [UnRegEndPoint] wallet:%s\n", ret.Wallet)
 	return nil
 }
 
@@ -116,33 +118,15 @@ func ReqEndPoint(trackerUrl string, walletAddr [20]byte) (string, error) {
 	}
 	ret, err := announce.Do()
 	if err != nil {
-		log.Errorf("ReqEndPoint failed err:%s\n", err)
+		log.Errorf("ReqEndPoint err: %s\n", err)
 		return "", err
 	}
 	hostIP := net.IP(ret.IPAddress[:])
+	if hostIP.String() == "0.0.0.0" || int(ret.Port) == 0 {
+		return "", errors.New(fmt.Sprintf("endpoint host or port is 0, nodeAddr %s:%d", hostIP.String(), ret.Port))
+	}
+	log.Infof("tracker client [ReqEndPoint] wallet:%s, nodeAddr %s:%d\n", ret.Wallet, hostIP.String(), ret.Port)
 	return fmt.Sprintf("%s:%d", hostIP.String(), ret.Port), nil
-}
-
-func UpdateEndPoint(trackerUrl string, walletAddr [20]byte, nodeIP net.IP, port uint16) error {
-	id := common.PeerID{}
-	rand.Read(id[:])
-	announce := Announce{
-		TrackerUrl: trackerUrl,
-		Request: AnnounceRequest{
-			PeerId:    id,
-			Wallet:    walletAddr,
-			IPAddress: ipconvert(nodeIP),
-			Port:      port,
-		},
-		flag: ActionUpdate,
-	}
-	ret, err := announce.Do()
-	if err != nil {
-		log.Errorf("RegEndPoint failed err:%s\n", err)
-		return err
-	}
-	log.Debugf("[UpdateEndPoint]  wallet:%s, ip:%v, port:%d\n", ret.Wallet, ret.IPAddress, ret.Port)
-	return nil
 }
 
 func RegNodeType(trackerUrl string, walletAddr [20]byte, nodeIP net.IP, port uint16, nodeType NodeType) error {

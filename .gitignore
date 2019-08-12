@@ -5,6 +5,7 @@ Chain
 DB
 Log
 testdata
+remote
 
 chain_config.json
 cp_necessary_files.sh

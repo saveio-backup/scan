@@ -91,7 +91,7 @@ func InitRestServer() rest.ApiServer {
 
 //start server
 func (this *restServer) Start() error {
-	retPort := int(config.Parameters.Base.HttpRestPortOffset)
+	retPort := int(config.Parameters.Base.PortBase + config.Parameters.Base.HttpRestPortOffset)
 	if retPort == 0 {
 		log.Fatal("Not configure HttpRestPort port ")
 		return nil

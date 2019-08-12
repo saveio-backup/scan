@@ -7,11 +7,11 @@ package tracker
 
 import (
 	"fmt"
-	"github.com/anacrolix/dht/krpc"
-	"github.com/saveio/themis/common"
-	"github.com/saveio/max/thirdparty/assert"
 	"net"
 	"testing"
+
+	"github.com/saveio/max/thirdparty/assert"
+	"github.com/saveio/themis/common"
 	//"github.com/saveio/themis/common/log"
 )
 
@@ -41,22 +41,7 @@ func TestUnRegEndPoint(t *testing.T) {
 func TestReqEndPointEx(t *testing.T) {
 	url := trackerUrl1
 	wb, _ := common.AddressFromBase58(walletAddr1)
-	nb, err := ReqEndPoint(url, wb)
+	hostAddr, err := ReqEndPoint(url, wb)
 	assert.Nil(err, t)
-	var nodeAddr krpc.NodeAddr
-	nodeAddr.UnmarshalBinary(nb)
-	fmt.Printf("ip:%s\n", nodeAddr.IP.String())
-	fmt.Printf("port:%d\n", nodeAddr.Port)
-}
-
-func TestUpdateEndPointEx(t *testing.T) {
-	url := trackerUrl1
-	//ip:=net.ParseIP("192.168.1.1")
-	ip := net.IP{0x11, 0x11, 0x12, 0x3}
-	fmt.Printf("ip:%s\n", ip)
-	fmt.Println(ip)
-	port := uint16(8840)
-	wb, _ := common.AddressFromBase58(walletAddr2)
-	err := UpdateEndPoint(url, wb, ip, port)
-	assert.Nil(err, t)
+	fmt.Printf("hostAddr:%s\n", hostAddr)
 }

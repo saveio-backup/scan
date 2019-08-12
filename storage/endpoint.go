@@ -44,15 +44,15 @@ func (this *EndpointDB) PutEndpoint(walletAddr string, host net.IP, port int) er
 	if host == nil || port < 0 || port > 65535 {
 		return errors.New(fmt.Sprintf("invalid address format %s:%d", string(host), port))
 	}
-
 	ep := &Endpoint{
 		WalletAddr: walletAddr,
 		NodeAddr: krpc.NodeAddr{
-			IP:   host,
+			IP:   host.To4(),
 			Port: port,
 		},
 	}
 	key := []byte(EP_WALLET_ADDR_KEY_PREFIX + ep.WalletAddr)
+	fmt.Println(ep.NodeAddr.IP)
 	buf, err := json.Marshal(ep)
 	if err != nil {
 		return err
