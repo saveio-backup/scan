@@ -251,7 +251,7 @@ func (this *Network) Stop() {
 }
 
 func (this *Network) GetPeerStateByAddress(addr string) (network.PeerState, error) {
-	return this.GetPeerStateByAddress(addr)
+	return this.P2p.GetRealConnState(addr)
 }
 
 func (this *Network) Connect(tAddr string) error {
