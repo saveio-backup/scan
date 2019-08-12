@@ -2,13 +2,11 @@ package server
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/ontio/ontology-eventbus/actor"
 	p2pNet "github.com/saveio/carrier/network"
-	dspact "github.com/saveio/dsp-go-sdk/actor/client"
 	chact "github.com/saveio/pylons/actor/client"
 	"github.com/saveio/scan/p2p/actor/messages"
 	network "github.com/saveio/scan/p2p/networks/channel"
@@ -89,14 +87,6 @@ func (this *P2PActor) Receive(ctx actor.Context) {
 	case *messages.Ping:
 		log.Warn("[P2p]actor Ping")
 		ctx.Sender().Tell(&messages.Pong{})
-	case *dspact.PeerListeningReq:
-		ret := this.net.IsPeerListenning(msg.Address)
-		var err error
-		if !ret {
-			err = errors.New("peer is not listening")
-		}
-		log.Debugf("is peer listening %s, ret %t, err %s", msg.Address, ret, err)
-		ctx.Sender().Request(&dspact.P2pResp{Error: err}, ctx.Self())
 	default:
 		log.Error("[P2PActor] receive unknown message type!")
 	}

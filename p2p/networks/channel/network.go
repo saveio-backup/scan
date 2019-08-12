@@ -192,7 +192,6 @@ func (this *Network) Start(address string) error {
 			this.P2p.BlockUntilQuicProxyFinish()
 		case "tcp":
 			this.P2p.BlockUntilTcpProxyFinish()
-
 		}
 	}
 	log.Debugf("finish BlockUntilProxyFinish...")
@@ -210,14 +209,6 @@ func (this *Network) Halt() error {
 	return nil
 }
 
-func (this *Network) Dial(addr string) error {
-	if this.P2p == nil {
-		return errors.New("network is nil")
-	}
-	_, err := this.P2p.Dial(addr)
-	return err
-}
-
 func (this *Network) Disconnect(addr string) error {
 	if this.P2p == nil {
 		return errors.New("network is nil")
@@ -227,22 +218,6 @@ func (this *Network) Disconnect(addr string) error {
 		return err
 	}
 	return peer.Close()
-}
-
-// IsPeerListenning. check the peer is listening or not.
-func (this *Network) IsPeerListenning(addr string) bool {
-	if this.P2p == nil {
-		return false
-	}
-	err := this.Dial(addr)
-	if err != nil {
-		return false
-	}
-	err = this.Disconnect(addr)
-	if err != nil {
-		return false
-	}
-	return true
 }
 
 func (this *Network) Stop() {
