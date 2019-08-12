@@ -121,7 +121,6 @@ func (this *Network) Start(address string) error {
 		keepalive.WithPeerStateChan(this.peerStateChan),
 	}
 	this.keepalive = keepalive.New(options...)
-
 	builder.AddComponent(this.keepalive)
 
 	if len(this.proxyAddr) > 0 {
@@ -229,8 +228,8 @@ func (this *Network) Stop() {
 	this.P2p.Close()
 }
 
-func (this *Network) GetPeerStateByAddress(addr string) (keepalive.PeerState, error) {
-	return this.keepalive.GetPeerStateByAddress(addr)
+func (this *Network) GetPeerStateByAddress(addr string) (network.PeerState, error) {
+	return this.GetPeerStateByAddress(addr)
 }
 
 func (this *Network) Connect(tAddr string) error {
@@ -238,7 +237,7 @@ func (this *Network) Connect(tAddr string) error {
 		return fmt.Errorf("[Connect] this is nil")
 	}
 	peerState, _ := this.GetPeerStateByAddress(tAddr)
-	if peerState == keepalive.PEER_REACHABLE {
+	if peerState == network.PEER_REACHABLE {
 		return nil
 	}
 	if _, ok := this.addressForHealthCheck.Load(tAddr); ok {
@@ -275,7 +274,7 @@ func (this *Network) WaitForConnected(addr string, timeout time.Duration) error 
 	for i := 0; i < secs; i++ {
 		state, _ := this.GetPeerStateByAddress(addr)
 		log.Debugf("this.keepalive: %p, GetPeerStateByAddress state addr:%s, :%d", this.keepalive, addr, state)
-		if state == keepalive.PEER_REACHABLE {
+		if state == network.PEER_REACHABLE {
 			return nil
 		}
 		<-time.After(interval)
@@ -297,8 +296,8 @@ func (this *Network) Send(msg proto.Message, toAddr string) error {
 	if err != nil {
 		return err
 	}
-	state, _ := this.keepalive.GetPeerStateByAddress(toAddr)
-	if state != keepalive.PEER_REACHABLE {
+	state, _ := this.GetPeerStateByAddress(toAddr)
+	if state != network.PEER_REACHABLE {
 		return fmt.Errorf("can not send to inactive peer %s", toAddr)
 	}
 	signed, err := this.P2p.PrepareMessage(context.Background(), msg)
@@ -440,7 +439,7 @@ func (this *Network) healthCheckProxyServer() error {
 	if err != nil {
 		return err
 	}
-	if proxyState == keepalive.PEER_REACHABLE {
+	if proxyState == network.PEER_REACHABLE {
 		return nil
 	}
 	client := this.P2p.GetPeerClient(this.proxyAddr)
@@ -448,7 +447,7 @@ func (this *Network) healthCheckProxyServer() error {
 		return fmt.Errorf("get peer client is nil: %s", this.proxyAddr)
 	}
 	proxyState, err = this.GetPeerStateByAddress(this.proxyAddr)
-	if err != nil || proxyState != keepalive.PEER_REACHABLE {
+	if err != nil || proxyState != network.PEER_REACHABLE {
 		return fmt.Errorf("back off proxy failed state: %d, err: %s", proxyState, err)
 	}
 	return nil
