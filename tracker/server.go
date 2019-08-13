@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"math/rand"
 	"net"
@@ -68,23 +69,22 @@ func (s *Server) Accepted() (err error) {
 	b := make([]byte, 0x10000)
 	n, addr, err := s.pc.ReadFrom(b)
 	if err != nil {
-		log.Error("[ReadFrom]: ", err.Error())
-		return
+		log.Error("[return ReadFrom]: ", err.Error())
+		return errors.New("return ReadFrom")
 	}
 	r := bytes.NewReader(b[:n])
 	var h RequestHeader
 	err = readBody(r, &h)
 	if err != nil {
-		log.Error("[readBody]: ", err.Error())
-		return
+		log.Error("[return readBody]: ", err.Error())
+		return errors.New("return readBody")
 	}
 
 	switch h.Action {
 	case ActionConnect:
 		log.Debugf("tracker.server.ActionConnect")
 		if h.ConnectionId != connectRequestConnectionId {
-			log.Debugf("tracker.server.ActionConnect %d %d", h.ConnectionId, connectRequestConnectionId)
-			return
+			return errors.New("return connectRequestConnectionId")
 		}
 		connId := s.newConn()
 		err = s.respond(addr, ResponseHeader{
@@ -93,26 +93,32 @@ func (s *Server) Accepted() (err error) {
 		}, ConnectionResponse{
 			ConnectionId: connId,
 		})
-		log.Debugf("tracker.server.ActionConnect return")
+		if err != nil {
+			log.Debugf("tracker.server.ActionConnect respond return err: %v\n", err)
+		}
 		return
 	case ActionAnnounce:
 		log.Debugf("tracker.server. Accepted ActionAnnounce")
 		if _, ok := s.conns[h.ConnectionId]; !ok {
-			s.respond(addr, ResponseHeader{
+			err := s.respond(addr, ResponseHeader{
 				TransactionId: h.TransactionId,
 				Action:        ActionError,
 			}, []byte("not connected"))
-			return
+			if err != nil {
+				log.Debugf("tracker.server.ActionAnnounce respond 1 not connected, err: %v\n", err)
+			}
+			return err
 		}
 		var ar AnnounceRequest
 		err = readBody(r, &ar)
 		if err != nil {
+			log.Debugf("tracker.server readBody return, err: %v\n", err)
 			return
 		}
 		log.Debugf("tracker.server.ActionAnnounce: %v, wallet: %s, fileHash: %s ", ar, ar.Wallet.ToBase58(), string(ar.InfoHash[:]))
 
 		if len(ar.InfoHash) == 0 {
-			err = fmt.Errorf("no info hash")
+			log.Debugf("tracker.server len(InfoHash) == 0 return, err: %v\n", err)
 			return
 		}
 		//ip := make(net.IP, 4)
@@ -149,6 +155,9 @@ func (s *Server) Accepted() (err error) {
 				Leechers: 0,
 				Seeders:  0,
 			}, []byte{})
+			if err != nil {
+				log.Debugf("tracker.server.ActionAnnounce respond 2 not connected, err: %v\n", err)
+			}
 			return
 		}
 		bm := func() encoding.BinaryMarshaler {
