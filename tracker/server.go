@@ -81,8 +81,9 @@ func (s *Server) Accepted() (err error) {
 
 	switch h.Action {
 	case ActionConnect:
-		log.Info("TrackerServer Accepted ActionConnect")
+		log.Debugf("tracker.server.ActionConnect")
 		if h.ConnectionId != connectRequestConnectionId {
+			log.Debugf("tracker.server.ActionConnect %d %d", h.ConnectionId, connectRequestConnectionId)
 			return
 		}
 		connId := s.newConn()
@@ -92,9 +93,10 @@ func (s *Server) Accepted() (err error) {
 		}, ConnectionResponse{
 			ConnectionId: connId,
 		})
+		log.Debugf("tracker.server.ActionConnect return")
 		return
 	case ActionAnnounce:
-		log.Info("TrackerServer Accepted ActionAnnounce")
+		log.Debugf("tracker.server. Accepted ActionAnnounce")
 		if _, ok := s.conns[h.ConnectionId]; !ok {
 			s.respond(addr, ResponseHeader{
 				TransactionId: h.TransactionId,
@@ -107,6 +109,7 @@ func (s *Server) Accepted() (err error) {
 		if err != nil {
 			return
 		}
+		log.Debugf("tracker.server.ActionAnnounce: %v, wallet: %s, fileHash: %s ", ar, ar.Wallet.ToBase58(), string(ar.InfoHash[:]))
 
 		if len(ar.InfoHash) == 0 {
 			err = fmt.Errorf("no info hash")
@@ -121,10 +124,10 @@ func (s *Server) Accepted() (err error) {
 		t := s.getTorrent(ar.InfoHash)
 		var pi *peerInfo
 		if t != nil {
-			log.Infof("tracker.server.ActionAnnounce s.getTorrent: %v", t.Peers)
+			log.Debugf("tracker.server.ActionAnnounce s.getTorrent: %v", t.Peers)
 			pi = t.Peers[nodeAddr.String()]
 		}
-		log.Info("tracker.server.ActionAnnounce pi: %v, nodeAddr: %s", pi, nodeAddr.String())
+		log.Debugf("tracker.server.ActionAnnounce pi: %v, nodeAddr: %s", pi, nodeAddr.String())
 		switch ar.Event.String() {
 		case "started":
 			s.onAnnounceStarted(&ar, pi)
@@ -172,7 +175,7 @@ func (s *Server) Accepted() (err error) {
 			}
 			return krpc.CompactIPv6NodeAddrs(pNodeAddrs)
 		}()
-		log.Infof("tracker.server.Accepted bm: %v\n", bm)
+		log.Debugf("tracker.server.Accepted bm: %v\n", bm)
 		b, err = bm.MarshalBinary()
 		if err != nil {
 			panic(err)
@@ -359,7 +362,7 @@ func (s *Server) onAnnounceStarted(ar *AnnounceRequest, pi *peerInfo) {
 	}
 
 	t.Peers[peer.String()] = pi
-	log.Infof("tracker.server.onAnnounceStarted torrent.Peers: %v\n", t.Peers)
+	log.Debugf("tracker.server.onAnnounceStarted torrent.Peers: %v\n", t.Peers)
 	bt, err := json.Marshal(t)
 	if err != nil {
 		log.Fatalf("json Marshal error:%s", err)
@@ -388,7 +391,7 @@ func (s *Server) onAnnounceUpdated(ar *AnnounceRequest, pi *peerInfo) {
 		pi.Complete = true
 	}
 	t.Peers[pi.NodeAddr.String()] = pi
-	log.Infof("tracker.server.onAnnounceUpdated torrent.Peers: %v\n", t.Peers)
+	log.Debugf("tracker.server.onAnnounceUpdated torrent.Peers: %v\n", t.Peers)
 	bt, err := json.Marshal(t)
 	if err != nil {
 		log.Fatalf("json Marshal error:%s", err)

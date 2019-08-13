@@ -33,7 +33,7 @@ func CompleteTorrent(infoHash common.MetaInfoHash, trackerUrl string, nodeIP net
 		log.Errorf("CompleteTorrent failed err: %s\n", err)
 		return err
 	}
-	log.Infof("interval:%d, leechers:%d, seeders:%d, peers:%v\n", ret.Interval, ret.Leechers, ret.Seeders, ret.Peers)
+	log.Debugf("tracker.client.CompleteTorrent interval:%d, leechers:%d, seeders:%d, peers:%v fileHash: %s\n", ret.Interval, ret.Leechers, ret.Seeders, ret.Peers, string(infoHash[:]))
 	return nil
 }
 
@@ -56,7 +56,7 @@ func GetTorrentPeers(infoHash common.MetaInfoHash, trackerUrl string, numWant in
 		log.Errorf("GetTorrentPeers failed err: %s\n", err)
 		return nil
 	}
-	log.Infof("interval:%d, leechers:%d, seeders:%d, peers:%v\n", ret.Interval, ret.Leechers, ret.Seeders, ret.Peers)
+	log.Debugf("tracker.client.CompleteTorrent interval:%d, leechers:%d, seeders:%d, peers:%v, infoHash:%v \n", ret.Interval, ret.Leechers, ret.Seeders, ret.Peers, string(infoHash[:]))
 	return ret.Peers
 }
 
