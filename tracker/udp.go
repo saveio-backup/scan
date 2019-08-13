@@ -117,6 +117,7 @@ func (c *udpAnnounce) Do(req AnnounceRequest) (res AnnounceResponse, err error) 
 		log.Error("Do connect err: ", err.Error())
 		return AnnounceResponse{}, err
 	}
+	log.Infof("tracker.udp.Do AnnounceRequest: %+v , wallet: %s, fileHash: %s ", req, req.Wallet.ToBase58(), string(req.InfoHash[:]))
 	reqURI := c.url.RequestURI()
 	//if c.ipv6() {
 	//	// BEP 15
@@ -147,12 +148,14 @@ func (c *udpAnnounce) Do(req AnnounceRequest) (res AnnounceResponse, err error) 
 		err = fmt.Errorf("error parsing announce response: %s", err)
 		return AnnounceResponse{}, err
 	}
+	log.Infof("tracker.udp.Do responseHeader: %+v , wallet: %s ", h, req.Wallet.ToBase58())
 	res.Interval = h.Interval
 	res.Leechers = h.Leechers
 	res.Seeders = h.Seeders
 	res.IPAddress = h.IPAddress
 	res.Port = h.Port
 	res.Wallet = h.Wallet
+	log.Infof("tracker.udp.Do res object: %v", res)
 
 	if c.a.flag == ActionAnnounce {
 		nas := func() interface {
@@ -177,6 +180,7 @@ func (c *udpAnnounce) Do(req AnnounceRequest) (res AnnounceResponse, err error) 
 		res.NodesInfo = &NodesInfoSt{}
 		err = res.NodesInfo.DeSerialize(b)
 	}
+	log.Infof("tracker.udp.Do res object return: %v", res)
 	return res, nil
 }
 

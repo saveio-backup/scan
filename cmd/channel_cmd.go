@@ -11,8 +11,8 @@ import (
 var ChannelCommand = cli.Command{
 	Action:      cli.ShowSubcommandHelp,
 	Name:        "channel",
-	Usage:       "Manage channel",
-	Description: "Manage channel",
+	Usage:       "Manage state channels",
+	Description: "Manage state channels",
 	Subcommands: []cli.Command{
 		{
 			Action:      initProgress,

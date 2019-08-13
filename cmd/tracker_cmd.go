@@ -15,12 +15,21 @@ import (
 	"github.com/urfave/cli"
 )
 
-var EndPointCommand = cli.Command{
+var TrackerCommand = cli.Command{
 	Action:      cli.ShowSubcommandHelp,
-	Name:        "endpoint",
-	Usage:       "Manage endpoint",
-	Description: "Local endpoint management",
+	Name:        "tracker",
+	Usage:       "Maintain torrent and endpoint map",
+	Description: "Maintain torrent and endpoint map",
 	Subcommands: []cli.Command{
+		{
+			Action:    checkTorrent,
+			Name:      "torrent",
+			Usage:     "Check map of hash and torrent",
+			ArgsUsage: "[sub-command options]",
+			Flags: []cli.Flag{
+				flags.FileHashFlag,
+			},
+		},
 		{
 			Action:    regEndPoint,
 			Name:      "reg",
@@ -62,13 +71,40 @@ var EndPointCommand = cli.Command{
 	},
 }
 
+func checkTorrent(ctx *cli.Context) error {
+	SetRpcPort(ctx)
+
+	if ctx.NumFlags() < 1 {
+		PrintErrorMsg("Missing argument.")
+		return cli.ShowSubcommandHelp(ctx)
+	}
+
+	fileHash := ctx.String(flags.GetFlagName(flags.FileHashFlag))
+
+	peers, failed := utils.CheckTorrent(fileHash)
+	if failed != nil {
+		PrintErrorMsg("Check torrent failed. Failed message:")
+		PrintJsonObject(failed)
+		return nil
+	}
+
+	if len(peers.Peers) == 0 {
+		PrintInfoMsg("\nCheck torrent success. no peers")
+	} else {
+		PrintInfoMsg("\nCheck torrent success. peers:")
+		for _, peer := range peers.Peers {
+			PrintInfoMsg("%s:%d", peer.IP.String(), peer.Port)
+		}
+	}
+	return nil
+}
+
 func regEndPoint(ctx *cli.Context) error {
 	SetRpcPort(ctx)
 
 	if ctx.NumFlags() < 2 {
 		PrintErrorMsg("Missing argument.")
-		cli.ShowSubcommandHelp(ctx)
-		return nil
+		return cli.ShowSubcommandHelp(ctx)
 	}
 
 	var wAddr string

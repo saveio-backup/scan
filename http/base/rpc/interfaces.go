@@ -574,6 +574,32 @@ func GetGasPrice(params []interface{}) map[string]interface{} {
 	return responseSuccess(result)
 }
 
+func CheckTorrent(params []interface{}) map[string]interface{} {
+	var filehash string
+	switch (params[0]).(type) {
+	case string:
+		filehash = params[0].(string)
+	default:
+		return responsePack(berr.INVALID_PARAMS, "")
+	}
+
+	if len(filehash) != 46 {
+		return responsePack(berr.INVALID_PARAMS, fmt.Sprintf("invalid fileHash len is %d, not 46", len(filehash)))
+	}
+
+	peers, err := tracker.CheckTorrent(filehash)
+	if err != nil {
+		if err.Error() == "not found" {
+			return responseSuccess(&httpComm.TorrentPeersRsp{Peers: peers})
+		}
+		return responsePack(berr.INTERNAL_ERROR, "")
+	}
+	return responseSuccess(&httpComm.TorrentPeersRsp{
+		Peers: peers,
+	})
+	return nil
+}
+
 func EndPointReg(params []interface{}) map[string]interface{} {
 	switch (params[0]).(type) {
 	case string:

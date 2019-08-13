@@ -15,6 +15,28 @@ import (
 	"github.com/saveio/themis/common/log"
 )
 
+func CheckTorrent(filehash string) (*httpComm.TorrentPeersRsp, *httpComm.FailedRsp) {
+	result, ontErr := sendRpcRequest("checktorrent", []interface{}{filehash})
+	peers := &httpComm.TorrentPeersRsp{}
+	if ontErr != nil {
+		switch ontErr.ErrorCode {
+		case ERROR_INVALID_PARAMS:
+			return nil, &httpComm.FailedRsp{ErrCode: berr.INVALID_PARAMS, ErrMsg: berr.ErrMap[berr.INVALID_PARAMS], FailedMsg: fmt.Sprintf("invalid fileHash len is %d, not 46", len(filehash))}
+		case berr.INTERNAL_ERROR:
+			return nil, &httpComm.FailedRsp{ErrCode: berr.INTERNAL_ERROR, ErrMsg: berr.ErrMap[berr.INTERNAL_ERROR], FailedMsg: ontErr.Error.Error()}
+		}
+		return nil, &httpComm.FailedRsp{ErrCode: ontErr.ErrorCode, ErrMsg: "", FailedMsg: ontErr.Error.Error()}
+	}
+
+	err := json.Unmarshal(result, peers)
+	log.Debugf("cli.tracker.checktorrent success filehash: %s, peers: %v, err: %v\n", filehash, peers, err)
+
+	if err != nil {
+		return nil, &httpComm.FailedRsp{ErrCode: berr.JSON_UNMARSHAL_ERROR, ErrMsg: berr.ErrMap[berr.JSON_UNMARSHAL_ERROR], FailedMsg: err.Error()}
+	}
+	return peers, nil
+}
+
 func RegEndPoint(waddr, host string) (*httpComm.EndPointRsp, *httpComm.FailedRsp) {
 	result, ontErr := sendRpcRequest("regendpoint", []interface{}{waddr, host})
 	endPoint := &httpComm.EndPointRsp{}

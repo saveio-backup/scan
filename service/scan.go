@@ -91,8 +91,14 @@ func (this *Node) StartScanNode(startChannelNetwork, startDnsNetwork bool) error
 		if err != nil {
 			return err
 		}
+
+		err = this.autoRegisterEndpoint()
+		if err != nil {
+			return err
+		}
+
 		if config.Parameters.Base.AutoSetupDNSRegisterEnable {
-			err := this.autoRegisterNode()
+			err = this.autoRegisterDns()
 			if err != nil {
 				return err
 			}
@@ -174,7 +180,35 @@ func (this *Node) StartTrackerService() error {
 	return nil
 }
 
-func (this *Node) autoRegisterNode() error {
+func (this Node) autoRegisterEndpoint() error {
+	publicAddr := this.ChannelNet.PublicAddr()
+	index := strings.Index(publicAddr, "://")
+	hostPort := publicAddr
+	if index != -1 {
+		hostPort = publicAddr[index+3:]
+	}
+	err := PutExternalIP(this.Account.Address.ToBase58(), hostPort)
+	if err != nil {
+		return err
+	}
+
+	ns, err := this.GetAllDnsNodes()
+	if err != nil {
+		return err
+	}
+	if len(ns) == 0 {
+		return errors.NewErr("no dns nodes")
+	}
+	for _, v := range ns {
+		err := PutExternalIP(v.WalletAddr.ToBase58(), fmt.Sprintf("%s:%s", string(v.IP), string(v.Port)))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (this *Node) autoRegisterDns() error {
 	publicAddr := this.ChannelNet.PublicAddr()
 	index := strings.Index(publicAddr, "://")
 	hostPort := publicAddr
@@ -200,9 +234,10 @@ func (this *Node) autoRegisterNode() error {
 
 	if err != nil {
 		log.Fatalf("scan node update addr to %s:%s failed, err: %v", host, port, err)
+		return err
 	}
 	log.Infof("scan node update addr to %s:%s success.", host, port)
-	return PutExternalIP(this.Account.Address.ToBase58(), hostPort)
+	return nil
 }
 
 func (this *Node) AutoSetupDNSChannelsWorking() error {

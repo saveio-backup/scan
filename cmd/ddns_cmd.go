@@ -11,8 +11,8 @@ import (
 var DNSCommand = cli.Command{
 	Action:      cli.ShowSubcommandHelp,
 	Name:        "dns",
-	Usage:       "Manage dns node",
-	Description: "Dns node management",
+	Usage:       "Interactive with native dns contract",
+	Description: "Interactive with native dns contract",
 	Subcommands: []cli.Command{
 
 		{

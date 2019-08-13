@@ -63,6 +63,7 @@ func StartRPCServer() error {
 	rpc.HandleFunc("getblocktxsbyheight", rpc.GetBlockTxsByHeight)
 	rpc.HandleFunc("getgasprice", rpc.GetGasPrice)
 
+	rpc.HandleFunc("checktorrent", rpc.CheckTorrent)
 	rpc.HandleFunc("regendpoint", rpc.EndPointReg)
 	rpc.HandleFunc("updateendpoint", rpc.EndPointUpdate)
 	rpc.HandleFunc("unRegendpoint", rpc.EndPointUnReg)

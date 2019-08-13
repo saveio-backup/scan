@@ -41,17 +41,17 @@ func initAPP() *cli.App {
 		chaincmd.AccountCommand,
 		chaincmd.InfoCommand,
 		chaincmd.AssetCommand,
-		chaincmd.ContractCommand,
+		// chaincmd.ContractCommand,
 		chaincmd.ImportCommand,
 		chaincmd.ExportCommand,
 		chaincmd.TxCommond,
 		chaincmd.SigTxCommand,
-		chaincmd.MultiSigAddrCommand,
-		chaincmd.MultiSigTxCommand,
+		// chaincmd.MultiSigAddrCommand,
+		// chaincmd.MultiSigTxCommand,
 		chaincmd.SendTxCommand,
 		chaincmd.ShowTxCommand,
-		cmd.EndPointCommand,
 		cmd.ChannelCommand,
+		cmd.TrackerCommand,
 		cmd.DNSCommand,
 	}
 	app.Flags = []cli.Flag{
@@ -64,25 +64,25 @@ func initAPP() *cli.App {
 		flags.DbDirFlag,
 		//p2p setting
 		flags.NetworkIDFlag,
-		flags.PortFlag,
-		flags.SeedListFlag,
+		// flags.PortFlag,
+		// flags.SeedListFlag,
 		//tracker command setting
-		flags.TrackerServerPortFlag,
-		flags.TrackerFee,
+		// flags.TrackerServerPortFlag,
+		// flags.TrackerFee,
 		flags.WalletFlag,
 		//flags.WalletSetFlag,
 		//flags.WalletFileFlag,
-		flags.HostFlag,
+		// flags.HostFlag,
 		//ddns command setting
-		flags.DnsIpFlag,
-		flags.DnsPortFlag,
-		flags.DnsAllFlag,
+		// flags.DnsIpFlag,
+		// flags.DnsPortFlag,
+		// flags.DnsAllFlag,
 		//channel command setting
-		flags.PartnerAddressFlag,
-		flags.TargetAddressFlag,
-		flags.TotalDepositFlag,
-		flags.AmountFlag,
-		flags.PaymentIDFlag,
+		// flags.PartnerAddressFlag,
+		// flags.TargetAddressFlag,
+		// flags.TotalDepositFlag,
+		// flags.AmountFlag,
+		// flags.PaymentIDFlag,
 		// RPC settings
 		//flags.RPCDisabledFlag,
 		//flags.RPCPortFlag,
@@ -100,38 +100,38 @@ func initAPP() *cli.App {
 		chainutils.AccountAddressFlag,
 		chainutils.AccountPassFlag,
 		//consensus setting
-		chainutils.EnableConsensusFlag,
-		chainutils.MaxTxInBlockFlag,
+		// chainutils.EnableConsensusFlag,
+		// chainutils.MaxTxInBlockFlag,
 		//txpool setting
-		chainutils.GasPriceFlag,
-		chainutils.GasLimitFlag,
-		chainutils.TxpoolPreExecDisableFlag,
-		chainutils.DisableSyncVerifyTxFlag,
-		chainutils.DisableBroadcastNetTxFlag,
+		// chainutils.GasPriceFlag,
+		// chainutils.GasLimitFlag,
+		// chainutils.TxpoolPreExecDisableFlag,
+		// chainutils.DisableSyncVerifyTxFlag,
+		// chainutils.DisableBroadcastNetTxFlag,
 		//p2p setting
-		chainutils.ReservedPeersOnlyFlag,
-		chainutils.ReservedPeersFileFlag,
+		// chainutils.ReservedPeersOnlyFlag,
+		// chainutils.ReservedPeersFileFlag,
 		chainutils.NetworkIdFlag,
-		chainutils.NodePortFlag,
-		chainutils.ConsensusPortFlag,
-		chainutils.DualPortSupportFlag,
-		chainutils.MaxConnInBoundFlag,
-		chainutils.MaxConnOutBoundFlag,
-		chainutils.MaxConnInBoundForSingleIPFlag,
+		// chainutils.NodePortFlag,
+		// chainutils.ConsensusPortFlag,
+		// chainutils.DualPortSupportFlag,
+		// chainutils.MaxConnInBoundFlag,
+		// chainutils.MaxConnOutBoundFlag,
+		// chainutils.MaxConnInBoundForSingleIPFlag,
 		//test mode setting
 		chainutils.EnableTestModeFlag,
-		chainutils.TestModeGenBlockTimeFlag,
+		// chainutils.TestModeGenBlockTimeFlag,
 		//rpc setting
 		chainutils.RPCDisabledFlag,
 		chainutils.RPCPortFlag,
-		chainutils.RPCLocalEnableFlag,
-		chainutils.RPCLocalProtFlag,
+		// chainutils.RPCLocalEnableFlag,
+		// chainutils.RPCLocalProtFlag,
 		//rest setting
 		chainutils.RestfulEnableFlag,
 		chainutils.RestfulPortFlag,
 		//ws setting
 		// chainutils.WsEnabledFlag,
-		chainutils.WsPortFlag,
+		// chainutils.WsPortFlag,
 	}
 	app.Before = func(context *cli.Context) error {
 		runtime.GOMAXPROCS(runtime.NumCPU())
@@ -225,8 +225,14 @@ func startScan(ctx *cli.Context) {
 
 	service.Init(config.Parameters.Base.WalletDir, config.Parameters.Base.WalletPwd)
 
+	epDB, err := storage.NewLevelDBStore(config.EndpointDBPath())
+	if err != nil {
+		log.Fatal(err)
+	}
+	storage.EDB = storage.NewEndpointDB(epDB)
+
 	startChannelNetwork, startDnsNetwork := true, true
-	err := service.ScanNode.StartScanNode(startChannelNetwork, startDnsNetwork)
+	err = service.ScanNode.StartScanNode(startChannelNetwork, startDnsNetwork)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -238,12 +244,6 @@ func startScan(ctx *cli.Context) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	epDB, err := storage.NewLevelDBStore(config.EndpointDBPath())
-	if err != nil {
-		log.Fatal(err)
-	}
-	storage.EDB = storage.NewEndpointDB(epDB)
 
 	if err := initRpc(ctx); err != nil {
 		log.Fatalf("start scan rpc err: %v", err.Error())

@@ -26,6 +26,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/saveio/scan/tracker"
 	"github.com/saveio/themis/common"
 	"github.com/saveio/themis/common/log"
 	"github.com/saveio/themis/core/payload"
@@ -50,6 +51,10 @@ type FailedRsp struct {
 }
 
 type SuccessRsp struct {
+}
+
+type TorrentPeersRsp struct {
+	Peers []tracker.Peer `json:"peers"`
 }
 
 type EndPointRsp struct {

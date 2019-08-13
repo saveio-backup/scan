@@ -30,10 +30,10 @@ func CompleteTorrent(infoHash common.MetaInfoHash, trackerUrl string, nodeIP net
 	}
 	ret, err := announce.Do()
 	if err != nil {
-		log.Errorf("CompleteTorrent failed err:%s\n", err)
+		log.Errorf("CompleteTorrent failed err: %s\n", err)
 		return err
 	}
-	log.Debugf("interval:%d, leechers:%d, seeders:%d, peers:%v\n", ret.Interval, ret.Leechers, ret.Seeders, ret.Peers)
+	log.Infof("interval:%d, leechers:%d, seeders:%d, peers:%v\n", ret.Interval, ret.Leechers, ret.Seeders, ret.Peers)
 	return nil
 }
 
@@ -53,10 +53,10 @@ func GetTorrentPeers(infoHash common.MetaInfoHash, trackerUrl string, numWant in
 	}
 	ret, err := announce.Do()
 	if err != nil {
-		log.Errorf("GetTorrentPeers failed err:%s\n", err)
+		log.Errorf("GetTorrentPeers failed err: %s\n", err)
 		return nil
 	}
-	log.Debugf("interval:%d, leechers:%d, seeders:%d, peers:%v\n", ret.Interval, ret.Leechers, ret.Seeders, ret.Peers)
+	log.Infof("interval:%d, leechers:%d, seeders:%d, peers:%v\n", ret.Interval, ret.Leechers, ret.Seeders, ret.Peers)
 	return ret.Peers
 }
 
@@ -77,7 +77,7 @@ func RegEndPoint(trackerUrl string, sigData []byte, pubKey keypair.PublicKey, wa
 	}
 	ret, err := announce.Do()
 	if err != nil {
-		log.Errorf("RegEndPoint failed err:%s\n", err)
+		log.Errorf("RegEndPoint failed err: %s\n", err)
 		return err
 	}
 	hostIP := net.IP(ret.IPAddress[:])
@@ -98,7 +98,7 @@ func UnRegEndPoint(trackerUrl string, walletAddr [20]byte) error {
 	}
 	ret, err := announce.Do()
 	if err != nil {
-		log.Errorf("UnRegEndPoint failed err:%s\n", err)
+		log.Errorf("UnRegEndPoint failed err: %s\n", err)
 		return err
 	}
 	log.Infof("tracker client [UnRegEndPoint] wallet:%s\n", ret.Wallet)

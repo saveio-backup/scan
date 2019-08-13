@@ -121,8 +121,10 @@ func (s *Server) Accepted() (err error) {
 		t := s.getTorrent(ar.InfoHash)
 		var pi *peerInfo
 		if t != nil {
+			log.Infof("tracker.server.ActionAnnounce s.getTorrent: %v", t.Peers)
 			pi = t.Peers[nodeAddr.String()]
 		}
+		log.Info("tracker.server.ActionAnnounce pi: %v, nodeAddr: %s", pi, nodeAddr.String())
 		switch ar.Event.String() {
 		case "started":
 			s.onAnnounceStarted(&ar, pi)
@@ -170,6 +172,7 @@ func (s *Server) Accepted() (err error) {
 			}
 			return krpc.CompactIPv6NodeAddrs(pNodeAddrs)
 		}()
+		log.Infof("tracker.server.Accepted bm: %v\n", bm)
 		b, err = bm.MarshalBinary()
 		if err != nil {
 			panic(err)
@@ -356,6 +359,7 @@ func (s *Server) onAnnounceStarted(ar *AnnounceRequest, pi *peerInfo) {
 	}
 
 	t.Peers[peer.String()] = pi
+	log.Infof("tracker.server.onAnnounceStarted torrent.Peers: %v\n", t.Peers)
 	bt, err := json.Marshal(t)
 	if err != nil {
 		log.Fatalf("json Marshal error:%s", err)
@@ -384,6 +388,7 @@ func (s *Server) onAnnounceUpdated(ar *AnnounceRequest, pi *peerInfo) {
 		pi.Complete = true
 	}
 	t.Peers[pi.NodeAddr.String()] = pi
+	log.Infof("tracker.server.onAnnounceUpdated torrent.Peers: %v\n", t.Peers)
 	bt, err := json.Marshal(t)
 	if err != nil {
 		log.Fatalf("json Marshal error:%s", err)
@@ -463,6 +468,7 @@ func (s *Server) getTorrent(infoHash common.MetaInfoHash) *torrent {
 	var t torrent
 	v, err := storage.TDB.Get(infoHash[:])
 	json.Unmarshal(v, &t)
+	log.Infof("tracker.server.getTorrent: %v", t)
 	if v == nil || err != nil {
 		return nil
 	} else {

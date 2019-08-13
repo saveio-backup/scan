@@ -19,6 +19,13 @@ var walletAddr1 = "AYMnqA65pJFKAbbpD8hi5gdNDBmeFBy5hS"
 var walletAddr2 = "AWaE84wqVf1yffjaR6VJ4NptLdqBAm8G9c"
 var trackerUrl1 = "udp://localhost:6369/announce"
 
+func TestCheckTorrent(t *testing.T) {
+	fileHashStr := ""
+	peers, err := CheckTorrent(fileHashStr)
+	assert.Nil(err, t)
+	fmt.Printf("peers: %v\n", peers)
+}
+
 func TestRegEndPoint(t *testing.T) {
 	url := trackerUrl1
 	//ip:=net.ParseIP("192.168.1.1")

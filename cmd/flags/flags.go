@@ -78,6 +78,10 @@ var (
 		Name:  "host",
 		Usage: "ip address and port of string format",
 	}
+	FileHashFlag = cli.StringFlag{
+		Name:  "filehash",
+		Usage: "file hash `<string>`",
+	}
 
 	//ddns command setting
 	DnsIpFlag = cli.StringFlag{
