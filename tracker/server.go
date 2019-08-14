@@ -94,7 +94,7 @@ func (s *Server) Accepted() (err error) {
 			ConnectionId: connId,
 		})
 		if err != nil {
-			log.Debugf("tracker.server.ActionConnect respond return err: %v\n", err)
+			log.Debugf("tracker.server.return ActionConnect respond return err: %v\n", err)
 		}
 		return
 	case ActionAnnounce:
@@ -105,20 +105,20 @@ func (s *Server) Accepted() (err error) {
 				Action:        ActionError,
 			}, []byte("not connected"))
 			if err != nil {
-				log.Debugf("tracker.server.ActionAnnounce respond 1 not connected, err: %v\n", err)
+				log.Debugf("tracker.server.return ActionAnnounce respond 1 not connected, err: %v\n", err)
 			}
 			return err
 		}
 		var ar AnnounceRequest
 		err = readBody(r, &ar)
 		if err != nil {
-			log.Debugf("tracker.server readBody return, err: %v\n", err)
+			log.Debugf("tracker.server.return readBody, err: %v\n", err)
 			return
 		}
 		log.Debugf("tracker.server.ActionAnnounce: %v, wallet: %s, fileHash: %s ", ar, ar.Wallet.ToBase58(), string(ar.InfoHash[:]))
 
 		if len(ar.InfoHash) == 0 {
-			log.Debugf("tracker.server len(InfoHash) == 0 return, err: %v\n", err)
+			log.Debugf("tracker.server.return len(InfoHash) == 0, err: %v\n", err)
 			return
 		}
 		//ip := make(net.IP, 4)
@@ -480,7 +480,7 @@ func (s *Server) getTorrent(infoHash common.MetaInfoHash) *torrent {
 	var t torrent
 	v, err := storage.TDB.Get(infoHash[:])
 	json.Unmarshal(v, &t)
-	log.Infof("tracker.server.getTorrent: %v", t)
+	// log.Debugf("tracker.server.getTorrent: %v, %s\n", t, string(infoHash[:]))
 	if v == nil || err != nil {
 		return nil
 	} else {

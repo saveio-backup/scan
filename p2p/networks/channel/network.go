@@ -198,6 +198,9 @@ func (this *Network) Start(address string) error {
 	if len(this.P2p.ID.Address) == 6 {
 		return errors.New("invalid address")
 	}
+	if len(config.Parameters.Base.NATProxyServerAddr) > 0 {
+		// go this.healthCheckProxyService()
+	}
 	return nil
 }
 
@@ -289,10 +292,6 @@ func (this *Network) IsConnectionExists(addr string) bool {
 // Send send msg to peer asyncnously
 // peer can be addr(string) or client(*network.peerClient)
 func (this *Network) Send(msg proto.Message, toAddr string) error {
-	err := this.healthCheckProxyServer()
-	if err != nil {
-		return err
-	}
 	state, _ := this.GetPeerStateByAddress(toAddr)
 	if state != network.PEER_REACHABLE {
 		return fmt.Errorf("can not send to inactive peer %s", toAddr)
@@ -350,10 +349,6 @@ func (this *Network) GetPID() *actor.PID {
 
 // Request. send msg to peer and wait for response synchronously with timeout
 func (this *Network) Request(msg proto.Message, peer string) (proto.Message, error) {
-	err := this.healthCheckProxyServer()
-	if err != nil {
-		return nil, err
-	}
 	client := this.P2p.GetPeerClient(peer)
 	if client == nil {
 		return nil, fmt.Errorf("get peer client is nil %s", peer)
@@ -366,10 +361,7 @@ func (this *Network) Request(msg proto.Message, peer string) (proto.Message, err
 // RequestWithRetry. send msg to peer and wait for response synchronously
 func (this *Network) RequestWithRetry(msg proto.Message, peer string, retry int) (proto.Message, error) {
 	var err error
-	err = this.healthCheckProxyServer()
-	if err != nil {
-		return nil, err
-	}
+
 	client := this.P2p.GetPeerClient(peer)
 	if client == nil {
 		return nil, fmt.Errorf("get peer client is nil %s", peer)
@@ -444,22 +436,49 @@ func getProtocolFromAddr(addr string) string {
 	return addr[:idx]
 }
 
-func (this *Network) healthCheckProxyServer() error {
-	if len(this.proxyAddr) == 0 {
+func (this *Network) healthCheckProxyService() {
+	ti := time.NewTicker(time.Duration(5) * time.Second)
+	first := false
+	for {
+		select {
+		case <-ti.C:
+			if !first {
+				log.Debugf("start check proxy %s", this.proxyAddr)
+				first = true
+			}
+			this.healthCheckPeer(this.proxyAddr)
+		case <-this.kill:
+			log.Debugf("stop health check proxy service when receive kill")
+			return
+		}
+	}
+}
+
+func (this *Network) healthCheckPeer(addr string) error {
+	if len(addr) == 0 {
 		return nil
 	}
-	proxyState, err := this.GetPeerStateByAddress(this.proxyAddr)
-	if err != nil {
-		return err
-	}
-	if proxyState == network.PEER_REACHABLE {
+	proxyState, err := this.GetPeerStateByAddress(addr)
+	if err == nil && proxyState == network.PEER_REACHABLE {
 		return nil
 	}
-	client := this.P2p.GetPeerClient(this.proxyAddr)
-	if client == nil {
-		return fmt.Errorf("get peer client is nil: %s", this.proxyAddr)
+	log.Debugf("health check peer: %s unreachable, err: %s ", addr, err)
+	if addr == this.proxyAddr {
+		log.Debugf("backoff proxy server ....")
+		err = this.P2p.ReconnectProxyServer(this.proxyAddr)
+		if err != nil {
+			log.Errorf("proxy reconnect failed, err %s", err)
+			return err
+		}
+		log.Debugf("backoff proxyserver success")
+	} else {
+		err := this.P2p.ReconnectPeer(addr)
+		if err != nil {
+			return err
+		}
+		log.Debugf("reconnect peer success: %s", addr)
 	}
-	proxyState, err = this.GetPeerStateByAddress(this.proxyAddr)
+	proxyState, err = this.GetPeerStateByAddress(addr)
 	if err != nil || proxyState != network.PEER_REACHABLE {
 		return fmt.Errorf("back off proxy failed state: %d, err: %s", proxyState, err)
 	}
