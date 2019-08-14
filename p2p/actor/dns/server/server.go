@@ -111,7 +111,7 @@ func (this *P2PActor) Receive(ctx actor.Context) {
 		}
 		// go this.Broadcast(msg)
 	case *pm.Torrent:
-		log.Debugf("tracker client torrent msg:%s", msg.String())
+		log.Debug("tracker client torrent msg")
 		if msg.InfoHash == nil || msg.Torrent == nil {
 			log.Errorf("[MSB Receive] receive from peer:%s, nil Torrent message", ctx.Sender().Address)
 			break

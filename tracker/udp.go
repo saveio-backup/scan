@@ -77,8 +77,8 @@ func newTransactionId() int32 {
 }
 
 func timeout(contiguousTimeouts int) (d time.Duration) {
-	if contiguousTimeouts > 8 {
-		contiguousTimeouts = 8
+	if contiguousTimeouts > 3 {
+		contiguousTimeouts = 3
 	}
 	d = 15 * time.Second
 	for ; contiguousTimeouts > 0; contiguousTimeouts-- {
@@ -230,53 +230,50 @@ func (c *udpAnnounce) request(action Action, args interface{}, options []byte) (
 		TransactionId: tid,
 	}, args, options)
 	if err != nil {
+		log.Errorf("tracker.udp.request write err: %v\n", err)
 		return
 	}
-	log.Infof("tracker.udp.request contiguousTimeouts: %d, timeout: %v, time: %v\n", c.contiguousTimeouts, timeout(c.contiguousTimeouts), time.Now().Add(timeout(c.contiguousTimeouts)))
+
 	c.socket.SetReadDeadline(time.Now().Add(timeout(c.contiguousTimeouts)))
 	b := make([]byte, 0x800) // 2KiB
 	for {
 		var n int
 		n, err = c.socket.Read(b)
 		if err != nil {
-			log.Error(fmt.Sprintf("tracker.udp.request.socket.Read err: %v", err))
-			return
-		}
-		if opE, ok := err.(*net.OpError); ok {
-			log.Error("tracker.udp.request.socket.Read err.(*net.OpError)")
-			if opE.Timeout() {
-				c.contiguousTimeouts++
-				log.Error(fmt.Sprintf("tracker.udp.request.socket.Read err.(*net.OpError): c.contiguousTimeouts: %d ", c.contiguousTimeouts))
-				return
+			log.Errorf("tracker.udp.request.socket.Read err: %v\n", err)
+			if opE, ok := err.(*net.OpError); ok {
+				log.Errorf("tracker.udp.request.socket.Read err.(*net.OpError) opE: %v\n", opE)
+				if opE.Timeout() {
+					c.contiguousTimeouts++
+					log.Errorf("tracker.udp.request.socket.Read err.(*net.OpError) Timeout() c.contiguousTimeouts: %d \n", c.contiguousTimeouts)
+					return
+				}
 			}
-		}
-		if err != nil {
-			log.Error(fmt.Sprintf("tracker.udp.request.socket.Read err 2: %v", err))
 			return
 		}
+
 		buf := bytes.NewBuffer(b[:n])
 		var h ResponseHeader
 		err = binary.Read(buf, binary.BigEndian, &h)
 		switch err {
 		case io.ErrUnexpectedEOF:
-			log.Error(fmt.Sprintf("tracker.udp.request.binary.Read err.ErrUnexpectedEOF: %v", err))
+			log.Errorf("tracker.udp.request.binary.Read err.ErrUnexpectedEOF: %v\n", err)
 			continue
 		case nil:
-			log.Error(fmt.Sprintf("tracker.udp.request.binary.Read err.nil: %v", err))
 		default:
-			log.Error(fmt.Sprintf("tracker.udp.request.binary.Read err.default: %v", err))
+			log.Errorf("tracker.udp.request.binary.Read err.default: %v\n", err)
 			return
 		}
 		if h.TransactionId != tid {
-			log.Error(fmt.Sprintf("tracker.udp.request.binary.Read h.TransactionId != tid: %d, %d", h.TransactionId, tid))
+			log.Debugf("tracker.udp.request.binary.Read h.TransactionId != tid: %d, %d\n", h.TransactionId, tid)
 			continue
 		}
 		c.contiguousTimeouts = 0
 		if h.Action == ActionError {
 			err = errors.New(buf.String())
+			log.Debugf("tracker.udp.request.return h.Action == ActionError err: %v\n", err)
 		}
 		responseBody = buf
-		log.Debugf("tracker.udp.request.return err: %v", err)
 		return
 	}
 }
