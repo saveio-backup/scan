@@ -232,22 +232,26 @@ func (c *udpAnnounce) request(action Action, args interface{}, options []byte) (
 	if err != nil {
 		return
 	}
+	log.Infof("tracker.udp.request contiguousTimeouts: %d, timeout: %v, time: %v\n", c.contiguousTimeouts, timeout(c.contiguousTimeouts), time.Now().Add(timeout(c.contiguousTimeouts)))
 	c.socket.SetReadDeadline(time.Now().Add(timeout(c.contiguousTimeouts)))
 	b := make([]byte, 0x800) // 2KiB
 	for {
 		var n int
 		n, err = c.socket.Read(b)
 		if err != nil {
-			log.Error(err)
+			log.Error(fmt.Sprintf("tracker.udp.request.socket.Read err: %v", err))
 			return
 		}
 		if opE, ok := err.(*net.OpError); ok {
+			log.Error("tracker.udp.request.socket.Read err.(*net.OpError)")
 			if opE.Timeout() {
 				c.contiguousTimeouts++
+				log.Error(fmt.Sprintf("tracker.udp.request.socket.Read err.(*net.OpError): c.contiguousTimeouts: %d ", c.contiguousTimeouts))
 				return
 			}
 		}
 		if err != nil {
+			log.Error(fmt.Sprintf("tracker.udp.request.socket.Read err 2: %v", err))
 			return
 		}
 		buf := bytes.NewBuffer(b[:n])
@@ -255,12 +259,16 @@ func (c *udpAnnounce) request(action Action, args interface{}, options []byte) (
 		err = binary.Read(buf, binary.BigEndian, &h)
 		switch err {
 		case io.ErrUnexpectedEOF:
+			log.Error(fmt.Sprintf("tracker.udp.request.binary.Read err.ErrUnexpectedEOF: %v", err))
 			continue
 		case nil:
+			log.Error(fmt.Sprintf("tracker.udp.request.binary.Read err.nil: %v", err))
 		default:
+			log.Error(fmt.Sprintf("tracker.udp.request.binary.Read err.default: %v", err))
 			return
 		}
 		if h.TransactionId != tid {
+			log.Error(fmt.Sprintf("tracker.udp.request.binary.Read h.TransactionId != tid: %d, %d", h.TransactionId, tid))
 			continue
 		}
 		c.contiguousTimeouts = 0
@@ -268,6 +276,7 @@ func (c *udpAnnounce) request(action Action, args interface{}, options []byte) (
 			err = errors.New(buf.String())
 		}
 		responseBody = buf
+		log.Debugf("tracker.udp.request.return err: %v", err)
 		return
 	}
 }
@@ -295,7 +304,7 @@ func (c *udpAnnounce) dialNetwork() string {
 
 func (c *udpAnnounce) connect() (err error) {
 	if c.connected() {
-		log.Debugf("had connected")
+		log.Debugf("tracker.udp.connect.connected")
 		return nil
 	}
 	c.connectionId = connectRequestConnectionId
@@ -315,11 +324,13 @@ func (c *udpAnnounce) connect() (err error) {
 	}
 	b, err := c.request(ActionConnect, nil, nil)
 	if err != nil {
+		log.Error(fmt.Sprintf("tracker.udp.connect.c.request err: %v", err))
 		return err
 	}
 	var res ConnectionResponse
 	err = readBody(b, &res)
 	if err != nil {
+		log.Error(fmt.Sprintf("tracker.udp.connect.readBody err: %v", err))
 		return err
 	}
 	c.connectionId = res.ConnectionId

@@ -18,3 +18,4 @@ viewlog.sh
 wallet.dat
 peers.recent
 Heap.prof*
+*.log
