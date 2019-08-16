@@ -7,6 +7,7 @@ import (
 	"net"
 
 	"github.com/saveio/scan/common"
+	themisComm "github.com/saveio/themis/common"
 	"github.com/saveio/themis/common/log"
 	"github.com/saveio/themis/crypto/keypair"
 )
@@ -81,7 +82,11 @@ func RegEndPoint(trackerUrl string, sigData []byte, pubKey keypair.PublicKey, wa
 		return err
 	}
 	hostIP := net.IP(ret.IPAddress[:])
-	log.Infof("tracker client [RegEndPoint] wallet:%s, nodeAddr %s:%d\n", ret.Wallet, hostIP.String(), ret.Port)
+	addr, err := themisComm.AddressParseFromBytes(ret.Wallet[:])
+	if err != nil {
+		log.Debugf("decode ret.Wallet err: %v\n", err)
+	}
+	log.Infof("tracker client [RegEndPoint] wallet:%s, nodeAddr %s:%d\n", addr.ToBase58(), hostIP.String(), ret.Port)
 	return nil
 }
 
@@ -101,7 +106,11 @@ func UnRegEndPoint(trackerUrl string, walletAddr [20]byte) error {
 		log.Errorf("UnRegEndPoint failed err: %s\n", err)
 		return err
 	}
-	log.Infof("tracker client [UnRegEndPoint] wallet:%s\n", ret.Wallet)
+	addr, err := themisComm.AddressParseFromBytes(ret.Wallet[:])
+	if err != nil {
+		log.Debugf("decode ret.Wallet err: %v\n", err)
+	}
+	log.Infof("tracker client [UnRegEndPoint] wallet:%s\n", addr.ToBase58())
 	return nil
 }
 
@@ -121,11 +130,16 @@ func ReqEndPoint(trackerUrl string, walletAddr [20]byte) (string, error) {
 		log.Errorf("ReqEndPoint err: %s\n", err)
 		return "", err
 	}
+	log.Debugf("tracker.client.ReqEndpoint ret: %v, err: %v\n", ret, err)
 	hostIP := net.IP(ret.IPAddress[:])
 	if hostIP.String() == "0.0.0.0" || int(ret.Port) == 0 {
 		return "", errors.New(fmt.Sprintf("endpoint host or port is 0, nodeAddr %s:%d", hostIP.String(), ret.Port))
 	}
-	log.Infof("tracker client [ReqEndPoint] wallet:%s, nodeAddr %s:%d\n", ret.Wallet, hostIP.String(), ret.Port)
+	addr, err := themisComm.AddressParseFromBytes(ret.Wallet[:])
+	if err != nil {
+		log.Debugf("decode ret.Wallet err: %v\n", err)
+	}
+	log.Infof("tracker client [ReqEndPoint] wallet:%s, nodeAddr %s:%d\n", addr.ToBase58(), hostIP.String(), ret.Port)
 	return fmt.Sprintf("%s:%d", hostIP.String(), ret.Port), nil
 }
 
@@ -148,7 +162,11 @@ func RegNodeType(trackerUrl string, walletAddr [20]byte, nodeIP net.IP, port uin
 		log.Errorf("RegEndPoint failed err:%s\n", err)
 		return err
 	}
-	log.Debugf("[UpdateEndPoint]  wallet:%s, ip:%v, port:%d\n", ret.Wallet, ret.IPAddress, ret.Port)
+	addr, err := themisComm.AddressParseFromBytes(ret.Wallet[:])
+	if err != nil {
+		log.Debugf("decode ret.Wallet err: %v\n", err)
+	}
+	log.Debugf("[UpdateEndPoint]  wallet:%s, ip:%v, port:%d\n", addr.ToBase58(), ret.IPAddress, ret.Port)
 	return nil
 }
 
@@ -169,6 +187,10 @@ func GetNodesByType(trackerUrl string, nodeType NodeType) (*NodesInfoSt, error) 
 		log.Errorf("RegEndPoint failed err:%s\n", err)
 		return nil, err
 	}
-	log.Debugf("[UpdateEndPoint]  wallet:%s, ip:%v, port:%d\n", ret.Wallet, ret.IPAddress, ret.Port)
+	addr, err := themisComm.AddressParseFromBytes(ret.Wallet[:])
+	if err != nil {
+		log.Debugf("decode ret.Wallet err: %v\n", err)
+	}
+	log.Debugf("[UpdateEndPoint]  wallet:%s, ip:%v, port:%d\n", addr.ToBase58(), ret.IPAddress, ret.Port)
 	return ret.NodesInfo, nil
 }

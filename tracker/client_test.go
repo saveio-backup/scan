@@ -12,7 +12,9 @@ import (
 
 var wallet1Addr = "AYMnqA65pJFKAbbpD8hi5gdNDBmeFBy5hS"
 var wallet2Addr = "AWaE84wqVf1yffjaR6VJ4NptLdqBAm8G9c"
+var wallet3Addr = "AXUhmdzcAJwaFW91q6UYuPGGJY3fimoTAj"
 var trackerUrl = "udp://localhost:6369/announce"
+var trackerUrlOnline = "udp://40.73.102.177:10338/announce"
 
 func TestRegEndPointForClient(t *testing.T) {
 	url := trackerUrl

@@ -245,14 +245,6 @@ func (c *udpAnnounce) request(action Action, args interface{}, options []byte) (
 		n, err = c.socket.Read(b)
 		if err != nil {
 			log.Errorf("tracker.udp.request.socket.Read err: %v\n", err)
-			if opE, ok := err.(*net.OpError); ok {
-				log.Errorf("tracker.udp.request.socket.Read err.(*net.OpError) opE: %v\n", opE)
-				if opE.Timeout() {
-					c.contiguousTimeouts++
-					log.Errorf("tracker.udp.request.socket.Read err.(*net.OpError) Timeout() c.contiguousTimeouts: %d \n", c.contiguousTimeouts)
-					return
-				}
-			}
 			return
 		}
 
@@ -353,7 +345,7 @@ func announceUDP(opt Announce, _url *url.URL) (AnnounceResponse, error) {
 	var err error
 
 	for retryTimes < UDP_RETRY_TIMES {
-		ret, err := ua.Do(opt.Request)
+		ret, err = ua.Do(opt.Request)
 		if err != nil {
 			log.Errorf("tracker.udp.announceUDP err: %v\n", err)
 			if opE, ok := err.(*net.OpError); ok {
@@ -366,7 +358,8 @@ func announceUDP(opt Announce, _url *url.URL) (AnnounceResponse, error) {
 			}
 			return ret, err
 		}
-		break
+		return ret, err
 	}
-	return ret, err
+
+	return ret, errors.New(fmt.Sprintf("udp retry %d times, also failed. err: %v", retryTimes, err))
 }
