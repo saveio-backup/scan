@@ -57,7 +57,7 @@ func (this *Node) StartChannelService() error {
 	if this.Channel == nil {
 		return errors.New("channel is nil")
 	}
-	this.SetupPartnerHost(this.Channel.GetAllPartners())
+
 	err := this.Channel.StartService()
 	if err != nil {
 		return err
@@ -65,17 +65,6 @@ func (this *Node) StartChannelService() error {
 	time.Sleep(time.Second)
 	this.Channel.OverridePartners()
 	return nil
-}
-
-// SetupPartnerHost. setup host addr for partners
-func (this *Node) SetupPartnerHost(partners []string) {
-	for _, addr := range partners {
-		host, err := GetExternalIP(addr)
-		if err != nil && host != "" {
-			log.Infof("SetHostAddr partners, addr: %s host: %s", addr, host)
-			this.Channel.SetHostAddr(addr, host)
-		}
-	}
 }
 
 // GetExternalIP. get external ip of wallet from dns nodes

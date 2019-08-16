@@ -40,6 +40,10 @@ const (
 	optionTypeEndOfOptions = 0
 	optionTypeNOP          = 1
 	optionTypeURLData      = 2
+
+	// UDP timewait
+	UDP_TIMEWAIT    = 5
+	UDP_RETRY_TIMES = 3
 )
 
 type ConnectionRequest struct {
@@ -80,7 +84,7 @@ func timeout(contiguousTimeouts int) (d time.Duration) {
 	if contiguousTimeouts > 3 {
 		contiguousTimeouts = 3
 	}
-	d = 15 * time.Second
+	d = UDP_TIMEWAIT * time.Second
 	for ; contiguousTimeouts > 0; contiguousTimeouts-- {
 		d *= 2
 	}
@@ -343,5 +347,26 @@ func announceUDP(opt Announce, _url *url.URL) (AnnounceResponse, error) {
 		a:   &opt,
 	}
 	defer ua.Close()
-	return ua.Do(opt.Request)
+
+	retryTimes := 0
+	var ret AnnounceResponse
+	var err error
+
+	for retryTimes < UDP_RETRY_TIMES {
+		ret, err := ua.Do(opt.Request)
+		if err != nil {
+			log.Errorf("tracker.udp.announceUDP err: %v\n", err)
+			if opE, ok := err.(*net.OpError); ok {
+				log.Errorf("tracker.udp.announceUDP opE: %v\n", opE)
+				if opE.Timeout() {
+					retryTimes++
+					log.Errorf("tracker.udp.announceUDP timeout retryTimes: %d \n", retryTimes)
+					continue
+				}
+			}
+			return ret, err
+		}
+		break
+	}
+	return ret, err
 }

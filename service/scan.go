@@ -257,10 +257,10 @@ func (this *Node) AutoSetupDNSChannelsWorking() error {
 		if strings.Index(dnsUrl, "0.0.0.0:0") != -1 {
 			return errors.NewErr("invalid host addr")
 		}
-		err = this.Channel.SetHostAddr(walletAddr, dnsUrl)
-		if err != nil {
-			return err
-		}
+		// err = this.Channel.SetHostAddr(walletAddr, dnsUrl)
+		// if err != nil {
+		// 	return err
+		// }
 		_, err = this.Channel.OpenChannel(walletAddr, 0)
 		if err != nil {
 			log.Debugf("open channel err ")
