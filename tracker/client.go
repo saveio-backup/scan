@@ -34,6 +34,9 @@ func CompleteTorrent(infoHash common.MetaInfoHash, trackerUrl string, nodeIP net
 		log.Errorf("CompleteTorrent failed err: %s\n", err)
 		return err
 	}
+	if len(ret.Peers) == 0 {
+		return errors.New("no peers")
+	}
 	log.Debugf("tracker.client.CompleteTorrent interval:%d, leechers:%d, seeders:%d, peers:%v fileHash: %s\n", ret.Interval, ret.Leechers, ret.Seeders, ret.Peers, string(infoHash[:]))
 	return nil
 }

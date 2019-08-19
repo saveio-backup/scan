@@ -134,15 +134,20 @@ func (s *Server) Accepted() (err error) {
 			pi = t.Peers[nodeAddr.String()]
 		}
 		log.Debugf("tracker.server.ActionAnnounce pi: %v, nodeAddr: %s", pi, nodeAddr.String())
+		var announceErr error
 		switch ar.Event.String() {
 		case "started":
-			s.onAnnounceStarted(&ar, pi)
+			announceErr = s.onAnnounceStarted(&ar, pi)
 		case "updated":
-			s.onAnnounceUpdated(&ar, pi)
+			announceErr = s.onAnnounceUpdated(&ar, pi)
 		case "stopped":
-			s.onAnnounceStopped(&ar, pi)
+			announceErr = s.onAnnounceStopped(&ar, pi)
 		case "completed":
-			s.onAnnounceCompleted(&ar, pi)
+			announceErr = s.onAnnounceCompleted(&ar, pi)
+		}
+		if announceErr != nil {
+			log.Debugf("tracker.server.ActionAnnounce announceErr: %v\n", err)
+			return s.respond(addr, ResponseHeader{TransactionId: h.TransactionId, Action: ActionAnnounce}, AnnounceResponseHeader{Interval: 800, Leechers: 0, Seeders: 0}, []byte{})
 		}
 		// update
 		t = s.getTorrent(ar.InfoHash)
@@ -337,10 +342,9 @@ func (s *Server) Accepted() (err error) {
 	}
 }
 
-func (s *Server) onAnnounceStarted(ar *AnnounceRequest, pi *peerInfo) {
+func (s *Server) onAnnounceStarted(ar *AnnounceRequest, pi *peerInfo) error {
 	if pi != nil {
-		s.onAnnounceUpdated(ar, pi)
-		return
+		return s.onAnnounceUpdated(ar, pi)
 	}
 
 	peer := krpc.NodeAddr{
@@ -375,24 +379,20 @@ func (s *Server) onAnnounceStarted(ar *AnnounceRequest, pi *peerInfo) {
 	bt, err := json.Marshal(t)
 	if err != nil {
 		log.Fatalf("json Marshal error:%s", err)
+		return err
 	}
-	storage.TDB.Put(ar.InfoHash[:], bt)
-	m := &pm.Torrent{
-		InfoHash: ar.InfoHash[:],
-		Torrent:  bt,
-		Type:     0,
-	}
-	s.p2p.Tell(m)
+	err = storage.TDB.Put(ar.InfoHash[:], bt)
+	s.p2p.Tell(&pm.Torrent{InfoHash: ar.InfoHash[:], Torrent: bt, Type: 0})
+	return err
 }
 
-func (s *Server) onAnnounceUpdated(ar *AnnounceRequest, pi *peerInfo) {
+func (s *Server) onAnnounceUpdated(ar *AnnounceRequest, pi *peerInfo) error {
 	if pi == nil {
-		s.onAnnounceStarted(ar, nil)
-		return
+		return s.onAnnounceStarted(ar, nil)
 	}
 	t := s.getTorrent(ar.InfoHash)
 	if t == nil {
-		return
+		return nil
 	}
 	if !pi.Complete && ar.Left == 0 {
 		t.Leechers -= 1
@@ -404,23 +404,20 @@ func (s *Server) onAnnounceUpdated(ar *AnnounceRequest, pi *peerInfo) {
 	bt, err := json.Marshal(t)
 	if err != nil {
 		log.Fatalf("json Marshal error:%s", err)
+		return err
 	}
-	storage.TDB.Put(ar.InfoHash[:], bt)
-	m := &pm.Torrent{
-		InfoHash: ar.InfoHash[:],
-		Torrent:  bt,
-		Type:     0,
-	}
-	s.p2p.Tell(m)
+	err = storage.TDB.Put(ar.InfoHash[:], bt)
+	s.p2p.Tell(&pm.Torrent{InfoHash: ar.InfoHash[:], Torrent: bt, Type: 0})
+	return err
 }
 
-func (s *Server) onAnnounceStopped(ar *AnnounceRequest, pi *peerInfo) {
+func (s *Server) onAnnounceStopped(ar *AnnounceRequest, pi *peerInfo) error {
 	if pi == nil {
-		return
+		return nil
 	}
 	t := s.getTorrent(ar.InfoHash)
 	if t == nil {
-		return
+		return nil
 	}
 	if pi.Complete {
 		t.Seeders -= 1
@@ -432,27 +429,17 @@ func (s *Server) onAnnounceStopped(ar *AnnounceRequest, pi *peerInfo) {
 	if err != nil {
 		log.Fatalf("json Marshal error:%s", err)
 	}
-	storage.TDB.Put(ar.InfoHash[:], bt)
-	m := &pm.Torrent{
-		InfoHash: ar.InfoHash[:],
-		Torrent:  bt,
-		Type:     0,
-	}
-	s.p2p.Tell(m)
-	//messageBus.MsgBus.TNTBox <- &messageBus.TorrenMsg{
-	//	InfoHash:     ar.InfoHash[:],
-	//	BytesTorrent: bt,
-	//}
+	err = storage.TDB.Put(ar.InfoHash[:], bt)
+	s.p2p.Tell(&pm.Torrent{InfoHash: ar.InfoHash[:], Torrent: bt, Type: 0})
+	return err
 }
 
-func (s *Server) onAnnounceCompleted(ar *AnnounceRequest, pi *peerInfo) {
+func (s *Server) onAnnounceCompleted(ar *AnnounceRequest, pi *peerInfo) error {
 	if pi == nil {
-		s.onAnnounceStarted(ar, nil)
-		return
+		return s.onAnnounceStarted(ar, nil)
 	}
 	if pi.Complete {
-		s.onAnnounceUpdated(ar, pi)
-		return
+		return s.onAnnounceUpdated(ar, pi)
 	}
 	t := s.getTorrent(ar.InfoHash)
 	t.Seeders += 1
@@ -462,18 +449,11 @@ func (s *Server) onAnnounceCompleted(ar *AnnounceRequest, pi *peerInfo) {
 	bt, err := json.Marshal(t)
 	if err != nil {
 		log.Fatalf("json Marshal error:%s", err)
+		return err
 	}
-	storage.TDB.Put(ar.InfoHash[:], bt)
-	m := &pm.Torrent{
-		InfoHash: ar.InfoHash[:],
-		Torrent:  bt,
-		Type:     0,
-	}
-	s.p2p.Tell(m)
-	//messageBus.MsgBus.TNTBox <- &messageBus.TorrenMsg{
-	//	InfoHash:     ar.InfoHash[:],
-	//	BytesTorrent: bt,
-	//}
+	err = storage.TDB.Put(ar.InfoHash[:], bt)
+	s.p2p.Tell(&pm.Torrent{InfoHash: ar.InfoHash[:], Torrent: bt, Type: 0})
+	return err
 }
 
 func (s *Server) getTorrent(infoHash common.MetaInfoHash) *torrent {

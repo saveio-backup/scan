@@ -1,6 +1,8 @@
 package storage
 
 import (
+	"sync"
+
 	"github.com/saveio/themis/core/store/common"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/errors"
@@ -17,6 +19,7 @@ var TDB *LevelDBStore
 type LevelDBStore struct {
 	db    *leveldb.DB // LevelDB instance
 	batch *leveldb.Batch
+	lock  sync.RWMutex
 }
 
 // used to compute the size of bloom filter bits array .
@@ -62,11 +65,16 @@ func NewMemLevelDBStore() (*LevelDBStore, error) {
 
 //Put a key-value pair to leveldb
 func (self *LevelDBStore) Put(key []byte, value []byte) error {
+	self.lock.Lock()
+	defer self.lock.Unlock()
 	return self.db.Put(key, value, nil)
 }
 
 //Get the value of a key from leveldb
 func (self *LevelDBStore) Get(key []byte) ([]byte, error) {
+	self.lock.RLock()
+	defer self.lock.RUnlock()
+
 	dat, err := self.db.Get(key, nil)
 	if err != nil {
 		if err == leveldb.ErrNotFound {
