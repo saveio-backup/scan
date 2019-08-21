@@ -80,7 +80,7 @@ func (this *TorrentDB) DelTorrent(fileHash []byte) error {
 
 func (this *TorrentDB) AddTorrentPeer(fileHash []byte, left uint64, nodeAddr string, peer *PeerInfo) error {
 	t, err := this.GetTorrent(fileHash)
-	if err != nil {
+	if err != nil && err.Error() != "not found" {
 		return err
 	}
 

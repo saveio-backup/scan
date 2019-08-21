@@ -330,7 +330,13 @@ func (s *Server) onAnnounceStarted(ar *AnnounceRequest, pi *storage.PeerInfo) er
 		NodeAddr: nodeAddr,
 	}
 	err := storage.TDB.AddTorrentPeer(ar.InfoHash[:], ar.Left, nodeAddr.String(), pi)
+	if err != nil {
+		return err
+	}
 	bt, err := storage.TDB.GetTorrentBinary(ar.InfoHash[:])
+	if err != nil {
+		return err
+	}
 	s.p2p.Tell(&pm.Torrent{InfoHash: ar.InfoHash[:], Torrent: bt, Type: 0})
 	return err
 }

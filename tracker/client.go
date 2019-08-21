@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/anacrolix/dht/krpc"
 	"github.com/saveio/scan/common"
 	themisComm "github.com/saveio/themis/common"
 	"github.com/saveio/themis/common/log"
@@ -26,10 +27,13 @@ func CompleteTorrent(infoHash common.MetaInfoHash, trackerUrl string, nodeIP net
 			IPAddress: ipconvert(nodeIP),
 			Port:      port,
 			Event:     AnnounceEventCompleted,
+			NumWant:   1,
 		},
 		flag: ActionAnnounce,
 	}
+	log.Debugf("tracker.client.CompleteTorrent announce %v\n", announce)
 	ret, err := announce.Do()
+
 	if err != nil {
 		log.Errorf("CompleteTorrent failed err: %s\n", err)
 		return err
@@ -37,7 +41,7 @@ func CompleteTorrent(infoHash common.MetaInfoHash, trackerUrl string, nodeIP net
 	if len(ret.Peers) == 0 {
 		return errors.New("no peers")
 	}
-	log.Debugf("tracker.client.CompleteTorrent interval:%d, leechers:%d, seeders:%d, peers:%v fileHash: %s\n", ret.Interval, ret.Leechers, ret.Seeders, ret.Peers, string(infoHash[:]))
+	log.Debugf("tracker.client.CompleteTorrent interval:%d, leechers:%d, seeders:%d, peer:%s fileHash: %s\n", ret.Interval, ret.Leechers, ret.Seeders, krpc.NodeAddr{IP: nodeIP, Port: int(port)}.String(), string(infoHash[:]))
 	return nil
 }
 
@@ -55,6 +59,7 @@ func GetTorrentPeers(infoHash common.MetaInfoHash, trackerUrl string, numWant in
 		},
 		flag: ActionAnnounce,
 	}
+	log.Debugf("tracker.client.GetTorrentPeers announce %v\n", announce)
 	ret, err := announce.Do()
 	if err != nil {
 		log.Errorf("GetTorrentPeers failed err: %s\n", err)
