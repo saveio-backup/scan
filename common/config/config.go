@@ -85,10 +85,11 @@ type BaseConfig struct {
 	DnsProtocol   string `json:"DnsProtocol"`
 	DnsPortOffset uint   `json:"DnsPortOffset"`
 
-	TrackerPortOffset  uint     `json:"TrackerPortOffset"`
-	TrackerFee         int      `json:"TrackerFee`
-	TrackerSeedList    []string `json:"TrackerSeedList"`
-	NATProxyServerAddr string   `json:"NATProxyServerAddr"`
+	TrackerPortOffset        uint     `json:"TrackerPortOffset"`
+	TrackerFee               int      `json:"TrackerFee`
+	TrackerSeedList          []string `json:"TrackerSeedList"`
+	TrackerPeerValidDuration string   `json:"TrackerPeerValidDuration"`
+	NATProxyServerAddr       string   `json:"NATProxyServerAddr"`
 
 	WalletPwd string `json:"WalletPwd"`
 	WalletDir string `json:"WalletDir"`

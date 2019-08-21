@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net"
 	"reflect"
@@ -117,12 +118,17 @@ func (this *P2PActor) Receive(ctx actor.Context) {
 			break
 		}
 
-		hpBytes, _ := storage.TDB.Get(msg.InfoHash)
+		hpBytes, _ := storage.TDB.GetTorrentBinary(msg.InfoHash)
 		if msg.Type == 0 {
 			msg.Type = 1
 			go this.Broadcast(msg)
 		} else if msg.Type == 1 && string(hpBytes) != string(msg.Torrent) {
-			err := storage.TDB.Put(msg.InfoHash, msg.Torrent)
+			var t *storage.Torrent
+			err := json.Unmarshal(msg.Torrent, t)
+			if t == nil || err != nil {
+				log.Errorf("[MSB Receive] sync json.Unmarshal msg.Torrent err:", err)
+			}
+			err = storage.TDB.PutTorrent(msg.InfoHash, t)
 			if err != nil {
 				log.Errorf("[MSB Receive] sync filemessage error:%v", err)
 			}

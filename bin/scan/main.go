@@ -56,6 +56,7 @@ func initAPP() *cli.App {
 	}
 	app.Flags = []cli.Flag{
 		flags.ScanConfigFlag,
+
 		//common setting
 		flags.LogStderrFlag,
 		flags.LogLevelFlag,
@@ -225,18 +226,24 @@ func startScan(ctx *cli.Context) {
 
 	service.Init(config.Parameters.Base.WalletDir, config.Parameters.Base.WalletPwd)
 
-	epDB, err := storage.NewLevelDBStore(config.EndpointDBPath())
+	edb, err := storage.NewLevelDBStore(config.EndpointDBPath())
 	if err != nil {
 		log.Fatal(err)
 	}
-	storage.EDB = storage.NewEndpointDB(epDB)
+	storage.EDB = storage.NewEndpointDB(edb)
 
 	startChannelNetwork, startDnsNetwork := true, true
 	err = service.ScanNode.StartScanNode(startChannelNetwork, startDnsNetwork)
 	if err != nil {
 		log.Fatal(err)
 	}
-	storage.TDB, err = storage.NewLevelDBStore(config.TrackerDBPath())
+	tdb, err := storage.NewLevelDBStore(config.TrackerDBPath())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	storage.TDB = storage.NewTorrentDB(tdb)
+
 	if err != nil {
 		log.Fatal(err)
 	}

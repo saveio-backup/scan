@@ -1,14 +1,15 @@
 package tracker
 
 import (
-	chainCom "github.com/saveio/themis/common"
-	"github.com/saveio/scan/storage"
-	"github.com/saveio/themis/common/log"
-	"io"
-	"github.com/ontio/ontology/common/serialization"
-	"fmt"
 	"bytes"
 	"encoding/binary"
+	"fmt"
+	"io"
+
+	"github.com/ontio/ontology/common/serialization"
+	"github.com/saveio/scan/storage"
+	chainCom "github.com/saveio/themis/common"
+	"github.com/saveio/themis/common/log"
 )
 
 const (
@@ -16,10 +17,11 @@ const (
 )
 
 type NodeType int64
+
 const (
-	NODE_TYPE_DDNS  NodeType = 110
+	NODE_TYPE_DDNS    NodeType = 110
 	NODE_TYPE_PORTER  NodeType = 111
-	NODE_TYPE_STORAGE  NodeType = 112
+	NODE_TYPE_STORAGE NodeType = 112
 )
 
 type NodeInfo struct {
@@ -33,7 +35,7 @@ type NodesInfoSt struct {
 }
 
 //buf := new(bytes.Buffer)
-func (this * NodeInfo) Serialize (w io.Writer) error {
+func (this *NodeInfo) Serialize(w io.Writer) error {
 	var err error
 	if err = serialization.WriteVarBytes(w, this.NodeNetAddr[:NODENETADDR]); err != nil {
 		return fmt.Errorf("[NodeInfo] NodeNetAddr Serialize error: %s", err.Error())
@@ -45,7 +47,7 @@ func (this * NodeInfo) Serialize (w io.Writer) error {
 	return nil
 }
 
-func (this * NodeInfo) DeSerialize (r io.Reader) error {
+func (this *NodeInfo) DeSerialize(r io.Reader) error {
 	var err error
 	nodeNetAddr, err := serialization.ReadVarBytes(r)
 	if err != nil {
@@ -65,7 +67,7 @@ func (this * NodeInfo) DeSerialize (r io.Reader) error {
 }
 
 //buf := new(bytes.Buffer)
-func (this * NodesInfoSt) Serialize (w io.Writer) error {
+func (this *NodesInfoSt) Serialize(w io.Writer) error {
 	var err error
 	if err = serialization.WriteUint64(w, this.NodeInfoLen); err != nil {
 		return fmt.Errorf("[NodesInfoSt] NodeInfoLen Serialize error: %s", err.Error())
@@ -79,7 +81,7 @@ func (this * NodesInfoSt) Serialize (w io.Writer) error {
 	return err
 }
 
-func (this * NodesInfoSt) DeSerialize (r io.Reader) error {
+func (this *NodesInfoSt) DeSerialize(r io.Reader) error {
 	var err error
 	if this.NodeInfoLen, err = serialization.ReadUint64(r); err != nil {
 		return err
@@ -103,7 +105,7 @@ func SaveNodeInfo(nodeType NodeType, nodeWallet chainCom.Address, nodeNetAddr st
 	key = append(key, nodeWallet[:]...)
 
 	log.Debugf("SaveNodeInfo WallerAddr %s, NodeAddr : %s", nodeWallet.ToBase58(), nodeNetAddr)
-	return storage.TDB.Put(key, []byte(nodeNetAddr))
+	return storage.EDB.Db.Put(key, []byte(nodeNetAddr))
 }
 
 func GetNodesInfo(nodeType NodeType) ([]byte, error) {
@@ -112,9 +114,8 @@ func GetNodesInfo(nodeType NodeType) ([]byte, error) {
 	prefix := Int64ToBytes(nodeType)
 	prefixLen := len(prefix)
 
-	storeIterator := storage.TDB.NewIterator(prefix[:])
+	storeIterator := storage.EDB.Db.NewIterator(prefix[:])
 	defer storeIterator.Release()
-
 
 	var nodesInfos NodesInfoSt
 
@@ -158,5 +159,3 @@ func Int64ToBytes(i NodeType) [16]byte {
 	binary.BigEndian.PutUint64(buf[8:], uint64(i))
 	return buf
 }
-
-

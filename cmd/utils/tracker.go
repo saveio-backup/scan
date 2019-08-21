@@ -16,6 +16,9 @@ import (
 )
 
 func CheckTorrent(filehash string) (*httpComm.TorrentPeersRsp, *httpComm.FailedRsp) {
+	if len(filehash) == 49 {
+		filehash = filehash[:46]
+	}
 	result, ontErr := sendRpcRequest("checktorrent", []interface{}{filehash})
 	peers := &httpComm.TorrentPeersRsp{}
 	if ontErr != nil {

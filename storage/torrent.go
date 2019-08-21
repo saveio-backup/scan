@@ -1,81 +1,190 @@
 package storage
 
-// // FileDB. implement a db storage for save information of sending/downloading/downloaded files
-// type TorrentDB struct {
-// 	db   *LevelDBStore
-// 	lock sync.RWMutex
-// }
+import (
+	"encoding/json"
+	"errors"
+	"time"
 
-// type peerInfo struct {
-// 	ID       common.PeerID
-// 	Complete bool
-// 	IP       [4]byte
-// 	Port     uint16
-// 	NodeAddr krpc.NodeAddr
-// }
+	"github.com/anacrolix/dht/krpc"
+	"github.com/saveio/scan/common/config"
+	"github.com/saveio/themis/common/log"
+)
 
-// type Torrent struct {
-// 	Leechers int32
-// 	Seeders  int32
-// 	Peers    map[string]*peerInfo
-// }
+var TDB *TorrentDB
 
-// func NewTorrentDB(db *LevelDBStore) *TorrentDB {
-// 	return &TorrentDB{
-// 		db: db,
-// 	}
-// }
+const (
+	MAX_PEERS_LENGTH                 = 100
+	DEFAULT_NUMWANT_TO_GET_ALL_PEERS = -1
+)
 
-// func (this *TorrentDB) Close() error {
-// 	return this.db.Close()
-// }
+type PeerID [20]byte
 
-// // PutTorrent. put torrent info to db
-// func (this *ChannelDB) AddPayment(hash string, torrent int32, amount uint64) error {
-// 	key := []byte(fmt.Sprintf("payment:%d", paymentId))
-// 	info := &Payment{
-// 		WalletAddress: walletAddr,
-// 		PaymentId:     paymentId,
-// 		Amount:        amount,
-// 	}
-// 	buf, err := json.Marshal(info)
-// 	if err != nil {
-// 		return err
-// 	}
+type TorrentDB struct {
+	db *LevelDBStore
+}
 
-// 	nodeAddr := krpc.NodeAddr{
-// 		IP:   ar.IPAddress[:],
-// 		Port: int(ar.Port),
-// 	}
-// 	log.Infof("ActionReg nodeAddr: %v, %d", nodeAddr.IP, nodeAddr.Port)
-// 	nb, err := nodeAddr.MarshalBinary()
-// 	log.Infof("ActionReg Wallet: %v, nb: %v", ar.Wallet.ToBase58(), nb)
-// 	if err != nil {
-// 		err = fmt.Errorf("nodeAddr marshal error")
-// 		return err
-// 	}
-// 	err = storage.TDB.Put(ar.Wallet[:], nb)
+type PeerInfo struct {
+	ID        PeerID
+	Complete  bool
+	IP        [4]byte
+	Port      uint16
+	NodeAddr  krpc.NodeAddr
+	Timestamp time.Time
+}
 
-// 	return this.db.Put(key, buf)
-// }
+type Torrent struct {
+	Leechers int32
+	Seeders  int32
+	Peers    map[string]*PeerInfo
+}
 
-// // GetPayment. get payment info from db
-// func (this *ChannelDB) GetPayment(paymentId int32) (*Payment, error) {
-// 	key := []byte(fmt.Sprintf("payment:%d", paymentId))
-// 	value, err := this.db.Get(key)
-// 	if err != nil {
-// 		if err != leveldb.ErrNotFound {
-// 			return nil, err
-// 		}
-// 	}
-// 	if len(value) == 0 {
-// 		return nil, nil
-// 	}
+func NewTorrentDB(db *LevelDBStore) *TorrentDB {
+	return &TorrentDB{
+		db: db,
+	}
+}
 
-// 	info := &Payment{}
-// 	err = json.Unmarshal(value, info)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return info, nil
-// }
+func (this *TorrentDB) Close() error {
+	return this.db.Close()
+}
+
+func (this *TorrentDB) PutTorrent(fileHash []byte, torrent *Torrent) error {
+	bt, err := json.Marshal(torrent)
+	if err != nil {
+		return err
+	}
+	return this.db.Put(fileHash, bt)
+}
+
+func (this *TorrentDB) GetTorrent(fileHash []byte) (*Torrent, error) {
+	var t Torrent
+	v, err := this.db.Get(fileHash)
+	json.Unmarshal(v, &t)
+	if v == nil || err != nil {
+		return nil, err
+	}
+	return &t, nil
+}
+
+func (this *TorrentDB) GetTorrentBinary(fileHash []byte) (bt []byte, err error) {
+	bt, err = this.db.Get(fileHash)
+	if err != nil {
+		return nil, err
+	}
+	return bt, nil
+}
+
+func (this *TorrentDB) DelTorrent(fileHash []byte) error {
+	return this.db.Delete(fileHash)
+}
+
+func (this *TorrentDB) AddTorrentPeer(fileHash []byte, left uint64, nodeAddr string, peer *PeerInfo) error {
+	t, err := this.GetTorrent(fileHash)
+	if err != nil {
+		return err
+	}
+
+	if t == nil {
+		t = &Torrent{}
+	}
+
+	if !peer.Complete && left == 0 {
+		t.Leechers -= 1
+		t.Seeders += 1
+		peer.Complete = true
+	} else if left == 0 {
+		t.Seeders++
+	} else {
+		t.Leechers++
+	}
+
+	if t.Peers == nil {
+		t.Peers = make(map[string]*PeerInfo, 0)
+	}
+	peer.Timestamp = time.Now()
+
+	t.Peers[nodeAddr] = peer
+	return this.PutTorrent(fileHash, t)
+}
+
+func (this *TorrentDB) DelTorrentPeer(fileHash []byte, peer *PeerInfo) error {
+	t, err := this.GetTorrent(fileHash)
+	if err != nil {
+		return err
+	}
+
+	if t == nil {
+		return nil
+	}
+
+	if peer.Complete {
+		t.Seeders -= 1
+	} else {
+		t.Leechers -= 1
+	}
+	delete(t.Peers, peer.NodeAddr.String())
+	return this.PutTorrent(fileHash, t)
+}
+
+func (this *TorrentDB) GetTorrentPeersByFileHash(fileHash []byte, numWant int32) (retPeers []*PeerInfo, leechers, seeders int32, err error) {
+	t, err := this.GetTorrent(fileHash)
+	if err != nil {
+		return retPeers, leechers, seeders, err
+	}
+	if t == nil {
+		return retPeers, leechers, seeders, errors.New("torrent not found, got nil")
+	}
+	leechers = t.Leechers
+	seeders = t.Seeders
+	log.Debugf("torrent %v\n", t)
+
+	peersCount, peersNotExpireCount := 0, 0
+	peersNotExpire := make(map[string]*PeerInfo)
+	now := time.Now()
+	expireDuration, err := time.ParseDuration(config.Parameters.Base.TrackerPeerValidDuration)
+	if err != nil {
+		log.Error(err)
+		return retPeers, leechers, seeders, err
+	}
+
+	log.Debugf("peers num %d\n", len(t.Peers))
+	for peer, info := range t.Peers {
+		log.Debugf("peer %v\n", info)
+		if info.Timestamp.After(now.Add(expireDuration)) {
+			log.Debugf("before\n")
+			if peersNotExpireCount < int(numWant) || numWant == DEFAULT_NUMWANT_TO_GET_ALL_PEERS {
+				retPeers = append(retPeers, info)
+			}
+			peersNotExpire[peer] = info
+			peersNotExpireCount += 1
+		}
+		peersCount += 1
+	}
+
+	log.Debugf("retPeers \n", retPeers)
+	// peers update strategy, needs more design
+	if peersCount >= MAX_PEERS_LENGTH {
+		err = this.PutTorrent(fileHash, &Torrent{Leechers: t.Leechers, Seeders: t.Seeders, Peers: peersNotExpire})
+		if err != nil {
+			return retPeers, leechers, seeders, err
+		}
+	}
+
+	return retPeers, leechers, seeders, nil
+}
+
+func (this *TorrentDB) GetTorrentPeerByFileHashAndNodeAddr(fileHash []byte, nodeAddr string) (peer *PeerInfo, err error) {
+	t, err := this.GetTorrent(fileHash)
+	if err != nil {
+		return peer, err
+	}
+	if t == nil {
+		return peer, errors.New("torrent not found, got nil")
+	}
+
+	peer, ok := t.Peers[nodeAddr]
+	if !ok {
+		return peer, errors.New("peer not found")
+	}
+	return peer, nil
+}

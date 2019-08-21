@@ -6,6 +6,7 @@
 package cmd
 
 import (
+	"github.com/anacrolix/dht/krpc"
 	"github.com/saveio/scan/cmd/common"
 	"github.com/saveio/scan/cmd/flags"
 	"github.com/saveio/scan/cmd/utils"
@@ -93,7 +94,8 @@ func checkTorrent(ctx *cli.Context) error {
 	} else {
 		PrintInfoMsg("\nCheck torrent success. peers:")
 		for _, peer := range peers.Peers {
-			PrintInfoMsg("%s:%d", peer.IP.String(), peer.Port)
+
+			PrintInfoMsg("%s\t%v", krpc.NodeAddr{IP: peer.IP[:], Port: int(peer.Port)}.String(), peer.Timestamp.Format("2006-01-02 15:04:05"))
 		}
 	}
 	return nil

@@ -26,7 +26,7 @@ func TestTorrentComplete(t *testing.T) {
 	copy(infoHash[:], idsBytes)
 	url := "udp://localhost:6369/announce"
 	ip := net.IP{0x0, 0x1, 0x2, 0x3}
-	port := uint16(6320)
+	port := uint16(6300)
 	CompleteTorrent(infoHash, url, ip, port)
 }
 

@@ -9,31 +9,14 @@ import (
 	"math/rand"
 	"net"
 
-	"encoding/json"
-
 	"github.com/anacrolix/dht/krpc"
 	"github.com/anacrolix/missinggo"
 	"github.com/ontio/ontology-eventbus/actor"
-	"github.com/saveio/scan/common"
 	pm "github.com/saveio/scan/messages/protoMessages"
 	"github.com/saveio/scan/storage"
 	Ccomon "github.com/saveio/themis/common"
 	"github.com/saveio/themis/common/log"
 )
-
-type peerInfo struct {
-	ID       common.PeerID
-	Complete bool
-	IP       [4]byte
-	Port     uint16
-	NodeAddr krpc.NodeAddr
-}
-
-type torrent struct {
-	Leechers int32
-	Seeders  int32
-	Peers    map[string]*peerInfo
-}
 
 type Server struct {
 	pc    net.PacketConn
@@ -121,19 +104,14 @@ func (s *Server) Accepted() (err error) {
 			log.Debugf("tracker.server.return len(InfoHash) == 0, err: %v\n", err)
 			return
 		}
-		//ip := make(net.IP, 4)
-		//binary.BigEndian.PutUint32(ip, ar.IPAddress)
-		nodeAddr := krpc.NodeAddr{
-			IP:   ar.IPAddress[:],
-			Port: int(ar.Port),
+
+		nodeAddr := krpc.NodeAddr{IP: ar.IPAddress[:], Port: int(ar.Port)}
+		pi, err := storage.TDB.GetTorrentPeerByFileHashAndNodeAddr(ar.InfoHash[:], nodeAddr.String())
+		log.Debugf("pi %v, err %v\n", pi, err)
+		if err != nil {
+			log.Debugf("tracker.server.ActionAnnounce pi: %v, nodeAddr: %s", pi, nodeAddr.String())
 		}
-		t := s.getTorrent(ar.InfoHash)
-		var pi *peerInfo
-		if t != nil {
-			log.Debugf("tracker.server.ActionAnnounce s.getTorrent: %v", t.Peers)
-			pi = t.Peers[nodeAddr.String()]
-		}
-		log.Debugf("tracker.server.ActionAnnounce pi: %v, nodeAddr: %s", pi, nodeAddr.String())
+
 		var announceErr error
 		switch ar.Event.String() {
 		case "started":
@@ -150,9 +128,9 @@ func (s *Server) Accepted() (err error) {
 			return s.respond(addr, ResponseHeader{TransactionId: h.TransactionId, Action: ActionAnnounce}, AnnounceResponseHeader{Interval: 800, Leechers: 0, Seeders: 0}, []byte{})
 		}
 		// update
-		t = s.getTorrent(ar.InfoHash)
-		if t == nil || t.Peers == nil {
-			err = s.respond(addr, ResponseHeader{
+		peers, leechers, seeders, err := storage.TDB.GetTorrentPeersByFileHash(ar.InfoHash[:], ar.NumWant)
+		if err != nil {
+			return s.respond(addr, ResponseHeader{
 				TransactionId: h.TransactionId,
 				Action:        ActionAnnounce,
 			}, AnnounceResponseHeader{
@@ -160,15 +138,11 @@ func (s *Server) Accepted() (err error) {
 				Leechers: 0,
 				Seeders:  0,
 			}, []byte{})
-			if err != nil {
-				log.Debugf("tracker.server.ActionAnnounce respond 2 not connected, err: %v\n", err)
-			}
-			return
 		}
 		bm := func() encoding.BinaryMarshaler {
 			ip := missinggo.AddrIP(addr)
 			pNodeAddrs := make([]krpc.NodeAddr, 0)
-			for _, pi := range t.Peers {
+			for _, pi := range peers {
 				if !pi.Complete {
 					continue
 				}
@@ -194,15 +168,15 @@ func (s *Server) Accepted() (err error) {
 		if err != nil {
 			panic(err)
 		}
-		err = s.respond(addr, ResponseHeader{
+
+		return s.respond(addr, ResponseHeader{
 			TransactionId: h.TransactionId,
 			Action:        ActionAnnounce,
 		}, AnnounceResponseHeader{
 			Interval: 900,
-			Leechers: t.Leechers,
-			Seeders:  t.Seeders,
+			Leechers: leechers,
+			Seeders:  seeders,
 		}, b)
-		return
 	case ActionReg:
 		log.Info("TrackerServer Accepted ActionReg")
 		if _, ok := s.conns[h.ConnectionId]; !ok {
@@ -342,131 +316,85 @@ func (s *Server) Accepted() (err error) {
 	}
 }
 
-func (s *Server) onAnnounceStarted(ar *AnnounceRequest, pi *peerInfo) error {
+func (s *Server) onAnnounceStarted(ar *AnnounceRequest, pi *storage.PeerInfo) error {
 	if pi != nil {
 		return s.onAnnounceUpdated(ar, pi)
 	}
 
-	peer := krpc.NodeAddr{
-		IP:   ar.IPAddress[:],
-		Port: int(ar.Port),
-	}
-
-	t := s.getTorrent(ar.InfoHash)
-	if t == nil {
-		t = &torrent{}
-	}
-
-	if ar.Left == 0 {
-		t.Seeders++
-	} else {
-		t.Leechers++
-	}
-	if t.Peers == nil {
-		t.Peers = make(map[string]*peerInfo, 0)
-	}
-
-	pi = &peerInfo{
-		ID:       ar.PeerId,
+	nodeAddr := krpc.NodeAddr{IP: ar.IPAddress[:], Port: int(ar.Port)}
+	pi = &storage.PeerInfo{
+		ID:       storage.PeerID(ar.PeerId),
 		Complete: ar.Left == 0,
 		IP:       ar.IPAddress,
 		Port:     ar.Port,
-		NodeAddr: peer,
+		NodeAddr: nodeAddr,
 	}
-
-	t.Peers[peer.String()] = pi
-	log.Debugf("tracker.server.onAnnounceStarted torrent.Peers: %v\n", t.Peers)
-	bt, err := json.Marshal(t)
-	if err != nil {
-		log.Fatalf("json Marshal error:%s", err)
-		return err
-	}
-	err = storage.TDB.Put(ar.InfoHash[:], bt)
+	err := storage.TDB.AddTorrentPeer(ar.InfoHash[:], ar.Left, nodeAddr.String(), pi)
+	bt, err := storage.TDB.GetTorrentBinary(ar.InfoHash[:])
 	s.p2p.Tell(&pm.Torrent{InfoHash: ar.InfoHash[:], Torrent: bt, Type: 0})
 	return err
 }
 
-func (s *Server) onAnnounceUpdated(ar *AnnounceRequest, pi *peerInfo) error {
+func (s *Server) onAnnounceUpdated(ar *AnnounceRequest, pi *storage.PeerInfo) error {
 	if pi == nil {
 		return s.onAnnounceStarted(ar, nil)
 	}
-	t := s.getTorrent(ar.InfoHash)
-	if t == nil {
-		return nil
-	}
-	if !pi.Complete && ar.Left == 0 {
-		t.Leechers -= 1
-		t.Seeders += 1
-		pi.Complete = true
-	}
-	t.Peers[pi.NodeAddr.String()] = pi
-	log.Debugf("tracker.server.onAnnounceUpdated torrent.Peers: %v\n", t.Peers)
-	bt, err := json.Marshal(t)
+
+	err := storage.TDB.AddTorrentPeer(ar.InfoHash[:], ar.Left, pi.NodeAddr.String(), pi)
 	if err != nil {
-		log.Fatalf("json Marshal error:%s", err)
 		return err
 	}
-	err = storage.TDB.Put(ar.InfoHash[:], bt)
+
+	bt, err := storage.TDB.GetTorrentBinary(ar.InfoHash[:])
+	if err != nil {
+		return err
+	}
+
 	s.p2p.Tell(&pm.Torrent{InfoHash: ar.InfoHash[:], Torrent: bt, Type: 0})
 	return err
 }
 
-func (s *Server) onAnnounceStopped(ar *AnnounceRequest, pi *peerInfo) error {
+func (s *Server) onAnnounceStopped(ar *AnnounceRequest, pi *storage.PeerInfo) error {
 	if pi == nil {
 		return nil
 	}
-	t := s.getTorrent(ar.InfoHash)
-	if t == nil {
-		return nil
-	}
-	if pi.Complete {
-		t.Seeders -= 1
-	} else {
-		t.Leechers -= 1
-	}
-	delete(t.Peers, pi.NodeAddr.String())
-	bt, err := json.Marshal(t)
+
+	err := storage.TDB.DelTorrentPeer(ar.InfoHash[:], pi)
 	if err != nil {
-		log.Fatalf("json Marshal error:%s", err)
+		return err
 	}
-	err = storage.TDB.Put(ar.InfoHash[:], bt)
+	bt, err := storage.TDB.GetTorrentBinary(ar.InfoHash[:])
+	if err != nil {
+		return err
+	}
 	s.p2p.Tell(&pm.Torrent{InfoHash: ar.InfoHash[:], Torrent: bt, Type: 0})
 	return err
 }
 
-func (s *Server) onAnnounceCompleted(ar *AnnounceRequest, pi *peerInfo) error {
+func (s *Server) onAnnounceCompleted(ar *AnnounceRequest, pi *storage.PeerInfo) error {
 	if pi == nil {
 		return s.onAnnounceStarted(ar, nil)
 	}
 	if pi.Complete {
 		return s.onAnnounceUpdated(ar, pi)
 	}
-	t := s.getTorrent(ar.InfoHash)
+	t, err := storage.TDB.GetTorrent(ar.InfoHash[:])
+	if err != nil {
+		return err
+	}
 	t.Seeders += 1
 	t.Leechers -= 1
 	pi.Complete = true
 	t.Peers[pi.NodeAddr.String()] = pi
-	bt, err := json.Marshal(t)
+	storage.TDB.PutTorrent(ar.InfoHash[:], t)
+	bt, err := storage.TDB.GetTorrentBinary(ar.InfoHash[:])
 	if err != nil {
-		log.Fatalf("json Marshal error:%s", err)
 		return err
 	}
-	err = storage.TDB.Put(ar.InfoHash[:], bt)
 	s.p2p.Tell(&pm.Torrent{InfoHash: ar.InfoHash[:], Torrent: bt, Type: 0})
 	return err
 }
 
-func (s *Server) getTorrent(infoHash common.MetaInfoHash) *torrent {
-	var t torrent
-	v, err := storage.TDB.Get(infoHash[:])
-	json.Unmarshal(v, &t)
-	// log.Debugf("tracker.server.getTorrent: %v, %s\n", t, string(infoHash[:]))
-	if v == nil || err != nil {
-		return nil
-	} else {
-		return &t
-	}
-}
 func marshal(parts ...interface{}) (ret []byte, err error) {
 	var buf bytes.Buffer
 	for _, p := range parts {

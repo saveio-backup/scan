@@ -13,7 +13,7 @@ import (
 )
 
 //global variable TDB
-var TDB *LevelDBStore
+var DB *LevelDBStore
 
 //LevelDB store
 type LevelDBStore struct {

@@ -1,7 +1,6 @@
 package tracker
 
 import (
-	"encoding/json"
 	"fmt"
 	"net"
 	"strconv"
@@ -16,29 +15,13 @@ import (
 )
 
 // ---------Local DDNS client relative action------------
-func CheckTorrent(fileHash string) ([]Peer, error) {
+func CheckTorrent(fileHash string) ([]*storage.PeerInfo, error) {
 	if len(fileHash) != 46 {
 		return nil, errors.NewErr(fmt.Sprintf("invalid fileHash len is %d, not 46", len(fileHash)))
 	}
 
-	v, err := storage.TDB.Get([]byte(fileHash))
-	log.Infof("tracker.server.getTorrent: isNil %v, err %v", v == nil, err)
-	if v == nil || err != nil {
-		return []Peer{}, err
-	}
-
-	var t torrent
-	json.Unmarshal(v, &t)
-	log.Infof("tracker.server.getTorrent: %v", t)
-
-	var peers []Peer
-	for _, p := range t.Peers {
-		peers = append(peers, Peer{
-			IP:   p.IP[:],
-			Port: int(p.Port),
-		})
-	}
-	return peers, nil
+	torrentPeers, _, _, err := storage.TDB.GetTorrentPeersByFileHash([]byte(fileHash), -1)
+	return torrentPeers, err
 }
 
 //local endPointReg

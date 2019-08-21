@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"sync"
 
 	"github.com/anacrolix/dht/krpc"
 	"github.com/syndtr/goleveldb/leveldb"
@@ -18,8 +17,7 @@ const (
 )
 
 type EndpointDB struct {
-	db   *LevelDBStore
-	lock sync.RWMutex
+	Db *LevelDBStore
 }
 
 type Endpoint struct {
@@ -29,18 +27,15 @@ type Endpoint struct {
 
 func NewEndpointDB(db *LevelDBStore) *EndpointDB {
 	return &EndpointDB{
-		db: db,
+		Db: db,
 	}
 }
 
 func (this *EndpointDB) Close() error {
-	return this.db.Close()
+	return this.Db.Close()
 }
 
 func (this *EndpointDB) PutEndpoint(walletAddr string, host net.IP, port int) error {
-	this.lock.Lock()
-	defer this.lock.Unlock()
-
 	if host == nil || port < 0 || port > 65535 {
 		return errors.New(fmt.Sprintf("invalid address format %s:%d", string(host), port))
 	}
@@ -57,14 +52,11 @@ func (this *EndpointDB) PutEndpoint(walletAddr string, host net.IP, port int) er
 	if err != nil {
 		return err
 	}
-	return this.db.Put(key, buf)
+	return this.Db.Put(key, buf)
 }
 
 func (this *EndpointDB) GetEndpoint(walletAddr string) (*Endpoint, error) {
-	this.lock.RLock()
-	defer this.lock.RUnlock()
-
-	value, err := this.db.Get([]byte(EP_WALLET_ADDR_KEY_PREFIX + walletAddr))
+	value, err := this.Db.Get([]byte(EP_WALLET_ADDR_KEY_PREFIX + walletAddr))
 	if err != nil && err != leveldb.ErrNotFound {
 		return nil, err
 	}
@@ -81,5 +73,5 @@ func (this *EndpointDB) GetEndpoint(walletAddr string) (*Endpoint, error) {
 }
 
 func (this *EndpointDB) DelEndpoint(walletAddr string) error {
-	return this.db.Delete([]byte(EP_WALLET_ADDR_KEY_PREFIX + walletAddr))
+	return this.Db.Delete([]byte(EP_WALLET_ADDR_KEY_PREFIX + walletAddr))
 }
