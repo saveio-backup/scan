@@ -17,13 +17,15 @@ import (
 	"github.com/saveio/dsp-go-sdk/network/common"
 	"github.com/saveio/themis/common/log"
 
-	"github.com/saveio/pylons/common/constants"
-
 	//"github.com/golang/protobuf/proto"
 	"github.com/gogo/protobuf/proto"
 	"github.com/ontio/ontology-eventbus/actor"
 	"github.com/saveio/scan/common/config"
 	pm "github.com/saveio/scan/messages/protoMessages"
+)
+
+const (
+	REQ_TIMEOUT = 15
 )
 
 var DnsP2p *Network
@@ -391,7 +393,7 @@ func (this *Network) Receive(message proto.Message, from string) error {
 func (this *Network) OnBusinessMessage(message proto.Message, from string) error {
 	log.Debugf("[OnBusinessMessage] receive message from peer:%s", from)
 	future := this.GetPID().RequestFuture(message,
-		constants.REQ_TIMEOUT*time.Second)
+		REQ_TIMEOUT*time.Second)
 	if _, err := future.Result(); err != nil {
 		log.Error("[OnBusinessMessage] error: ", err)
 		return err

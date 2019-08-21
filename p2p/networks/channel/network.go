@@ -18,7 +18,6 @@ import (
 	act "github.com/saveio/pylons/actor/server"
 	"github.com/saveio/themis/common/log"
 
-	"github.com/saveio/pylons/common/constants"
 	"github.com/saveio/pylons/network/transport/messages"
 
 	//"github.com/golang/protobuf/proto"
@@ -413,17 +412,6 @@ func (this *Network) Receive(message proto.Message, from string) error {
 		act.OnBusinessMessage(message, from)
 	default:
 		// log.Errorf("[MSB Receive] unknown message type:%s", msg.String())
-	}
-	return nil
-}
-
-func (this *Network) OnBusinessMessage(message proto.Message, from string) error {
-	log.Debugf("[OnBusinessMessage] receive message from peer:%s", from)
-	future := this.GetPID().RequestFuture(message,
-		constants.REQ_TIMEOUT*time.Second)
-	if _, err := future.Result(); err != nil {
-		log.Error("[OnBusinessMessage] error: ", err)
-		return err
 	}
 	return nil
 }
