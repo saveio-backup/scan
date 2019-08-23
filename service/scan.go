@@ -4,13 +4,11 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net"
-	"os"
 	"strings"
 	"time"
 
 	"github.com/saveio/carrier/crypto"
 	"github.com/saveio/carrier/crypto/ed25519"
-	"github.com/saveio/themis-go-sdk/wallet"
 
 	"github.com/saveio/dsp-go-sdk/channel"
 	dspCfg "github.com/saveio/dsp-go-sdk/config"
@@ -41,26 +39,9 @@ type Node struct {
 	PublicIp string
 }
 
-func Init(walletDir, pwd string) (*Node, error) {
+func Init(acc *account.Account) (*Node, error) {
 	this := &Node{}
-	log.Debugf("walletDir: %s, %d", walletDir, len(walletDir))
-	if len(walletDir) == 0 {
-		return this, nil
-	}
-	_, err := os.Open(walletDir)
-	if err != nil {
-		return this, nil
-	}
-	wallet, err := wallet.OpenWallet(walletDir)
-	if err != nil {
-		log.Error("Scan open wallet Error, msg:", err)
-		return nil, err
-	}
-	this.Account, err = wallet.GetDefaultAccount([]byte(pwd))
-	if err != nil {
-		log.Error("Scan get default account Error, msg:", err)
-		return nil, err
-	}
+	this.Account = acc
 	config.SetCurrentUserWalletAddress(this.Account.Address.ToBase58())
 	ScanNode = this
 	return this, nil
@@ -220,8 +201,8 @@ func (this *Node) autoRegisterDns() error {
 		return err
 	}
 	balance, err := this.Chain.Native.Usdt.BalanceOf(this.Account.Address)
-	if err != nil || balance < config.Parameters.Base.InitDeposit {
-		log.Fatal("get dns balance: %s, initdeposit: %s, needs err: %v", cutils.FormatUsdt(balance), cutils.FormatUsdt(config.Parameters.Base.InitDeposit), err)
+	if err != nil || balance < config.Parameters.Base.DnsGovernDeposit {
+		log.Fatal("get dns balance: %s, governdeposit: %s, needs err: %v", cutils.FormatUsdt(balance), cutils.FormatUsdt(config.Parameters.Base.DnsGovernDeposit), err)
 	}
 	ownNode, err := this.GetDnsNodeByAddr(this.Account.Address)
 	if err != nil {
@@ -229,7 +210,7 @@ func (this *Node) autoRegisterDns() error {
 	} else if ownNode != nil {
 		_, err = this.DNSNodeUpdate(host, port)
 	} else {
-		_, err = this.DNSNodeReg(host, port, config.Parameters.Base.InitDeposit)
+		_, err = this.DNSNodeReg(host, port, config.Parameters.Base.DnsGovernDeposit)
 	}
 
 	if err != nil {
@@ -274,8 +255,8 @@ func (this *Node) AutoSetupDNSChannelsWorking() error {
 		log.Debugf("channel connected %s %s", walletAddr, err)
 		bal, _ := this.Channel.GetAvailableBalance(walletAddr)
 		log.Debugf("current balance %d", bal)
-		log.Infof("connect to dns node :%s, deposit %d", dnsUrl, config.Parameters.Base.ChannelDeposit)
-		err = this.Channel.SetDeposit(walletAddr, config.Parameters.Base.ChannelDeposit)
+		log.Infof("connect to dns node :%s, deposit %d", dnsUrl, config.Parameters.Base.DnsChannelDeposit)
+		err = this.Channel.SetDeposit(walletAddr, config.Parameters.Base.DnsChannelDeposit)
 		if err != nil && strings.Index(err.Error(), "totalDeposit must big than contractBalance") == -1 {
 			log.Debugf("deposit result %s", err)
 			// TODO: withdraw and close channel

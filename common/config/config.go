@@ -10,6 +10,7 @@ import (
 
 	"github.com/saveio/edge/common"
 	"github.com/saveio/scan/cmd/flags"
+	chainFlags "github.com/saveio/themis/cmd/utils"
 	"github.com/saveio/themis/common/log"
 	"github.com/urfave/cli"
 	//"os"
@@ -81,9 +82,11 @@ type BaseConfig struct {
 	ChannelRevealTimeout string `json:"ChannelRevealTimeout"`
 	ChannelSettleTimeout string `json:"ChannelSettleTimeout"`
 
-	DnsNetworkId  uint32 `json:"DnsNetworkId"`
-	DnsProtocol   string `json:"DnsProtocol"`
-	DnsPortOffset uint   `json:"DnsPortOffset"`
+	DnsNetworkId      uint32 `json:"DnsNetworkId"`
+	DnsProtocol       string `json:"DnsProtocol"`
+	DnsPortOffset     uint   `json:"DnsPortOffset"`
+	DnsGovernDeposit  uint64 `json:"DnsGovernDeposit"`
+	DnsChannelDeposit uint64 `json:"DnsChannelDeposit"`
 
 	TrackerPortOffset        uint     `json:"TrackerPortOffset"`
 	TrackerFee               int      `json:"TrackerFee`
@@ -96,13 +99,10 @@ type BaseConfig struct {
 
 	DBPath string `json:"DBPath"`
 
-	DnsNodeMaxNum              int      `json:"DnsNodeMaxNum"`
-	SeedInterval               int      `json:"SeedInterval"`
-	DnsChannelDeposit          uint64   `json:"DnsChannelDeposit"`
 	AutoSetupDNSRegisterEnable bool     `json:"AutoSetupDNSRegisterEnable"`
 	AutoSetupDNSChannelsEnable bool     `json:"AutoSetupDNSChannelsEnable"`
-	InitDeposit                uint64   `json:"InitDeposit"`
-	ChannelDeposit             uint64   `json:"ChannelDeposit"`
+	DnsNodeMaxNum              int      `json:"DnsNodeMaxNum"`
+	SeedInterval               int      `json:"SeedInterval"`
 	Fee                        uint64   `json:"Fee"`
 	IgnoreConnectDNSAddrs      []string `json:"IgnoreConnectDNSAddrs"`
 
@@ -178,6 +178,9 @@ func setConfigByCommandParams(scanConfig *ScanConfig, ctx *cli.Context) {
 	if ctx.GlobalIsSet(flags.GetFlagName(flags.LogLevelFlag)) {
 		scanConfig.Base.LogLevel = ctx.Uint(flags.GetFlagName(flags.LogLevelFlag))
 	}
+	if ctx.GlobalIsSet(flags.GetFlagName(chainFlags.AccountPassFlag)) {
+		scanConfig.Base.WalletPwd = ctx.String(chainFlags.GetFlagName(chainFlags.AccountPassFlag))
+	}
 }
 
 func SetScanConfig(ctx *cli.Context) {
@@ -186,17 +189,27 @@ func SetScanConfig(ctx *cli.Context) {
 
 func Init(ctx *cli.Context) {
 	if ctx.GlobalIsSet(flags.GetFlagName(flags.ScanConfigFlag)) {
-		configDir = ctx.String(flags.GetFlagName(flags.ScanConfigFlag)) + DEFAULT_CONFIG_FILE
+		scanConfigStr := ctx.String(flags.GetFlagName(flags.ScanConfigFlag))
+		f, err := os.Stat(scanConfigStr)
+		if err != nil {
+			log.Fatalf(fmt.Sprintf("scan config not found, %v\n", err))
+		}
+		if f.IsDir() {
+			configDir = scanConfigStr + DEFAULT_CONFIG_FILE
+		} else {
+			configDir = scanConfigStr
+		}
 	} else {
 		configDir = "." + DEFAULT_CONFIG_FILE
 	}
-	log.Infof("scan config path %s\n", configDir)
+	log.Infof("scan config path %s", configDir)
 	existed := common.FileExisted(configDir)
 	if !existed {
 		log.Infof("config file is not exist: %s, use default config", configDir)
 		return
 	}
 	GetJsonObjectFromFile(configDir, Parameters)
+	SetScanConfig(ctx)
 }
 
 func Save() error {

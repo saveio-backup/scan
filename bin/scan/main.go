@@ -7,29 +7,27 @@ import (
 	"runtime"
 	"runtime/pprof"
 	"syscall"
-
-	"github.com/saveio/scan/service"
-
-	chaincmd "github.com/saveio/themis/cmd"
-	chainutils "github.com/saveio/themis/cmd/utils"
-	"github.com/saveio/themis/common/log"
-
-	"github.com/saveio/scan/cmd"
-	chain "github.com/saveio/themis/start"
-
-	//ccom "github.com/saveio/scan/cmd/common"
 	"time"
 
+	"github.com/saveio/edge/common"
+	"github.com/saveio/scan/cmd"
 	"github.com/saveio/scan/cmd/flags"
 	"github.com/saveio/scan/common/config"
 	"github.com/saveio/scan/http/jsonrpc"
 	"github.com/saveio/scan/http/localrpc"
 	"github.com/saveio/scan/http/restful"
+	"github.com/saveio/scan/service"
 	"github.com/saveio/scan/storage"
+
+	"github.com/saveio/themis/account"
+	chaincmd "github.com/saveio/themis/cmd"
+	chaincomm "github.com/saveio/themis/cmd/common"
+	"github.com/saveio/themis/cmd/utils"
+	chainutils "github.com/saveio/themis/cmd/utils"
+	"github.com/saveio/themis/common/log"
+	chain "github.com/saveio/themis/start"
+
 	"github.com/urfave/cli"
-	//"github.com/saveio/themis-go-sdk/wallet"
-	//"github.com/saveio/themis-go-sdk/wallet"
-	//"github.com/saveio/scan/tracker"
 )
 
 func initAPP() *cli.App {
@@ -93,6 +91,7 @@ func initAPP() *cli.App {
 		//Restful setting
 		//flags.RestfulEnableFlag,
 		//flags.RestfulPortFlag,
+
 		//common setting
 		chainutils.ConfigFlag,
 		chainutils.DisableEventLogFlag,
@@ -154,20 +153,18 @@ func main() {
 }
 
 func start(ctx *cli.Context) {
-	fmt.Print("\n")
-	_, err := chain.InitConfig(ctx)
+	cmd.InitLog(ctx)
+
+	acc, err := getDefaultAccount(ctx)
 	if err != nil {
-		log.Errorf("startChain initConfig error:%s", err)
-		return
+		log.Fatal(err)
 	}
-	config.Init(ctx)
-	config.SetScanConfig(ctx)
-	if config.Parameters.Base.DisableChain == false {
+	if !config.Parameters.Base.DisableChain {
 		logwithsideline("CHAIN STARTING")
 		startChain(ctx)
 	}
 	logwithsideline("SCAN STARTING")
-	startScan(ctx)
+	startScan(ctx, acc)
 	logwithsideline("SETUP DOWN, ENJOY!!!")
 	if config.Parameters.Base.DumpMemory == true {
 		go dumpMemory()
@@ -176,9 +173,15 @@ func start(ctx *cli.Context) {
 }
 
 func startChain(ctx *cli.Context) {
+	_, err := chain.InitConfig(ctx)
+	if err != nil {
+		log.Errorf("startChain initConfig error:%s", err)
+		return
+	}
+
 	acc, err := chain.InitAccount(ctx)
 	if err != nil {
-		log.Errorf("startChain initWallet error:%s", err)
+		log.Errorf("startChain InitAccount error:%s", err)
 		return
 	}
 	_, err = chain.InitLedger(ctx)
@@ -220,12 +223,9 @@ func startChain(ctx *cli.Context) {
 	log.Info("Chain started SUCCESS")
 }
 
-func startScan(ctx *cli.Context) {
-	//init log module
-	cmd.SetLogConfig(ctx)
-	log.Info("start logging...")
-
-	service.Init(config.Parameters.Base.WalletDir, config.Parameters.Base.WalletPwd)
+func startScan(ctx *cli.Context, acc *account.Account) {
+	config.Init(ctx)
+	service.Init(acc)
 
 	edb, err := storage.NewLevelDBStore(config.EndpointDBPath())
 	if err != nil {
@@ -270,6 +270,23 @@ func startScan(ctx *cli.Context) {
 	if config.Parameters.Base.AutoSetupDNSChannelsEnable {
 		go service.ScanNode.AutoSetupDNSChannelsWorking()
 	}
+}
+
+func getDefaultAccount(ctx *cli.Context) (*account.Account, error) {
+	walletFile := ctx.GlobalString(utils.GetFlagName(utils.WalletFileFlag))
+	if walletFile == "" {
+		return nil, fmt.Errorf("Please config wallet file using --wallet flag")
+	}
+	if !common.FileExisted(walletFile) {
+		return nil, fmt.Errorf("Cannot find wallet file:%s. Please create wallet first", walletFile)
+	}
+
+	acc, err := chaincomm.GetAccount(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("get account error:%s", err)
+	}
+	fmt.Printf("\nUsing account: %s\n", acc.Address.ToBase58())
+	return acc, nil
 }
 
 func initRpc(ctx *cli.Context) error {

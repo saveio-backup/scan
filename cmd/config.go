@@ -12,7 +12,7 @@ import (
 
 ///////////////////////set channel service config by cli///////////////////////
 
-func SetLogConfig(ctx *cli.Context) {
+func InitLog(ctx *cli.Context) {
 	if ctx.Bool(flags.GetFlagName(flags.LogStderrFlag)) {
 		logLevel := ctx.GlobalInt(flags.GetFlagName(flags.LogLevelFlag))
 		log.InitLog(logLevel, log.Stdout)
@@ -23,7 +23,6 @@ func SetLogConfig(ctx *cli.Context) {
 	}
 	//log.SetLevel(ctx.GlobalUint(cmd.GetFlagName(cmd.LogLevelFlag))) //TODO
 	//log.SetMaxSize(config.DEFAULT_MAX_LOG_SIZE) //TODO
-
 }
 
 func SetRpcPort(ctx *cli.Context) {

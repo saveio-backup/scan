@@ -47,7 +47,6 @@ func (this *EndpointDB) PutEndpoint(walletAddr string, host net.IP, port int) er
 		},
 	}
 	key := []byte(EP_WALLET_ADDR_KEY_PREFIX + ep.WalletAddr)
-	fmt.Println(ep.NodeAddr.IP)
 	buf, err := json.Marshal(ep)
 	if err != nil {
 		return err
