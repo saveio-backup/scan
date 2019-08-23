@@ -7,15 +7,15 @@ import (
 	"net"
 
 	"github.com/anacrolix/dht/krpc"
-	"github.com/saveio/scan/common"
+	"github.com/saveio/scan/storage"
 	themisComm "github.com/saveio/themis/common"
 	"github.com/saveio/themis/common/log"
 	"github.com/saveio/themis/crypto/keypair"
 )
 
 // CompleteTorrent Complete make torrent
-func CompleteTorrent(infoHash common.MetaInfoHash, trackerUrl string, nodeIP net.IP, port uint16) error {
-	id := common.PeerID{}
+func CompleteTorrent(infoHash storage.MetaInfoHash, trackerUrl string, nodeIP net.IP, port uint16) error {
+	id := storage.PeerID{}
 	rand.Read(id[:])
 
 	announce := Announce{
@@ -46,8 +46,8 @@ func CompleteTorrent(infoHash common.MetaInfoHash, trackerUrl string, nodeIP net
 }
 
 // GetTorrentPeers get peers of torrent
-func GetTorrentPeers(infoHash common.MetaInfoHash, trackerUrl string, numWant int32, left uint64) []Peer {
-	id := common.PeerID{}
+func GetTorrentPeers(infoHash storage.MetaInfoHash, trackerUrl string, numWant int32, left uint64) []Peer {
+	id := storage.PeerID{}
 	rand.Read(id[:])
 	announce := Announce{
 		TrackerUrl: trackerUrl,
@@ -72,7 +72,7 @@ func GetTorrentPeers(infoHash common.MetaInfoHash, trackerUrl string, numWant in
 // ---------Tracker client relative action------------
 func RegEndPoint(trackerUrl string, sigData []byte, pubKey keypair.PublicKey, walletAddr [20]byte, nodeIP net.IP, port uint16) error {
 	log.Debugf("RegEndPoint Params: trackerUrl: %s, sigData: %v, pubKey: %v, WalletAddr: %v, nodeIP: %v, Port: %d", trackerUrl, sigData, pubKey, walletAddr, nodeIP, port)
-	id := common.PeerID{}
+	id := storage.PeerID{}
 	rand.Read(id[:])
 	announce := Announce{
 		TrackerUrl: trackerUrl,
@@ -99,7 +99,7 @@ func RegEndPoint(trackerUrl string, sigData []byte, pubKey keypair.PublicKey, wa
 }
 
 func UnRegEndPoint(trackerUrl string, walletAddr [20]byte) error {
-	id := common.PeerID{}
+	id := storage.PeerID{}
 	rand.Read(id[:])
 	announce := Announce{
 		TrackerUrl: trackerUrl,
@@ -123,7 +123,7 @@ func UnRegEndPoint(trackerUrl string, walletAddr [20]byte) error {
 }
 
 func ReqEndPoint(trackerUrl string, walletAddr [20]byte) (string, error) {
-	id := common.PeerID{}
+	id := storage.PeerID{}
 	rand.Read(id[:])
 	announce := Announce{
 		TrackerUrl: trackerUrl,
@@ -152,7 +152,7 @@ func ReqEndPoint(trackerUrl string, walletAddr [20]byte) (string, error) {
 }
 
 func RegNodeType(trackerUrl string, walletAddr [20]byte, nodeIP net.IP, port uint16, nodeType NodeType) error {
-	id := common.PeerID{}
+	id := storage.PeerID{}
 	rand.Read(id[:])
 	announce := Announce{
 		TrackerUrl: trackerUrl,
@@ -179,7 +179,7 @@ func RegNodeType(trackerUrl string, walletAddr [20]byte, nodeIP net.IP, port uin
 }
 
 func GetNodesByType(trackerUrl string, nodeType NodeType) (*NodesInfoSt, error) {
-	id := common.PeerID{}
+	id := storage.PeerID{}
 	rand.Read(id[:])
 	announce := Announce{
 		TrackerUrl: trackerUrl,

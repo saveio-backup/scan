@@ -17,6 +17,7 @@ const (
 	DEFAULT_NUMWANT_TO_GET_ALL_PEERS = -1
 )
 
+type MetaInfoHash [46]byte
 type PeerID [20]byte
 
 type TorrentDB struct {

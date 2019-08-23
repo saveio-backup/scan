@@ -1,7 +1,8 @@
 GOFMT=gofmt
 GC=go build
-VERSION := $(shell git describe --abbrev=4 --always --tags)
-BUILD_SCAN_PAR = -ldflags "-X github.com/saveio/scan/config/config.VERSION=$(VERSION)"
+# VERSION := $(shell git describe --abbrev=4 --always --tags)
+VERSION := $(shell git tag -l --sort=-v:refname | grep v1.0. | head -1)
+BUILD_SCAN_PAR = -ldflags "-X github.com/saveio/scan/common/config.VERSION=$(VERSION)"
 
 SRC_FILES = $(shell git ls-files | grep -e .go$ | grep -v _test.go)
 

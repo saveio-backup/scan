@@ -67,21 +67,6 @@ func (this *Node) StartChannelService() error {
 	return nil
 }
 
-// GetExternalIP. get external ip of wallet from dns nodes
-// func GetExternalIP(walletAddr string) (string, error) {
-// 	w, _ := common.WHPTobyte(walletAddr, "")
-// 	hpBytes, err := storage.TDB.Get(w)
-// 	if err != nil {
-// 		return "", err
-// 	} else {
-// 		var nodeAddr krpc.NodeAddr
-// 		log.Infof("Channel.GetExternalIP wallAddr: %v, hpBytes: %v", walletAddr, hpBytes)
-// 		nodeAddr.UnmarshalBinary(hpBytes)
-// 		log.Infof("Channel.GetExternalIP nodeAddr: %s:%d", nodeAddr.IP, nodeAddr.Port)
-// 		return fmt.Sprintf("%s://%s:%d", config.Parameters.Base.ChannelProtocol, nodeAddr.IP, nodeAddr.Port), nil
-// 	}
-// }
-
 func GetExternalIP(walletAddr string) (string, error) {
 	log.Debugf("channel get hostinfo call %s", walletAddr)
 	nodeAddr, err := storage.EDB.GetEndpoint(walletAddr)

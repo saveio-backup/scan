@@ -3,8 +3,10 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/signal"
 	"runtime"
 	"runtime/pprof"
+	"syscall"
 
 	"github.com/saveio/scan/service"
 
@@ -19,7 +21,6 @@ import (
 	"time"
 
 	"github.com/saveio/scan/cmd/flags"
-	"github.com/saveio/scan/common"
 	"github.com/saveio/scan/common/config"
 	"github.com/saveio/scan/http/jsonrpc"
 	"github.com/saveio/scan/http/localrpc"
@@ -171,7 +172,7 @@ func start(ctx *cli.Context) {
 	if config.Parameters.Base.DumpMemory == true {
 		go dumpMemory()
 	}
-	common.WaitToExit()
+	WaitToExit()
 }
 
 func startChain(ctx *cli.Context) {
@@ -333,6 +334,20 @@ func logwithsideline(msg string) {
 	fmt.Println(line)
 	fmt.Printf("/> %s\n", msg)
 	fmt.Println(line)
+}
+
+func WaitToExit() {
+	exit := make(chan bool, 0)
+	sc := make(chan os.Signal, 1)
+	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
+	go func() {
+		for sig := range sc {
+			log.Infof("seeds received exit signal:%v.", sig.String())
+			close(exit)
+			break
+		}
+	}()
+	<-exit
 }
 
 func dumpMemory() {

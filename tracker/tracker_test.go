@@ -5,7 +5,7 @@ import (
 	"net"
 	"testing"
 
-	"github.com/saveio/scan/common"
+	"github.com/saveio/scan/storage"
 	chainComm "github.com/saveio/themis/common"
 	"github.com/saveio/themis/common/log"
 )
@@ -19,7 +19,7 @@ func TestUnsupportedTrackerScheme(t *testing.T) {
 
 func TestTorrentComplete(t *testing.T) {
 	// args: infoHash, trackerUrl
-	infoHash := common.MetaInfoHash{}
+	infoHash := storage.MetaInfoHash{}
 	// copy(infoHash[:], []uint8{0xa3, 0x56, 0x41, 0x43, 0x74, 0x23, 0xe6, 0x26, 0xd9, 0x38, 0x25, 0x4a, 0x6b, 0x80, 0x49, 0x10, 0xa6, 0x67, 0xa, 0xc1})
 	ids := "QmaRDZPe3QdnvCaUPUafk3EUMkWfsc4mtTosTDQQ9m4Ddc"
 	idsBytes := []byte(ids)
@@ -31,11 +31,11 @@ func TestTorrentComplete(t *testing.T) {
 }
 
 func TestGetTorrentPeers(t *testing.T) {
-	infoHash := common.MetaInfoHash{}
+	infoHash := storage.MetaInfoHash{}
 	// copy(infoHash[:], []uint8{0xa3, 0x56, 0x41, 0x43, 0x74, 0x23, 0xe6, 0x26, 0xd9, 0x38, 0x25, 0x4a, 0x6b, 0x80, 0x49, 0x10, 0xa6, 0x67, 0xa, 0xc1})
 	// fmt.Println(string(infoHash[:]))
 	// ids := "zb2rhmFsUmnSMrZodXs9vjjZePJPdxjVjXzbNRQNXpahe4"
-	ids := "QmaRDZPe3QdnvCaUPUafk3EUMkWfsc4mtTosTDQQ9m4Ddc"
+	ids := "QmTrKW3x3Wmin1iAxdLQ8VTdCLY6uk2MLuFVYu7JHJSRdz"
 	idsBytes := []byte(ids)
 	copy(infoHash[:], idsBytes)
 	// ids := "zb2rhmiu2V1kTDk5SRRo2F7b5WAivNDzQeDq7Qm3RNVndh5Gz"
@@ -45,8 +45,9 @@ func TestGetTorrentPeers(t *testing.T) {
 	// idStr, err := cid.Parse(id.Bytes())
 	// fmt.Printf("%s, %+v\n", idStr, err)
 
-	url := "udp://localhost:6369/announce"
-	peers := GetTorrentPeers(infoHash, url, -1, 1)
+	// url := "udp://localhost:6369/announce"
+	var trackerUrlOnline = "udp://40.73.102.177:6369/announce"
+	peers := GetTorrentPeers(infoHash, trackerUrlOnline, -1, 1)
 	fmt.Printf("peers:%v\n", peers)
 }
 
