@@ -1,21 +1,20 @@
-package netserver
+package tracker
 
 import (
 	"fmt"
 	"net"
 
 	"github.com/saveio/scan/common/config"
-	"github.com/saveio/scan/tracker"
 	"github.com/saveio/themis/common/log"
 )
 
 type TKServer struct {
-	Tsvr *tracker.Server
+	Tsvr *Server
 }
 
 func NewTKServer() *TKServer {
 	return &TKServer{
-		Tsvr: tracker.NewServer(),
+		Tsvr: NewServer(),
 	}
 }
 

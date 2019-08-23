@@ -13,11 +13,11 @@ import (
 	"github.com/saveio/dsp-go-sdk/channel"
 	dspCfg "github.com/saveio/dsp-go-sdk/config"
 	"github.com/saveio/scan/common/config"
-	"github.com/saveio/scan/netserver"
 	ch_actor_server "github.com/saveio/scan/p2p/actor/channel/server"
 	dns_actor_server "github.com/saveio/scan/p2p/actor/dns/server"
 	channel_net "github.com/saveio/scan/p2p/networks/channel"
 	dns_net "github.com/saveio/scan/p2p/networks/dns"
+	"github.com/saveio/scan/tracker"
 	themisSdk "github.com/saveio/themis-go-sdk"
 	"github.com/saveio/themis/account"
 	cutils "github.com/saveio/themis/cmd/utils"
@@ -154,7 +154,7 @@ func (this *Node) SetupDnsNetwork() error {
 }
 
 func (this *Node) StartTrackerService() error {
-	tkSvr := netserver.NewTKServer()
+	tkSvr := tracker.NewTKServer()
 	tkSvr.Tsvr.SetPID(this.DnsNet.GetPID())
 	go tkSvr.StartTrackerListening()
 	log.Info("start tracker service success")
