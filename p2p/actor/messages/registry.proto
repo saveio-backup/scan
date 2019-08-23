@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package protoMessages;
+package messages;
 
 message Registry {
     string walletAddr = 1;

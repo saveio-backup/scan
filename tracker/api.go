@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	pm "github.com/saveio/scan/messages/protoMessages"
+	pm "github.com/saveio/scan/p2p/actor/messages"
 	network "github.com/saveio/scan/p2p/networks/dns"
 	"github.com/saveio/scan/storage"
 

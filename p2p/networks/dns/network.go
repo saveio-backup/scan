@@ -21,7 +21,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/ontio/ontology-eventbus/actor"
 	"github.com/saveio/scan/common/config"
-	pm "github.com/saveio/scan/messages/protoMessages"
+	pm "github.com/saveio/scan/p2p/actor/messages"
 )
 
 const (

@@ -13,8 +13,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/ontio/ontology-eventbus/actor"
 	p2pNet "github.com/saveio/carrier/network"
-	pm "github.com/saveio/scan/messages/protoMessages"
-	"github.com/saveio/scan/p2p/actor/messages"
+	pm "github.com/saveio/scan/p2p/actor/messages"
 	network "github.com/saveio/scan/p2p/networks/dns"
 	"github.com/saveio/themis/common/log"
 )
@@ -135,7 +134,7 @@ func (this *P2PActor) Receive(ctx actor.Context) {
 		} else {
 			log.Errorf("No NEED BROADCAST, hpBytes: %s, v: %s", hpBytes, msg.Torrent)
 		}
-	case *messages.UserDefineMsg:
+	case *pm.UserDefineMsg:
 		t := reflect.TypeOf(msg)
 		this.msgHandlers[t.Name()](msg, this.localPID)
 	default:

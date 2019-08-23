@@ -242,7 +242,6 @@ func startScan(ctx *cli.Context, acc *account.Account) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	storage.TDB = storage.NewTorrentDB(tdb)
 
 	if err != nil {

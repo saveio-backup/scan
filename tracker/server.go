@@ -12,7 +12,7 @@ import (
 	"github.com/anacrolix/dht/krpc"
 	"github.com/anacrolix/missinggo"
 	"github.com/ontio/ontology-eventbus/actor"
-	pm "github.com/saveio/scan/messages/protoMessages"
+	pm "github.com/saveio/scan/p2p/actor/messages"
 	"github.com/saveio/scan/storage"
 	Ccomon "github.com/saveio/themis/common"
 	"github.com/saveio/themis/common/log"
