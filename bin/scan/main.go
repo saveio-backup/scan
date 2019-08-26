@@ -253,21 +253,29 @@ func startScan(ctx *cli.Context, acc *account.Account) {
 	}
 
 	if err := initRpc(ctx); err != nil {
-		log.Fatalf("start scan rpc err: %v", err.Error())
+		log.Fatalf("rpc start err: %v", err.Error())
 	}
-	log.Info("start scan rpc success.")
+	log.Info("rpc start success.")
 	initRestful(ctx)
-	log.Info("start scan restful success.")
+	log.Info("restful start success.")
 
 	err = service.ScanNode.StartChannelService()
 	if err != nil {
-		log.Fatalf("start scan start channel service err : %v", err)
+		log.Fatalf("channel service start err : %v", err)
 	}
-	log.Info("start scan start channel service success.")
+	log.Info("channel service started.")
 
 	// setup dns channel connect
 	if config.Parameters.Base.AutoSetupDNSChannelsEnable {
-		go service.ScanNode.AutoSetupDNSChannelsWorking()
+		go func() {
+			err := service.ScanNode.AutoSetupDNSChannelsWorking()
+			if err != nil {
+				log.Error(err)
+				log.Error("AutoSetupDNSChannelsWorking failed")
+			} else {
+				log.Info("AutoSetupDNSChannelsWorking done.")
+			}
+		}()
 	}
 }
 

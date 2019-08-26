@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net"
 	"strings"
-	"time"
 
 	"github.com/saveio/carrier/crypto"
 	"github.com/saveio/carrier/crypto/ed25519"
@@ -24,6 +23,7 @@ import (
 	"github.com/saveio/themis/common/log"
 	"github.com/saveio/themis/crypto/keypair"
 	"github.com/saveio/themis/errors"
+	dnsContract "github.com/saveio/themis/smartcontract/service/native/dns"
 )
 
 var ScanNode *Node
@@ -68,6 +68,7 @@ func (this *Node) StartScanNode(startChannelNetwork, startDnsNetwork bool) error
 		if err != nil {
 			return err
 		}
+		log.Debugf("scan public addr is: %s\n", this.ChannelNet.PublicAddr())
 		this.Channel, err = NewScanChannel(this, this.ChannelNet.GetPID())
 		if err != nil {
 			return err
@@ -205,123 +206,93 @@ func (this *Node) autoRegisterDns() error {
 		log.Fatal("get dns balance: %s, governdeposit: %s, needs err: %v", cutils.FormatUsdt(balance), cutils.FormatUsdt(config.Parameters.Base.DnsGovernDeposit), err)
 	}
 	ownNode, err := this.GetDnsNodeByAddr(this.Account.Address)
-	if err != nil {
-		log.Fatal("get dns node dnsinfo: %v, err: %v", ownNode, err)
-	} else if ownNode != nil {
-		_, err = this.DNSNodeUpdate(host, port)
+	log.Debugf("ownNode: %v, err: %v\n", ownNode, err)
+
+	if ownNode != nil {
+		if _, err = this.DNSNodeUpdate(host, port); err != nil {
+			return err
+		}
 	} else {
-		_, err = this.DNSNodeReg(host, port, config.Parameters.Base.DnsGovernDeposit)
+		if _, err = this.DNSNodeReg(host, port, config.Parameters.Base.DnsGovernDeposit); err != nil {
+			return err
+		}
 	}
 
-	if err != nil {
-		log.Fatalf("scan node update addr to %s:%s failed, err: %v", host, port, err)
-		return err
-	}
 	log.Infof("scan node update addr to %s:%s success.", host, port)
 	return nil
 }
 
 func (this *Node) AutoSetupDNSChannelsWorking() error {
-	ns, err := this.GetAllDnsNodes()
+	item, err := this.GetDnsPeerPoolItem(hex.EncodeToString(keypair.SerializePublicKey(this.Account.PublicKey)))
 	if err != nil {
 		return err
 	}
-	if len(ns) == 0 {
-		return errors.NewErr("no dns nodes")
+
+	if item.Status != dnsContract.RegisterCandidateStatus {
+		return errors.NewErr("dns status is not RegisterCandidateStatus")
+	}
+
+	allDns, err := this.GetAllDnsNodes()
+	if err != nil || len(allDns) == 0 {
+		return err
+	}
+
+	allChannels, err := this.GetAllChannels()
+	if err != nil {
+		return err
 	}
 
 	setDNSNodeFunc := func(dnsUrl, walletAddr string) error {
-		log.Debugf("set dns node func %s %s", dnsUrl, walletAddr)
-		// if err := client.P2pIsPeerListening(dnsUrl); err != nil {
-		// 	return err
-		// }
-		if strings.Index(dnsUrl, "0.0.0.0:0") != -1 {
-			return errors.NewErr("invalid host addr")
+		log.Debugf("dnsUrl: %s, walletAddr: %s\n", dnsUrl, walletAddr)
+		if !isValidUrl(dnsUrl) {
+			return errors.NewErr("invalid dnsUrl")
 		}
-		// err = this.Channel.SetHostAddr(walletAddr, dnsUrl)
-		// if err != nil {
-		// 	return err
-		// }
-		_, err = this.Channel.OpenChannel(walletAddr, 0)
-		if err != nil {
-			log.Debugf("open channel err ")
-			return err
-		}
-		err = this.Channel.WaitForConnected(walletAddr, time.Duration(100)*time.Second)
-		if err != nil {
-			log.Errorf("wait channel connected err %s %s", walletAddr, err)
-			return err
-		}
-		log.Debugf("channel connected %s %s", walletAddr, err)
-		bal, _ := this.Channel.GetAvailableBalance(walletAddr)
-		log.Debugf("current balance %d", bal)
-		log.Infof("connect to dns node :%s, deposit %d", dnsUrl, config.Parameters.Base.DnsChannelDeposit)
-		err = this.Channel.SetDeposit(walletAddr, config.Parameters.Base.DnsChannelDeposit)
-		if err != nil && strings.Index(err.Error(), "totalDeposit must big than contractBalance") == -1 {
-			log.Debugf("deposit result %s", err)
-			// TODO: withdraw and close channel
-			return err
-		}
-		bal, _ = this.Channel.GetAvailableBalance(walletAddr)
-		log.Debugf("current deposited balance %d", bal)
-		log.Info("channel deposit success")
 
-		err := this.Channel.CanTransfer(walletAddr, 10)
-		if err == nil {
-			log.Info("loopTest can transfer!")
+		// open new channel
+		channelId, err := this.Channel.OpenChannel(walletAddr, config.Parameters.Base.DnsChannelDeposit)
+		if err != nil {
+			return err
+		}
+		log.Debugf("auto setup dns channel success, channelId %d\n", channelId)
+
+		bal, err := this.Channel.GetAvailableBalance(walletAddr)
+		if err != nil {
+			return err
+		}
+		log.Debugf("available balance %d\n", bal)
+
+		// transfer [loopTest], [TODO] remove this when Stable
+		err = this.Channel.CanTransfer(walletAddr, 10)
+		if err != nil {
+			log.Debug("loopTest cannot transfer!")
+		} else {
+			log.Debug("loopTest can transfer!")
 			for i := 0; i < 3; i++ {
 				err := this.Transfer(1, 1, walletAddr)
 				if err != nil {
-					log.Error("[loopTest] direct transfer failed:", err)
+					log.Errorf("auto setup dns channel [loopTest] direct transfer failed: %v\n", err)
 				} else {
-					log.Info("[loopTest] direct transfer successfully")
+					log.Debugf("auto setup dns channel [loopTest] direct transfer successful\n")
 				}
-			}
-		} else {
-			if err != nil {
-				log.Error("loopTest cannot transfer!")
 			}
 		}
 		return nil
 	}
 
-	// first init
-	for _, v := range ns {
-		log.Debugf("auto setup dns channel working, dns walletaddr: %s hostaddr:%s:%s, ", v.WalletAddr.ToBase58(), string(v.IP), string(v.Port))
+	for _, dns := range allDns {
+		var dnsWalletAddrStr = dns.WalletAddr.ToBase58()
+		var dnsUrlStr = fmt.Sprintf("%s://%s:%s", config.Parameters.Base.ChannelProtocol, dns.IP, dns.Port)
 
-		// dnsUrl, _ := GetExternalIP(v.WalletAddr.ToBase58())
-		var dnsUrl string
-		dnsInfo, err := this.GetDnsNodeByAddr(v.WalletAddr)
-		if err != nil || dnsInfo == nil {
-			log.Errorf("auto setup dns channel working dnsinfo: %s, err: %s", dnsInfo, err)
-		} else if len(dnsUrl) == 0 {
-			dnsUrl = fmt.Sprintf("%s://%s:%s", config.Parameters.Base.ChannelProtocol, v.IP, v.Port)
-		} else {
-			dnsUrl = fmt.Sprintf("%s://%s:%s", config.Parameters.Base.ChannelProtocol, dnsInfo.IP, dnsInfo.Port)
+		// ignore to connect self, config define, channel is already exist.
+		if dnsWalletAddrStr == this.Account.Address.ToBase58() ||
+			contains(config.Parameters.Base.IgnoreConnectDNSAddrs, dnsWalletAddrStr) ||
+			this.channelExists(allChannels.Channels, dnsWalletAddrStr) {
+			continue
 		}
-		err = PutExternalIP(v.WalletAddr.ToBase58(), strings.Split(dnsUrl, "://")[1])
+
+		err = setDNSNodeFunc(dnsUrlStr, dnsWalletAddrStr)
 		if err != nil {
-			log.Errorf("auto setup dns channel working PutExternalIP err:%v", err)
-		}
-
-		ignoreFlag := false
-		// ignore items to connect
-		for _, ignoreAddrItem := range config.Parameters.Base.IgnoreConnectDNSAddrs {
-			if v.WalletAddr.ToBase58() == ignoreAddrItem {
-				ignoreFlag = true
-			}
-		}
-		if v.WalletAddr.ToBase58() == this.Account.Address.ToBase58() {
-			ignoreFlag = true
-		}
-		if _, err := this.GetDnsPeerPoolItem(hex.EncodeToString(keypair.SerializePublicKey(this.Account.PublicKey))); err != nil {
-			ignoreFlag = true
-		}
-		if ignoreFlag == false {
-			err = setDNSNodeFunc(dnsUrl, v.WalletAddr.ToBase58())
-			if err != nil {
-				continue
-			}
+			log.Error(err)
 		}
 	}
 	return nil

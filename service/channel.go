@@ -150,6 +150,15 @@ func (this *Node) QueryHostInfo(partnerAddr string) (string, error) {
 	return this.Channel.GetHostAddr(partnerAddr)
 }
 
+func (this *Node) channelExists(ci []*ch_actor.ChannelInfo, w string) bool {
+	for _, ch := range ci {
+		if ch.Address == w {
+			return true
+		}
+	}
+	return false
+}
+
 var startChannelHeight uint32
 
 type FilterBlockProgress struct {

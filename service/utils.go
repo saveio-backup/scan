@@ -52,3 +52,19 @@ func (this accountReader) Read(buf []byte) (int, error) {
 	}
 	return len(buf), nil
 }
+
+func contains(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
+}
+
+func isValidUrl(dnsUrl string) bool {
+	if strings.Index(dnsUrl, "0.0.0.0:0") != -1 {
+		return false
+	}
+	return true
+}
