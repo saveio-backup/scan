@@ -78,7 +78,7 @@ func StartRPCServer() error {
 	rpc.HandleFunc("getdnshostinfo", rpc.GetDnsHostInfo)
 
 	rpc.HandleFunc("openchannel", rpc.OpenChannel)
-	// rpc.HandleFunc("closechannel", rpc.CloseChannel)
+	rpc.HandleFunc("closechannel", rpc.CloseChannel)
 	rpc.HandleFunc("depositchannel", rpc.DepositToChannel)
 	rpc.HandleFunc("transferchannel", rpc.TransferToSomebody)
 	rpc.HandleFunc("withdrawchannel", rpc.WithdrawChannel)

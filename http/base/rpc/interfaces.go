@@ -946,24 +946,24 @@ func OpenChannel(params []interface{}) map[string]interface{} {
 	return responseSuccess(&channelRsp)
 }
 
-// func CloseChannel(params []interface{}) map[string]interface{} {
-// 	var partnerAddrstr string
-// 	switch (params[0]).(type) {
-// 	case string:
-// 		partnerAddrstr = params[0].(string)
-// 	default:
-// 		return responsePack(berr.INVALID_PARAMS, "")
-// 	}
+func CloseChannel(params []interface{}) map[string]interface{} {
+	var partnerAddrstr string
+	switch (params[0]).(type) {
+	case string:
+		partnerAddrstr = params[0].(string)
+	default:
+		return responsePack(berr.INVALID_PARAMS, "")
+	}
 
-// 	err := service.ScanNode.CloseChannel(partnerAddrstr)
-// 	if err != nil {
-// 		log.Errorf("OpenChannel error: %s", err)
-// 		return responsePack(berr.INTERNAL_ERROR, err.Error())
-// 	}
-// 	fmt.Printf("rpc/interface/openchannel partneraddr:%s\n", partnerAddrstr)
+	err := service.ScanNode.CloseChannel(partnerAddrstr)
+	if err != nil {
+		log.Errorf("OpenChannel error: %s", err)
+		return responsePack(berr.INTERNAL_ERROR, err.Error())
+	}
+	fmt.Printf("rpc/interface/openchannel partneraddr:%s\n", partnerAddrstr)
 
-// 	return responseSuccess(&httpComm.SuccessRsp{})
-// }
+	return responseSuccess(&httpComm.SuccessRsp{})
+}
 
 func DepositToChannel(params []interface{}) map[string]interface{} {
 	var partnerAddrstr string

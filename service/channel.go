@@ -103,14 +103,13 @@ func PutExternalIP(wallAddr, hostAddr string) error {
 	return nil
 }
 
-//pylons api
 func (this *Node) OpenChannel(partnerAddr string, amount uint64) (chanCom.ChannelID, error) {
 	return this.Channel.OpenChannel(partnerAddr, amount)
 }
 
-// func (this *ChannelSvr) CloseChannel(partnerAddr string) error {
-// 	return this.Channel.ChannelClose(partnerAddr)
-// }
+func (this *Node) CloseChannel(partnerAddr string) error {
+	return this.Channel.ChannelClose(partnerAddr)
+}
 
 func (this *Node) QuerySpecialChannelDeposit(partnerAddr string) (uint64, error) {
 	return this.Channel.GetTotalDepositBalance(partnerAddr)

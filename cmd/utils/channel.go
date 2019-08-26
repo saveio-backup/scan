@@ -72,34 +72,34 @@ func OpenChannel(partnerAddr string) (*httpComm.ChannelRsp, *httpComm.FailedRsp)
 	return chanRsp, nil
 }
 
-// func CloseChannel(partnerAddr string) (*httpComm.SuccessRsp, *httpComm.FailedRsp) {
-// 	result, ontErr := sendRpcRequest("closechannel", []interface{}{partnerAddr})
-// 	if ontErr != nil {
-// 		switch ontErr.ErrorCode {
-// 		case ERROR_INVALID_PARAMS:
-// 			return nil, &httpComm.FailedRsp{
-// 				ErrCode:   berr.INVALID_PARAMS,
-// 				ErrMsg:    berr.ErrMap[berr.INVALID_PARAMS],
-// 				FailedMsg: fmt.Sprintf("Invalid partnerAddr: %s", partnerAddr),
-// 			}
-// 		case berr.INTERNAL_ERROR:
-// 			return nil, &httpComm.FailedRsp{
-// 				ErrCode:   berr.INTERNAL_ERROR,
-// 				ErrMsg:    berr.ErrMap[berr.INTERNAL_ERROR],
-// 				FailedMsg: ontErr.Error.Error(),
-// 			}
-// 		}
-// 		return nil, &httpComm.FailedRsp{
-// 			ErrCode:   ontErr.ErrorCode,
-// 			ErrMsg:    "",
-// 			FailedMsg: ontErr.Error.Error(),
-// 		}
-// 	}
+func CloseChannel(partnerAddr string) (*httpComm.SuccessRsp, *httpComm.FailedRsp) {
+	result, ontErr := sendRpcRequest("closechannel", []interface{}{partnerAddr})
+	if ontErr != nil {
+		switch ontErr.ErrorCode {
+		case ERROR_INVALID_PARAMS:
+			return nil, &httpComm.FailedRsp{
+				ErrCode:   berr.INVALID_PARAMS,
+				ErrMsg:    berr.ErrMap[berr.INVALID_PARAMS],
+				FailedMsg: fmt.Sprintf("Invalid partnerAddr: %s", partnerAddr),
+			}
+		case berr.INTERNAL_ERROR:
+			return nil, &httpComm.FailedRsp{
+				ErrCode:   berr.INTERNAL_ERROR,
+				ErrMsg:    berr.ErrMap[berr.INTERNAL_ERROR],
+				FailedMsg: ontErr.Error.Error(),
+			}
+		}
+		return nil, &httpComm.FailedRsp{
+			ErrCode:   ontErr.ErrorCode,
+			ErrMsg:    "",
+			FailedMsg: ontErr.Error.Error(),
+		}
+	}
 
-// 	log.Debugf("closechannel success")
-// 	log.Debugf("CloseChannel result :%s", result)
-// 	return nil, nil
-// }
+	log.Debugf("closechannel success")
+	log.Debugf("CloseChannel result :%s", result)
+	return nil, nil
+}
 
 func DepositToChannel(partnerAddr string, totalDeposit uint64) (*httpComm.SuccessRsp, *httpComm.FailedRsp) {
 	result, ontErr := sendRpcRequest("depositchannel", []interface{}{partnerAddr, totalDeposit})

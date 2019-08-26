@@ -32,16 +32,16 @@ var ChannelCommand = cli.Command{
 			},
 			Description: "Open a payment channel with partner",
 		},
-		// {
-		// 	Action:    closeChannel,
-		// 	Name:      "close",
-		// 	Usage:     "Close a payment channel",
-		// 	ArgsUsage: " ",
-		// 	Flags: []cli.Flag{
-		// 		flags.PartnerAddressFlag,
-		// 	},
-		// 	Description: "Close a payment channel with partner",
-		// },
+		{
+			Action:    closeChannel,
+			Name:      "close",
+			Usage:     "Close a payment channel",
+			ArgsUsage: " ",
+			Flags: []cli.Flag{
+				flags.PartnerAddressFlag,
+			},
+			Description: "Close a payment channel with partner",
+		},
 		{
 			Action:    depositToChannel,
 			Name:      "deposit",
@@ -78,11 +78,11 @@ var ChannelCommand = cli.Command{
 		},
 		{
 			Action:      getAllChannels,
-			Name:        "list",
-			Usage:       "Show all channels",
+			Name:        "show",
+			Usage:       "Show channels by paging, or target by address",
 			ArgsUsage:   " ",
 			Flags:       []cli.Flag{},
-			Description: "Show all channels info which belong to current owner",
+			Description: "Show channels by paging, or target by address",
 		},
 		// {
 		// 	Action:    getCurrentBalance,
@@ -160,26 +160,26 @@ func openChannel(ctx *cli.Context) error {
 	return nil
 }
 
-// func closeChannel(ctx *cli.Context) error {
-// 	SetRpcPort(ctx)
+func closeChannel(ctx *cli.Context) error {
+	SetRpcPort(ctx)
 
-// 	if ctx.NumFlags() < 1 {
-// 		PrintErrorMsg("Missing argument.")
-// 		cli.ShowSubcommandHelp(ctx)
-// 		return nil
-// 	}
+	if ctx.NumFlags() < 1 {
+		PrintErrorMsg("Missing argument.")
+		cli.ShowSubcommandHelp(ctx)
+		return nil
+	}
 
-// 	partnerAddr := ctx.String(flags.GetFlagName(flags.PartnerAddressFlag))
+	partnerAddr := ctx.String(flags.GetFlagName(flags.PartnerAddressFlag))
 
-// 	_, failed := utils.CloseChannel(partnerAddr)
-// 	if failed != nil {
-// 		PrintErrorMsg("\nClose channel failed. Failed message:")
-// 		PrintJsonObject(failed)
-// 		return nil
-// 	}
-// 	PrintInfoMsg("\nClose channel success.")
-// 	return nil
-// }
+	_, failed := utils.CloseChannel(partnerAddr)
+	if failed != nil {
+		PrintErrorMsg("\nClose channel failed. Failed message:")
+		PrintJsonObject(failed)
+		return nil
+	}
+	PrintInfoMsg("\nClose channel success.")
+	return nil
+}
 
 func depositToChannel(ctx *cli.Context) error {
 	SetRpcPort(ctx)
@@ -251,22 +251,40 @@ func transferToSomebody(ctx *cli.Context) error {
 func getAllChannels(ctx *cli.Context) error {
 	SetRpcPort(ctx)
 
+	page := ctx.Uint(flags.GetFlagName(flags.PageFlag))
+	partnerAddr := ctx.String(flags.GetFlagName(flags.TargetAddressFlag))
+
 	channelInfos, failed := utils.GetAllChannels()
 	if failed != nil {
 		PrintErrorMsg("\nShow all channels info failed. Failed message:")
 		PrintJsonObject(failed)
 		return nil
 	} else if channelInfos != nil {
-		PrintInfoMsg("\nShow all channels info success. Default limit 50:")
-		PrintInfoMsg("The total number of channels is %d", len(channelInfos.Channels))
-		PrintInfoMsg("The total balance of channels is %d, and BalanceFormat: %s", channelInfos.Balance, channelInfos.BalanceFormat)
-		counter := 0
-		for _, item := range channelInfos.Channels {
-			if counter < 50 {
-				PrintInfoMsg("Index %d:", counter)
-				PrintJsonObject(item)
+		if partnerAddr != "" {
+			PrintInfoMsg("\nShow channel with %s info.", partnerAddr)
+			exist := false
+			for _, item := range channelInfos.Channels {
+				if item.Address == partnerAddr {
+					PrintJsonObject(item)
+					exist = true
+					break
+				}
 			}
-			counter++
+			if !exist {
+				PrintInfoMsg("do not exist.")
+			}
+		} else {
+			PrintInfoMsg("\nShow all channels info success. Default limit 50:")
+			PrintInfoMsg("The total number of channels is %d", len(channelInfos.Channels))
+			PrintInfoMsg("The total balance of channels is %d, and BalanceFormat: %s", channelInfos.Balance, channelInfos.BalanceFormat)
+			counter := 50 * page
+			for _, item := range channelInfos.Channels {
+				if counter < 50 {
+					PrintInfoMsg("Index %d:", counter)
+					PrintJsonObject(item)
+				}
+				counter++
+			}
 		}
 	}
 
