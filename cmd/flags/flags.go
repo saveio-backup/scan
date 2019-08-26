@@ -93,7 +93,7 @@ var (
 		Usage: "Dns `<port>`",
 	}
 	DnsWalletFlag = cli.StringFlag{
-		Name:  "walletAddr,ws",
+		Name:  "walletAddr,wa",
 		Usage: "Dns `<walletAddr>`",
 	}
 	DnsAllFlag = cli.BoolFlag{
@@ -102,11 +102,11 @@ var (
 	}
 	//channel command setting
 	PartnerAddressFlag = cli.StringFlag{
-		Name:  "partnerAddr,ws",
+		Name:  "partnerAddr,pa",
 		Usage: "Channel partner `<address>`",
 	}
 	TargetAddressFlag = cli.StringFlag{
-		Name:  "targetAddr,ws",
+		Name:  "targetAddr,ta",
 		Usage: "Channel transfer target `<address>`",
 	}
 	TotalDepositFlag = cli.Uint64Flag{
