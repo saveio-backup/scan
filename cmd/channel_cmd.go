@@ -77,11 +77,14 @@ var ChannelCommand = cli.Command{
 			Description: "Transfer some token from owner to target with specified payment ID",
 		},
 		{
-			Action:      getAllChannels,
-			Name:        "show",
-			Usage:       "Show channels by paging, or target by address",
-			ArgsUsage:   " ",
-			Flags:       []cli.Flag{},
+			Action:    getAllChannels,
+			Name:      "show",
+			Usage:     "Show channels by paging, or target by address",
+			ArgsUsage: " ",
+			Flags: []cli.Flag{
+				flags.PageFlag,
+				flags.PartnerAddressFlag,
+			},
 			Description: "Show channels by paging, or target by address",
 		},
 		// {
@@ -252,7 +255,7 @@ func getAllChannels(ctx *cli.Context) error {
 	SetRpcPort(ctx)
 
 	page := ctx.Uint(flags.GetFlagName(flags.PageFlag))
-	partnerAddr := ctx.String(flags.GetFlagName(flags.TargetAddressFlag))
+	partnerAddr := ctx.String(flags.GetFlagName(flags.PartnerAddressFlag))
 
 	channelInfos, failed := utils.GetAllChannels()
 	if failed != nil {
