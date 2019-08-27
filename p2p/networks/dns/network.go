@@ -34,14 +34,12 @@ var once sync.Once
 
 const (
 	OpCodeTorrent opcode.Opcode = 2000 + iota
-	OpCodeRegistry
-	OpCodeUnRegistry
+	OpCodeEndpoint
 )
 
 var opCodes = map[opcode.Opcode]proto.Message{
-	OpCodeTorrent:    &pm.Torrent{},
-	OpCodeRegistry:   &pm.Registry{},
-	OpCodeUnRegistry: &pm.UnRegistry{},
+	OpCodeTorrent:  &pm.Torrent{},
+	OpCodeEndpoint: &pm.Endpoint{},
 }
 
 type Network struct {
@@ -377,13 +375,9 @@ func (this *Network) Receive(message proto.Message, from string) error {
 	case *pm.Torrent:
 		log.Errorf("[MSB Receive] receive from peer:%s, nil Torrent message", from)
 		this.OnBusinessMessage(message, from)
-	case *pm.Registry:
+	case *pm.Endpoint:
 		log.Errorf("[MSB Receive] receive from peer:%s, nil Reg message", from)
 		this.OnBusinessMessage(message, from)
-	case *pm.UnRegistry:
-		log.Errorf("[MSB Receive] receive from peer:%s, nil Unreg message", from)
-		this.OnBusinessMessage(message, from)
-
 	default:
 		// log.Errorf("[MSB Receive] unknown message type:%s", msg.String())
 	}

@@ -23,50 +23,66 @@ var TrackerCommand = cli.Command{
 	Description: "Maintain torrent and endpoint map",
 	Subcommands: []cli.Command{
 		{
-			Action:    checkTorrent,
-			Name:      "torrent",
-			Usage:     "Check map of hash and torrent",
-			ArgsUsage: "[sub-command options]",
-			Flags: []cli.Flag{
-				flags.FileHashFlag,
+			Action:      cli.ShowSubcommandHelp,
+			Name:        "torrent",
+			Usage:       "Manage torrents",
+			Description: "Manage torrents",
+			Subcommands: []cli.Command{
+				{
+					Action:    checkTorrent,
+					Name:      "check",
+					Usage:     "Check map of hash and torrent",
+					ArgsUsage: "[sub-command options]",
+					Flags: []cli.Flag{
+						flags.FileHashFlag,
+					},
+				},
 			},
 		},
 		{
-			Action:    regEndPoint,
-			Name:      "reg",
-			Usage:     "Reg wallet address and host",
-			ArgsUsage: "[sub-command options]",
-			Flags: []cli.Flag{
-				flags.WalletFlag,
-				flags.HostFlag,
-			},
-		},
-		{
-			Action:    updateEndPoint,
-			Name:      "update",
-			Usage:     "Update the host of your wallet address",
-			ArgsUsage: "[sub-command options]",
-			Flags: []cli.Flag{
-				flags.WalletFlag,
-				flags.HostFlag,
-			},
-		},
-		{
-			Action:    unRegEndPoint,
-			Name:      "unreg",
-			Usage:     "UnReg wallet address and host",
-			ArgsUsage: "[sub-command options]",
-			Flags: []cli.Flag{
-				flags.WalletFlag,
-			},
-		},
-		{
-			Action:    reqEndPoint,
-			Name:      "req",
-			Usage:     "query the host of your wallet address or others",
-			ArgsUsage: "[sub-command options]",
-			Flags: []cli.Flag{
-				flags.WalletFlag,
+			Action:      cli.ShowSubcommandHelp,
+			Name:        "endpoint",
+			Usage:       "Manage endpoints",
+			Description: "Manage endpoints",
+			Subcommands: []cli.Command{
+				{
+					Action:    regEndPoint,
+					Name:      "reg",
+					Usage:     "Reg wallet address and host",
+					ArgsUsage: "[sub-command options]",
+					Flags: []cli.Flag{
+						flags.WalletFlag,
+						flags.HostFlag,
+					},
+				},
+				{
+					Action:    updateEndPoint,
+					Name:      "update",
+					Usage:     "Update the host of your wallet address",
+					ArgsUsage: "[sub-command options]",
+					Flags: []cli.Flag{
+						flags.WalletFlag,
+						flags.HostFlag,
+					},
+				},
+				{
+					Action:    unRegEndPoint,
+					Name:      "unreg",
+					Usage:     "UnReg wallet address and host",
+					ArgsUsage: "[sub-command options]",
+					Flags: []cli.Flag{
+						flags.WalletFlag,
+					},
+				},
+				{
+					Action:    reqEndPoint,
+					Name:      "req",
+					Usage:     "query the host of your wallet address or others",
+					ArgsUsage: "[sub-command options]",
+					Flags: []cli.Flag{
+						flags.WalletFlag,
+					},
+				},
 			},
 		},
 	},

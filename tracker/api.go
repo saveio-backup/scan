@@ -26,7 +26,7 @@ func CheckTorrent(fileHash string) ([]*storage.PeerInfo, error) {
 
 //local endPointReg
 func EndPointRegistry(walletAddr, hostAddr string) error {
-	log.Debugf("Local EndPointRegistry wallet:%s,host:%s\n", walletAddr, hostAddr)
+	log.Debugf("Local EndPointRegistry walletAddr:%s, hostAddr:%s\n", walletAddr, hostAddr)
 	if walletAddr == "" || hostAddr == "" {
 		return errors.NewErr("[EndPointRegistry] walletAddr or hostPort is null")
 	}
@@ -39,7 +39,7 @@ func EndPointRegistry(walletAddr, hostAddr string) error {
 	if err != nil {
 		return err
 	}
-	network.DnsP2p.GetPID().Tell(&pm.Registry{WalletAddr: walletAddr, HostPort: hostPort, Type: 0})
+	network.DnsP2p.GetPID().Tell(&pm.Endpoint{WalletAddr: walletAddr, HostPort: hostPort, Type: 0})
 	return nil
 }
 
@@ -58,7 +58,7 @@ func EndPointRegUpdate(walletAddr, hostAddr string) error {
 		return err
 	}
 
-	network.DnsP2p.GetPID().Tell(&pm.Registry{WalletAddr: walletAddr, HostPort: hostPort, Type: 0})
+	network.DnsP2p.GetPID().Tell(&pm.Endpoint{WalletAddr: walletAddr, HostPort: hostPort, Type: 0})
 	return nil
 }
 
@@ -68,8 +68,6 @@ func EndPointUnRegistry(walletAddr string) error {
 	if err != nil {
 		return err
 	}
-	m := &pm.UnRegistry{WalletAddr: walletAddr, Type: 0}
-	network.DnsP2p.GetPID().Tell(m)
 	return nil
 }
 

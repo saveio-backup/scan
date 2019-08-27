@@ -192,7 +192,7 @@ func (s *Server) Accepted() (err error) {
 		if err != nil {
 			return s.respond(addr, ResponseHeader{TransactionId: h.TransactionId, Action: ActionError}, []byte("db put endpoint failed"))
 		}
-		s.p2p.Tell(&pm.Registry{WalletAddr: ar.Wallet.ToBase58(), HostPort: nodeAddr.String(), Type: 0})
+		s.p2p.Tell(&pm.Endpoint{WalletAddr: ar.Wallet.ToBase58(), HostPort: nodeAddr.String(), Type: 0})
 		log.Infof("ActionReg wallAddr:%s, nodeAddr:%s", ar.Wallet.ToBase58(), nodeAddr.String())
 		return s.respond(addr, ResponseHeader{TransactionId: h.TransactionId, Action: ActionReg}, AnnounceResponseHeader{IPAddress: ipAddr, Port: ar.Port, Wallet: ar.Wallet})
 	case ActionUnReg:
@@ -215,7 +215,6 @@ func (s *Server) Accepted() (err error) {
 		if err != nil {
 			return s.respond(addr, ResponseHeader{TransactionId: h.TransactionId, Action: ActionError}, []byte("db del endpoint failed"))
 		}
-		s.p2p.Tell(&pm.UnRegistry{WalletAddr: ar.Wallet.ToBase58(), Type: 0})
 		return s.respond(addr, ResponseHeader{TransactionId: h.TransactionId, Action: ActionUnReg}, AnnounceResponseHeader{Wallet: ar.Wallet})
 	case ActionReq:
 		log.Info("TrackerServer Accepted ActionReq")
@@ -333,11 +332,13 @@ func (s *Server) onAnnounceStarted(ar *AnnounceRequest, pi *storage.PeerInfo) er
 	if err != nil {
 		return err
 	}
-	bt, err := storage.TDB.GetTorrentBinary(ar.InfoHash[:])
+
+	var piBinarys bytes.Buffer
+	err = pi.Serialize(&piBinarys)
 	if err != nil {
 		return err
 	}
-	s.p2p.Tell(&pm.Torrent{InfoHash: ar.InfoHash[:], Torrent: bt, Type: 0})
+	s.p2p.Tell(&pm.Torrent{InfoHash: ar.InfoHash[:], Left: ar.Left, Peerinfo: piBinarys.Bytes(), Type: 0})
 	return err
 }
 
@@ -351,12 +352,12 @@ func (s *Server) onAnnounceUpdated(ar *AnnounceRequest, pi *storage.PeerInfo) er
 		return err
 	}
 
-	bt, err := storage.TDB.GetTorrentBinary(ar.InfoHash[:])
+	var piBinarys bytes.Buffer
+	err = pi.Serialize(&piBinarys)
 	if err != nil {
 		return err
 	}
-
-	s.p2p.Tell(&pm.Torrent{InfoHash: ar.InfoHash[:], Torrent: bt, Type: 0})
+	s.p2p.Tell(&pm.Torrent{InfoHash: ar.InfoHash[:], Left: ar.Left, Peerinfo: piBinarys.Bytes(), Type: 0})
 	return err
 }
 
@@ -369,11 +370,13 @@ func (s *Server) onAnnounceStopped(ar *AnnounceRequest, pi *storage.PeerInfo) er
 	if err != nil {
 		return err
 	}
-	bt, err := storage.TDB.GetTorrentBinary(ar.InfoHash[:])
+
+	var piBinarys bytes.Buffer
+	err = pi.Serialize(&piBinarys)
 	if err != nil {
 		return err
 	}
-	s.p2p.Tell(&pm.Torrent{InfoHash: ar.InfoHash[:], Torrent: bt, Type: 0})
+	s.p2p.Tell(&pm.Torrent{InfoHash: ar.InfoHash[:], Left: ar.Left, Peerinfo: piBinarys.Bytes(), Type: 0})
 	return err
 }
 
@@ -393,11 +396,13 @@ func (s *Server) onAnnounceCompleted(ar *AnnounceRequest, pi *storage.PeerInfo) 
 	pi.Complete = true
 	t.Peers[pi.NodeAddr.String()] = pi
 	storage.TDB.PutTorrent(ar.InfoHash[:], t)
-	bt, err := storage.TDB.GetTorrentBinary(ar.InfoHash[:])
+
+	var piBinarys bytes.Buffer
+	err = pi.Serialize(&piBinarys)
 	if err != nil {
 		return err
 	}
-	s.p2p.Tell(&pm.Torrent{InfoHash: ar.InfoHash[:], Torrent: bt, Type: 0})
+	s.p2p.Tell(&pm.Torrent{InfoHash: ar.InfoHash[:], Left: ar.Left, Peerinfo: piBinarys.Bytes(), Type: 0})
 	return err
 }
 

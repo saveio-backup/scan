@@ -3,9 +3,12 @@ package storage
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"time"
 
 	"github.com/anacrolix/dht/krpc"
+	"github.com/ontio/ontology/common/serialization"
 	"github.com/saveio/scan/common/config"
 	"github.com/saveio/themis/common/log"
 )
@@ -15,10 +18,13 @@ var TDB *TorrentDB
 const (
 	MAX_PEERS_LENGTH                 = 100
 	DEFAULT_NUMWANT_TO_GET_ALL_PEERS = -1
+	PEERID_LENGTH                    = 20
+	METAINFOHASH_LENGTH              = 46
+	IP_LENGTH                        = 4
 )
 
-type MetaInfoHash [46]byte
-type PeerID [20]byte
+type MetaInfoHash [METAINFOHASH_LENGTH]byte
+type PeerID [PEERID_LENGTH]byte
 
 type TorrentDB struct {
 	db *LevelDBStore
@@ -27,10 +33,90 @@ type TorrentDB struct {
 type PeerInfo struct {
 	ID        PeerID
 	Complete  bool
-	IP        [4]byte
+	IP        [IP_LENGTH]byte
 	Port      uint16
 	NodeAddr  krpc.NodeAddr
 	Timestamp time.Time
+}
+
+func (this *PeerInfo) Serialize(w io.Writer) error {
+	var err error
+	if err = serialization.WriteVarBytes(w, this.ID[:PEERID_LENGTH]); err != nil {
+		return fmt.Errorf("[PeerInfo] ID Serialize error: %s", err.Error())
+	}
+
+	if err = serialization.WriteBool(w, this.Complete); err != nil {
+		return fmt.Errorf("[PeerInfo] Complete Serialize error: %s", err.Error())
+	}
+
+	if err = serialization.WriteVarBytes(w, this.IP[:IP_LENGTH]); err != nil {
+		return fmt.Errorf("[PeerInfo] IP Serialize error: %s", err.Error())
+	}
+
+	if err = serialization.WriteUint16(w, this.Port); err != nil {
+		return fmt.Errorf("[PeerInfo] Port Serialize error: %s", err.Error())
+	}
+
+	naBinarys, err := this.NodeAddr.MarshalBinary()
+	if err != nil {
+		return fmt.Errorf("[PeerInfo] NodeAddr Serialize error: %s", err.Error())
+	}
+	if err = serialization.WriteVarBytes(w, naBinarys); err != nil {
+		return fmt.Errorf("[PeerInfo] NodeAddrBinarys Serialize error: %s", err.Error())
+	}
+
+	tsBinarys, err := this.Timestamp.MarshalBinary()
+	if err != nil {
+		return fmt.Errorf("[PeerInfo] Timestamp Serialize error: %s", err.Error())
+	}
+	if err = serialization.WriteVarBytes(w, tsBinarys); err != nil {
+		return fmt.Errorf("[PeerInfo] TimestampBynarys Serialize error: %s", err.Error())
+	}
+	return nil
+}
+
+func (this *PeerInfo) DeSerialize(r io.Reader) error {
+	var err error
+	ID, err := serialization.ReadVarBytes(r)
+	if err != nil {
+		return fmt.Errorf("[PeerInfo] ID DeSerialize error: %s", err.Error())
+	}
+	copy(this.ID[:], ID)
+
+	this.Complete, err = serialization.ReadBool(r)
+	if err != nil {
+		return fmt.Errorf("[PeerInfo] Complete DeSerialize error: %s", err.Error())
+	}
+
+	IP, err := serialization.ReadVarBytes(r)
+	if err != nil {
+		return fmt.Errorf("[PeerInfo] IP DeSerialize error: %s", err.Error())
+	}
+	copy(this.IP[:], IP[:IP_LENGTH])
+
+	this.Port, err = serialization.ReadUint16(r)
+	if err != nil {
+		return fmt.Errorf("[PeerInfo] ID Port error: %s", err.Error())
+	}
+
+	naBinarys, err := serialization.ReadVarBytes(r)
+	if err != nil {
+		return fmt.Errorf("[PeerInfo] ID NodeAddrBinarys error: %s", err.Error())
+	}
+	err = this.NodeAddr.UnmarshalBinary(naBinarys)
+	if err != nil {
+		return fmt.Errorf("[PeerInfo] ID NodeAddr error: %s", err.Error())
+	}
+
+	taBinarys, err := serialization.ReadVarBytes(r)
+	if err != nil {
+		return fmt.Errorf("[PeerInfo] ID TimestampBinary error: %s", err.Error())
+	}
+	err = this.Timestamp.UnmarshalBinary(taBinarys)
+	if err != nil {
+		return fmt.Errorf("[PeerInfo] ID Timestamp error: %s", err.Error())
+	}
+	return nil
 }
 
 type Torrent struct {

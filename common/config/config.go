@@ -100,7 +100,6 @@ type BaseConfig struct {
 	DBPath string `json:"DBPath"`
 
 	AutoSetupDNSRegisterEnable bool     `json:"AutoSetupDNSRegisterEnable"`
-	AutoSetupDNSChannelsEnable bool     `json:"AutoSetupDNSChannelsEnable"`
 	DnsNodeMaxNum              int      `json:"DnsNodeMaxNum"`
 	SeedInterval               int      `json:"SeedInterval"`
 	Fee                        uint64   `json:"Fee"`
@@ -137,7 +136,6 @@ func TestConfig() *ScanConfig {
 			TrackerFee:                 DEFAULT_TRACKER_FEE,
 			TrackerSeedList:            nil,
 			AutoSetupDNSRegisterEnable: false,
-			AutoSetupDNSChannelsEnable: false,
 		},
 	}
 }

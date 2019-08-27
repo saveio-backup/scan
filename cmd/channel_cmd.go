@@ -16,11 +16,19 @@ var ChannelCommand = cli.Command{
 	Subcommands: []cli.Command{
 		{
 			Action:      initProgress,
-			Name:        "initprogress",
+			Name:        "progress",
 			Usage:       "Get channel init progress",
 			ArgsUsage:   " ",
 			Flags:       []cli.Flag{},
 			Description: "Get channel init progress",
+		},
+		{
+			Action:      join,
+			Name:        "join",
+			Usage:       "Join all dns nodes channels",
+			ArgsUsage:   " ",
+			Flags:       []cli.Flag{},
+			Description: "Join all dns nodes channels",
 		},
 		{
 			Action:    openChannel,
@@ -142,6 +150,18 @@ func initProgress(ctx *cli.Context) error {
 	return nil
 }
 
+func join(ctx *cli.Context) error {
+	SetRpcPort(ctx)
+	failed := utils.JoinDnsChannels()
+	if failed != nil {
+		PrintErrorMsg("\njoin all dns nodes channels failed. Failed message:")
+		PrintJsonObject(failed)
+	} else {
+		PrintInfoMsg("\njoin all dns nodes channels success.\n")
+	}
+	return nil
+}
+
 func openChannel(ctx *cli.Context) error {
 	SetRpcPort(ctx)
 
@@ -254,7 +274,7 @@ func transferToSomebody(ctx *cli.Context) error {
 func getAllChannels(ctx *cli.Context) error {
 	SetRpcPort(ctx)
 
-	page := ctx.Uint(flags.GetFlagName(flags.PageFlag))
+	page := ctx.Int(flags.GetFlagName(flags.PageFlag))
 	partnerAddr := ctx.String(flags.GetFlagName(flags.PartnerAddressFlag))
 
 	channelInfos, failed := utils.GetAllChannels()
@@ -280,9 +300,9 @@ func getAllChannels(ctx *cli.Context) error {
 			PrintInfoMsg("\nShow all channels info success. Default limit 50:")
 			PrintInfoMsg("The total number of channels is %d", len(channelInfos.Channels))
 			PrintInfoMsg("The total balance of channels is %d, and BalanceFormat: %s", channelInfos.Balance, channelInfos.BalanceFormat)
-			counter := 50 * page
+			counter := 0
 			for _, item := range channelInfos.Channels {
-				if counter < 50 {
+				if 50*page < counter && counter < 50*(page+1) {
 					PrintInfoMsg("Index %d:", counter)
 					PrintJsonObject(item)
 				}

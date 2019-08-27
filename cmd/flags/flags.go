@@ -121,7 +121,7 @@ var (
 		Name:  "paymentId",
 		Usage: "",
 	}
-	PageFlag = cli.UintFlag{
+	PageFlag = cli.IntFlag{
 		Name:  "page",
 		Usage: "channel list page",
 	}

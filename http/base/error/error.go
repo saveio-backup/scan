@@ -50,6 +50,7 @@ const (
 	ENDPOINT_NOT_FOUND int64 = 48001
 
 	CHANNEL_TARGET_HOST_INFO_NOT_FOUND int64 = 49001
+	BLOCK_SYNCING_UNCOMPLETE           int64 = 49002
 )
 
 var ErrMap = map[int64]string{
@@ -80,6 +81,7 @@ var ErrMap = map[int64]string{
 	ENDPOINT_NOT_FOUND: "ENDPOINT NOT FOUND",
 
 	CHANNEL_TARGET_HOST_INFO_NOT_FOUND: "CHANNEL TARGET HOST INFO NOT FOUND",
+	BLOCK_SYNCING_UNCOMPLETE:           "BLOCK SYNCING UNCOMPLETE",
 
 	int64(ontErrors.ErrNoCode):               "INTERNAL ERROR, ErrNoCode",
 	int64(ontErrors.ErrUnknown):              "INTERNAL ERROR, ErrUnknown",

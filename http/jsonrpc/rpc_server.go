@@ -77,6 +77,8 @@ func StartRPCServer() error {
 	rpc.HandleFunc("getregisterdnsinfo", rpc.GetRegisterDnsInfo)
 	rpc.HandleFunc("getdnshostinfo", rpc.GetDnsHostInfo)
 
+	rpc.HandleFunc("initprogress", rpc.GetChannelInitProgress)
+	rpc.HandleFunc("joindnschannels", rpc.JoinDnsNodesChannels)
 	rpc.HandleFunc("openchannel", rpc.OpenChannel)
 	rpc.HandleFunc("closechannel", rpc.CloseChannel)
 	rpc.HandleFunc("depositchannel", rpc.DepositToChannel)
@@ -86,7 +88,6 @@ func StartRPCServer() error {
 	// rpc.HandleFunc("getcurrentbalance", rpc.GetCurrentBalance)
 	rpc.HandleFunc("querychanneldeposit", rpc.QueryChannelDeposit)
 	rpc.HandleFunc("queryhostinfo", rpc.QueryHostInfo)
-	rpc.HandleFunc("initprogress", rpc.GetChannelInitProgress)
 	err := http.ListenAndServe(":"+strconv.Itoa(int(cfg.Parameters.Base.PortBase+cfg.Parameters.Base.JsonRpcPortOffset)), nil)
 	if err != nil {
 		return fmt.Errorf("ListenAndServe error:%s", err)

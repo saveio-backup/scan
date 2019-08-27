@@ -34,6 +34,20 @@ func CheckChannelInitProgress() (*httpComm.FilterBlockProgress, *httpComm.Failed
 	return progress, nil
 }
 
+func JoinDnsChannels() *httpComm.FailedRsp {
+	result, ontErr := sendRpcRequest("joindnschannels", []interface{}{})
+	if ontErr != nil {
+		return &httpComm.FailedRsp{
+			ErrCode:   ontErr.ErrorCode,
+			ErrMsg:    "",
+			FailedMsg: ontErr.Error.Error(),
+		}
+	}
+
+	log.Debugf("JoinDnsChannels result :%s", result)
+	return nil
+}
+
 func OpenChannel(partnerAddr string) (*httpComm.ChannelRsp, *httpComm.FailedRsp) {
 	result, ontErr := sendRpcRequest("openchannel", []interface{}{partnerAddr})
 	if ontErr != nil {

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"strconv"
 
 	"github.com/anacrolix/dht/krpc"
 	"github.com/syndtr/goleveldb/leveldb"
@@ -69,6 +70,30 @@ func (this *EndpointDB) GetEndpoint(walletAddr string) (*Endpoint, error) {
 		return nil, err
 	}
 	return info, nil
+}
+
+func (this *EndpointDB) UpdateEndpoint(walletAddr, hostAddr string) error {
+
+	host, port, err := net.SplitHostPort(hostAddr)
+	if err != nil {
+		return err
+	}
+	netIp := net.ParseIP(host).To4()
+	if netIp == nil {
+		netIp = net.ParseIP(host).To16()
+	}
+	netPort, err := strconv.Atoi(port)
+	if err != nil {
+		return err
+	}
+
+	ep, err := this.GetEndpoint(walletAddr)
+	if err != nil {
+		return err
+	} else if ep.NodeAddr.String() == hostAddr {
+		return nil
+	}
+	return this.PutEndpoint(walletAddr, netIp, netPort)
 }
 
 func (this *EndpointDB) DelEndpoint(walletAddr string) error {

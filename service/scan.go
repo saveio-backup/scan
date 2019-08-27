@@ -223,6 +223,15 @@ func (this *Node) autoRegisterDns() error {
 }
 
 func (this *Node) AutoSetupDNSChannelsWorking() error {
+	progress, err := this.GetFilterBlockProgress()
+	if err != nil {
+		return err
+	}
+
+	if progress.Progress != 1.0 {
+		return errors.NewErr("block sync uncomplete, please wait a moment.")
+	}
+
 	item, err := this.GetDnsPeerPoolItem(hex.EncodeToString(keypair.SerializePublicKey(this.Account.PublicKey)))
 	if err != nil {
 		return err

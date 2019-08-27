@@ -145,7 +145,6 @@ func initAPP() *cli.App {
 var wAddr string
 
 func main() {
-	fmt.Print(os.Args)
 	if err := initAPP().Run(os.Args); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -264,19 +263,6 @@ func startScan(ctx *cli.Context, acc *account.Account) {
 		log.Fatalf("channel service start err : %v", err)
 	}
 	log.Info("channel service started.")
-
-	// setup dns channel connect
-	if config.Parameters.Base.AutoSetupDNSChannelsEnable {
-		go func() {
-			err := service.ScanNode.AutoSetupDNSChannelsWorking()
-			if err != nil {
-				log.Error(err)
-				log.Error("AutoSetupDNSChannelsWorking failed")
-			} else {
-				log.Info("AutoSetupDNSChannelsWorking done.")
-			}
-		}()
-	}
 }
 
 func getDefaultAccount(ctx *cli.Context) (*account.Account, error) {

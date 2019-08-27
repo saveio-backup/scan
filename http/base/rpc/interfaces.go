@@ -21,6 +21,7 @@ package rpc
 import (
 	"bytes"
 	"encoding/hex"
+	"errors"
 
 	"github.com/saveio/scan/service"
 
@@ -1161,4 +1162,21 @@ func GetChannelInitProgress(params []interface{}) map[string]interface{} {
 		Now:      progress.Now,
 	}
 	return responseSuccess(&progressRsp)
+}
+
+func JoinDnsNodesChannels(params []interface{}) map[string]interface{} {
+	progress, err := service.ScanNode.GetFilterBlockProgress()
+	if err != nil {
+		return responsePack(berr.INTERNAL_ERROR, err.Error())
+	}
+	if progress.Progress != 1.0 {
+		return responsePack(berr.BLOCK_SYNCING_UNCOMPLETE, errors.New("block sync uncomplete, please wait a moment."))
+	}
+
+	err = service.ScanNode.AutoSetupDNSChannelsWorking()
+	if err != nil {
+		return responsePack(berr.INTERNAL_ERROR, err.Error())
+	}
+
+	return responseSuccess(nil)
 }

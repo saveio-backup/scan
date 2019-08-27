@@ -1,12 +1,9 @@
 package server
 
 import (
+	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"net"
-	"reflect"
-	"strconv"
 
 	"github.com/saveio/scan/storage"
 
@@ -67,78 +64,55 @@ func (this *P2PActor) Receive(ctx actor.Context) {
 		log.Debug("[P2p]actor started")
 	case *actor.Restart:
 		log.Warn("[P2p]actor restart")
-	case *pm.Registry:
-		log.Debugf("tracker client registry or update msg:%s", msg.String())
+	case *pm.Endpoint:
+		log.Debugf("dns actor receive pm.Registry msg, WalletAddr: %s, HostPort: %s\n", msg.WalletAddr, msg.HostPort)
 		if msg.WalletAddr == "" || msg.HostPort == "" {
-			log.Errorf("[MSB Receive] receive from peer:%s, nil Reg message", ctx.Sender().Address)
-			break
-		}
-		nodeAddr, err := storage.EDB.GetEndpoint(msg.WalletAddr)
-		if err != nil {
-			return
-		}
-
-		if msg.Type == 0 {
-			msg.Type = 1
-			// go this.Broadcast(msg)
-		} else if msg.Type == 1 && fmt.Sprintf("%s", nodeAddr.NodeAddr) != msg.HostPort {
-			err := UpdateEndpointDB(msg.WalletAddr, msg.HostPort)
-			if err != nil {
-				log.Errorf("[MSB Receive] sync registry failed, error:%v", err)
-			}
-			log.Debugf("[MSB Receive] sync registry success: %v", msg.String())
-		}
-	case *pm.UnRegistry:
-		log.Debugf("tracker client unRegistry msg:%s", msg.String())
-		if msg.WalletAddr == "" {
-			log.Errorf("[MSB Receive] receive from peer:%s, nil Reg message", ctx.Sender().Address)
 			break
 		}
 
-		nodeAddr, err := storage.EDB.GetEndpoint(msg.WalletAddr)
-		if err != nil {
-			return
-		}
-
-		if msg.Type == 0 {
+		switch msg.Type {
+		case 0:
 			msg.Type = 1
 			go this.Broadcast(msg)
-		} else if msg.Type == 1 && fmt.Sprintf("%s", nodeAddr.NodeAddr) != "" {
-			err := storage.EDB.DelEndpoint(msg.WalletAddr)
+			break
+		case 1:
+			err := storage.EDB.UpdateEndpoint(msg.WalletAddr, msg.HostPort)
 			if err != nil {
-				log.Errorf("[MSB Receive] sync regmessage error:%v", err)
+				log.Errorf("err\n", err)
 			}
+			break
+		default:
+			log.Debugf("unknown msg type: %d\n", msg.Type)
 		}
-		// go this.Broadcast(msg)
 	case *pm.Torrent:
-		log.Debug("tracker client torrent msg")
-		if msg.InfoHash == nil || msg.Torrent == nil {
-			log.Errorf("[MSB Receive] receive from peer:%s, nil Torrent message", ctx.Sender().Address)
+		log.Debug("dns actor receive pm.Torrent msg, InfoHash: %v, Left: %d, msg.PeerInfo: %v\n", msg.InfoHash, msg.Left, msg.Peerinfo)
+		if msg.InfoHash == nil || msg.Peerinfo == nil {
 			break
 		}
 
-		hpBytes, _ := storage.TDB.GetTorrentBinary(msg.InfoHash)
-		if msg.Type == 0 {
+		var peer *storage.PeerInfo
+		err := peer.DeSerialize(bytes.NewReader(msg.Peerinfo))
+		if err != nil {
+			log.Errorf("%v\n", err)
+			break
+		}
+
+		switch msg.Type {
+		case 0:
 			msg.Type = 1
 			go this.Broadcast(msg)
-		} else if msg.Type == 1 && string(hpBytes) != string(msg.Torrent) {
-			var t *storage.Torrent
-			err := json.Unmarshal(msg.Torrent, t)
-			if t == nil || err != nil {
-				log.Errorf("[MSB Receive] sync json.Unmarshal msg.Torrent err:", err)
-			}
-			err = storage.TDB.PutTorrent(msg.InfoHash, t)
+			break
+		case 1:
+			err := storage.TDB.AddTorrentPeer(msg.InfoHash, msg.Left, peer.NodeAddr.String(), peer)
 			if err != nil {
-				log.Errorf("[MSB Receive] sync filemessage error:%v", err)
+				log.Errorf("%v\n", err)
 			}
-		} else {
-			log.Errorf("No NEED BROADCAST, hpBytes: %s, v: %s", hpBytes, msg.Torrent)
+			break
+		default:
+			log.Debugf("unknown msg type: %d\n", msg.Type)
 		}
-	case *pm.UserDefineMsg:
-		t := reflect.TypeOf(msg)
-		this.msgHandlers[t.Name()](msg, this.localPID)
 	default:
-		log.Error("[P2PActor] receive unknown message type!")
+		log.Debugf("dns actor receive unknown message type.")
 	}
 
 }
@@ -158,20 +132,4 @@ func (this *P2PActor) UnRegMsgHandler(msgName string, handler MessageHandler) {
 
 func (this *P2PActor) GetLocalPID() *actor.PID {
 	return this.localPID
-}
-
-func UpdateEndpointDB(walletAddr, hostAddr string) error {
-	host, port, err := net.SplitHostPort(hostAddr)
-	if err != nil {
-		return err
-	}
-	netIp := net.ParseIP(host).To4()
-	if netIp == nil {
-		netIp = net.ParseIP(host).To16()
-	}
-	netPort, err := strconv.Atoi(port)
-	if err != nil {
-		return err
-	}
-	return storage.EDB.PutEndpoint(walletAddr, netIp, netPort)
 }
