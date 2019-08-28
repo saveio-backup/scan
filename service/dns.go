@@ -5,7 +5,6 @@ import (
 	"github.com/saveio/themis/smartcontract/service/native/dns"
 )
 
-//dns api
 func (this *Node) DNSNodeReg(ip string, port string, initDeposit uint64) (common.Uint256, error) {
 	return this.Chain.Native.Dns.DNSNodeReg([]byte(ip), []byte(port), initDeposit)
 }

@@ -25,10 +25,10 @@ var ChannelCommand = cli.Command{
 		{
 			Action:      join,
 			Name:        "join",
-			Usage:       "Join all dns nodes channels",
+			Usage:       "Join dns nodes channels",
 			ArgsUsage:   " ",
 			Flags:       []cli.Flag{},
-			Description: "Join all dns nodes channels",
+			Description: "Join dns nodes channels",
 		},
 		{
 			Action:    openChannel,
@@ -142,8 +142,7 @@ func initProgress(ctx *cli.Context) error {
 	SetRpcPort(ctx)
 	progress, failed := utils.CheckChannelInitProgress()
 	if failed != nil {
-		PrintErrorMsg("\nCheck channel init progress failed. Failed message:")
-		PrintJsonObject(failed)
+		PrintErrorMsg("%v\n", failed.FailedMsg)
 		return nil
 	}
 	PrintInfoMsg("\nCheck chennal init preogress success. Progress:\n %+v", progress)
@@ -154,11 +153,10 @@ func join(ctx *cli.Context) error {
 	SetRpcPort(ctx)
 	failed := utils.JoinDnsChannels()
 	if failed != nil {
-		PrintErrorMsg("\njoin all dns nodes channels failed. Failed message:")
-		PrintJsonObject(failed)
-	} else {
-		PrintInfoMsg("\njoin all dns nodes channels success.\n")
+		PrintErrorMsg("%v\n", failed.FailedMsg)
+		return nil
 	}
+	PrintInfoMsg("\nJoin dns nodes channels success.\n")
 	return nil
 }
 
@@ -175,8 +173,7 @@ func openChannel(ctx *cli.Context) error {
 
 	chanRsp, failed := utils.OpenChannel(partnerAddr)
 	if failed != nil {
-		PrintErrorMsg("\nOpen channel failed. Failed message:")
-		PrintJsonObject(failed)
+		PrintErrorMsg("%v\n", failed.FailedMsg)
 		return nil
 	}
 	PrintInfoMsg("\nOpen channel success. Channel ID: %d", chanRsp.Id)
@@ -196,8 +193,7 @@ func closeChannel(ctx *cli.Context) error {
 
 	_, failed := utils.CloseChannel(partnerAddr)
 	if failed != nil {
-		PrintErrorMsg("\nClose channel failed. Failed message:")
-		PrintJsonObject(failed)
+		PrintErrorMsg("%v\n", failed.FailedMsg)
 		return nil
 	}
 	PrintInfoMsg("\nClose channel success.")
@@ -218,8 +214,7 @@ func depositToChannel(ctx *cli.Context) error {
 
 	_, failed := utils.DepositToChannel(partnerAddr, totalDeposit)
 	if failed != nil {
-		PrintErrorMsg("\nDeposit to channel failed. Failed message:")
-		PrintJsonObject(failed)
+		PrintErrorMsg("%v\n", failed.FailedMsg)
 		return nil
 	}
 	PrintInfoMsg("\nDeposit to channel success.")
@@ -240,8 +235,7 @@ func withdrawChannel(ctx *cli.Context) error {
 
 	_, failed := utils.WithdrawChannel(partnerAddr, amount)
 	if failed != nil {
-		PrintErrorMsg("\nWithdraw channel failed. Failed message:")
-		PrintJsonObject(failed)
+		PrintErrorMsg("%v\n", failed.FailedMsg)
 		return nil
 	}
 	PrintInfoMsg("\nWithdraw channel success.")
@@ -263,8 +257,7 @@ func transferToSomebody(ctx *cli.Context) error {
 
 	_, failed := utils.TransferToSomebody(partnerAddr, amount, paymentId)
 	if failed != nil {
-		PrintErrorMsg("\nTransfer by channel failed. Failed message:")
-		PrintJsonObject(failed)
+		PrintErrorMsg("%v\n", failed.FailedMsg)
 		return nil
 	}
 	PrintInfoMsg("\nTransfer by channel success.")
@@ -279,12 +272,10 @@ func getAllChannels(ctx *cli.Context) error {
 
 	channelInfos, failed := utils.GetAllChannels()
 	if failed != nil {
-		PrintErrorMsg("\nShow all channels info failed. Failed message:")
-		PrintJsonObject(failed)
+		PrintErrorMsg("%v\n", failed.FailedMsg)
 		return nil
 	} else if channelInfos != nil {
 		if partnerAddr != "" {
-			PrintInfoMsg("\nShow channel with %s info.", partnerAddr)
 			exist := false
 			for _, item := range channelInfos.Channels {
 				if item.Address == partnerAddr {
@@ -297,12 +288,12 @@ func getAllChannels(ctx *cli.Context) error {
 				PrintInfoMsg("do not exist.")
 			}
 		} else {
-			PrintInfoMsg("\nShow all channels info success. Default limit 50:")
+			PrintInfoMsg("Show all channels limit 50 in default, can be paging used by flag [--page]")
 			PrintInfoMsg("The total number of channels is %d", len(channelInfos.Channels))
 			PrintInfoMsg("The total balance of channels is %d, and BalanceFormat: %s", channelInfos.Balance, channelInfos.BalanceFormat)
-			counter := 0
+			counter, pagePrev, pageNext := 0, 50*page, 50*(page+1)
 			for _, item := range channelInfos.Channels {
-				if 50*page < counter && counter < 50*(page+1) {
+				if pagePrev <= counter && counter < pageNext {
 					PrintInfoMsg("Index %d:", counter)
 					PrintJsonObject(item)
 				}
@@ -345,11 +336,9 @@ func queryChannelDeposit(ctx *cli.Context) error {
 	partnerAddr := ctx.String(flags.GetFlagName(flags.PartnerAddressFlag))
 	totalDepositBalanceRsp, failed := utils.QueryChannelDeposit(partnerAddr)
 	if failed != nil {
-		PrintErrorMsg("\nQuery channel deposit balance failed. Failed message:")
-		PrintJsonObject(failed)
+		PrintErrorMsg("%v\n", failed.FailedMsg)
 		return nil
 	}
-	PrintInfoMsg("\nQuery channel deposit balance success. TotalDepositBalance msg:")
 	PrintJsonObject(totalDepositBalanceRsp)
 	return nil
 }
@@ -370,11 +359,9 @@ func queryHostInfo(ctx *cli.Context) error {
 	partnerAddr := ctx.String(flags.GetFlagName(flags.PartnerAddressFlag))
 	chanHostRsp, failed := utils.QueryHostInfo(partnerAddr)
 	if failed != nil {
-		PrintErrorMsg("\nTransfer by channel failed. Failed message:")
-		PrintJsonObject(failed)
+		PrintErrorMsg("%v\n", failed.FailedMsg)
 		return nil
 	}
-	PrintInfoMsg("\nTransfer by channel success. Channel host info msg:")
 	PrintJsonObject(chanHostRsp)
 	return nil
 }

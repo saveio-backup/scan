@@ -20,12 +20,11 @@ import (
 	"github.com/saveio/scan/storage"
 
 	"github.com/saveio/themis/account"
-	chaincmd "github.com/saveio/themis/cmd"
-	chaincomm "github.com/saveio/themis/cmd/common"
-	"github.com/saveio/themis/cmd/utils"
-	chainutils "github.com/saveio/themis/cmd/utils"
+	thmsCmd "github.com/saveio/themis/cmd"
+	thmsComm "github.com/saveio/themis/cmd/common"
+	thmsUtils "github.com/saveio/themis/cmd/utils"
 	"github.com/saveio/themis/common/log"
-	chain "github.com/saveio/themis/start"
+	thms "github.com/saveio/themis/start"
 
 	"github.com/urfave/cli"
 )
@@ -37,18 +36,18 @@ func initAPP() *cli.App {
 	app.Version = config.VERSION
 	app.Copyright = "Copyright in 2019 The Save Authors"
 	app.Commands = []cli.Command{
-		chaincmd.AccountCommand,
-		chaincmd.InfoCommand,
-		chaincmd.AssetCommand,
-		// chaincmd.ContractCommand,
-		chaincmd.ImportCommand,
-		chaincmd.ExportCommand,
-		chaincmd.TxCommond,
-		chaincmd.SigTxCommand,
-		// chaincmd.MultiSigAddrCommand,
-		// chaincmd.MultiSigTxCommand,
-		chaincmd.SendTxCommand,
-		chaincmd.ShowTxCommand,
+		thmsCmd.AccountCommand,
+		thmsCmd.InfoCommand,
+		thmsCmd.AssetCommand,
+		// thmsCmd.ContractCommand,
+		thmsCmd.ImportCommand,
+		thmsCmd.ExportCommand,
+		thmsCmd.TxCommond,
+		thmsCmd.SigTxCommand,
+		// thmsCmd.MultiSigAddrCommand,
+		// thmsCmd.MultiSigTxCommand,
+		thmsCmd.SendTxCommand,
+		thmsCmd.ShowTxCommand,
 		cmd.ChannelCommand,
 		cmd.TrackerCommand,
 		cmd.DNSCommand,
@@ -93,46 +92,46 @@ func initAPP() *cli.App {
 		//flags.RestfulPortFlag,
 
 		//common setting
-		chainutils.ConfigFlag,
-		chainutils.DisableEventLogFlag,
-		chainutils.DataDirFlag,
+		thmsUtils.ConfigFlag,
+		thmsUtils.DisableEventLogFlag,
+		thmsUtils.DataDirFlag,
 		//account setting
-		chainutils.WalletFileFlag,
-		chainutils.AccountAddressFlag,
-		chainutils.AccountPassFlag,
+		thmsUtils.WalletFileFlag,
+		thmsUtils.AccountAddressFlag,
+		thmsUtils.AccountPassFlag,
 		//consensus setting
-		chainutils.EnableConsensusFlag,
-		chainutils.MaxTxInBlockFlag,
+		thmsUtils.EnableConsensusFlag,
+		thmsUtils.MaxTxInBlockFlag,
 		//txpool setting
-		chainutils.GasPriceFlag,
-		chainutils.GasLimitFlag,
-		chainutils.TxpoolPreExecDisableFlag,
-		chainutils.DisableSyncVerifyTxFlag,
-		chainutils.DisableBroadcastNetTxFlag,
+		thmsUtils.GasPriceFlag,
+		thmsUtils.GasLimitFlag,
+		thmsUtils.TxpoolPreExecDisableFlag,
+		thmsUtils.DisableSyncVerifyTxFlag,
+		thmsUtils.DisableBroadcastNetTxFlag,
 		//p2p setting
-		chainutils.ReservedPeersOnlyFlag,
-		chainutils.ReservedPeersFileFlag,
-		chainutils.NetworkIdFlag,
-		chainutils.NodePortFlag,
-		chainutils.ConsensusPortFlag,
-		chainutils.DualPortSupportFlag,
-		chainutils.MaxConnInBoundFlag,
-		chainutils.MaxConnOutBoundFlag,
-		chainutils.MaxConnInBoundForSingleIPFlag,
+		thmsUtils.ReservedPeersOnlyFlag,
+		thmsUtils.ReservedPeersFileFlag,
+		thmsUtils.NetworkIdFlag,
+		thmsUtils.NodePortFlag,
+		thmsUtils.ConsensusPortFlag,
+		thmsUtils.DualPortSupportFlag,
+		thmsUtils.MaxConnInBoundFlag,
+		thmsUtils.MaxConnOutBoundFlag,
+		thmsUtils.MaxConnInBoundForSingleIPFlag,
 		//test mode setting
-		chainutils.EnableTestModeFlag,
-		chainutils.TestModeGenBlockTimeFlag,
+		thmsUtils.EnableTestModeFlag,
+		thmsUtils.TestModeGenBlockTimeFlag,
 		//rpc setting
-		chainutils.RPCDisabledFlag,
-		chainutils.RPCPortFlag,
-		chainutils.RPCLocalEnableFlag,
-		chainutils.RPCLocalProtFlag,
+		thmsUtils.RPCDisabledFlag,
+		thmsUtils.RPCPortFlag,
+		thmsUtils.RPCLocalEnableFlag,
+		thmsUtils.RPCLocalProtFlag,
 		//rest setting
-		chainutils.RestfulEnableFlag,
-		chainutils.RestfulPortFlag,
+		thmsUtils.RestfulEnableFlag,
+		thmsUtils.RestfulPortFlag,
 		//ws setting
-		// chainutils.WsEnabledFlag,
-		chainutils.WsPortFlag,
+		// thmsUtils.WsEnabledFlag,
+		thmsUtils.WsPortFlag,
 	}
 	app.Before = func(context *cli.Context) error {
 		runtime.GOMAXPROCS(runtime.NumCPU())
@@ -172,53 +171,53 @@ func start(ctx *cli.Context) {
 }
 
 func startChain(ctx *cli.Context) {
-	_, err := chain.InitConfig(ctx)
+	_, err := thms.InitConfig(ctx)
 	if err != nil {
 		log.Errorf("startChain initConfig error:%s", err)
 		return
 	}
 
-	acc, err := chain.InitAccount(ctx)
+	acc, err := thms.InitAccount(ctx)
 	if err != nil {
 		log.Errorf("startChain InitAccount error:%s", err)
 		return
 	}
-	_, err = chain.InitLedger(ctx)
+	_, err = thms.InitLedger(ctx)
 	if err != nil {
 		log.Errorf("startChain initLedger error:%s", err)
 		return
 	}
 	//defer ldg.Close()
-	txpool, err := chain.InitTxPool(ctx)
+	txpool, err := thms.InitTxPool(ctx)
 	if err != nil {
 		log.Errorf("startChain initTxPool error:%s", err)
 		return
 	}
-	p2pSvr, p2pPid, err := chain.InitP2PNode(ctx, txpool)
+	p2pSvr, p2pPid, err := thms.InitP2PNode(ctx, txpool)
 	if err != nil {
 		log.Errorf("startChain initP2PNode error:%s", err)
 		return
 	}
-	_, err = chain.InitConsensus(ctx, p2pPid, txpool, acc)
+	_, err = thms.InitConsensus(ctx, p2pPid, txpool, acc)
 	if err != nil {
 		log.Errorf("startChain initConsensus error:%s", err)
 		return
 	}
-	err = chain.InitRpc(ctx)
+	err = thms.InitRpc(ctx)
 	if err != nil {
 		log.Errorf("startChain initRpc error:%s", err)
 		return
 	}
-	err = chain.InitLocalRpc(ctx)
+	err = thms.InitLocalRpc(ctx)
 	if err != nil {
 		log.Errorf("startChain initLocalRpc error:%s", err)
 		return
 	}
-	chain.InitRestful(ctx)
-	chain.InitWs(ctx)
-	chain.InitNodeInfo(ctx, p2pSvr)
+	thms.InitRestful(ctx)
+	thms.InitWs(ctx)
+	thms.InitNodeInfo(ctx, p2pSvr)
 
-	go chain.LogCurrBlockHeight()
+	go thms.LogCurrBlockHeight()
 	log.Info("Chain started SUCCESS")
 }
 
@@ -266,7 +265,7 @@ func startScan(ctx *cli.Context, acc *account.Account) {
 }
 
 func getDefaultAccount(ctx *cli.Context) (*account.Account, error) {
-	walletFile := ctx.GlobalString(utils.GetFlagName(utils.WalletFileFlag))
+	walletFile := ctx.GlobalString(thmsUtils.GetFlagName(thmsUtils.WalletFileFlag))
 	if walletFile == "" {
 		return nil, fmt.Errorf("Please config wallet file using --wallet flag")
 	}
@@ -274,7 +273,7 @@ func getDefaultAccount(ctx *cli.Context) (*account.Account, error) {
 		return nil, fmt.Errorf("Cannot find wallet file:%s. Please create wallet first", walletFile)
 	}
 
-	acc, err := chaincomm.GetAccount(ctx)
+	acc, err := thmsComm.GetAccount(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("get account error:%s", err)
 	}
@@ -307,9 +306,9 @@ func initRpc(ctx *cli.Context) error {
 
 func initLocalRpc(ctx *cli.Context) error {
 	log.Infof("localRpc start to init...")
-	//if !ctx.GlobalBool(flags.GetFlagName(utils.RPCLocalEnableFlag)) {
-	//	return nil
-	//}
+	if !ctx.GlobalBool(flags.GetFlagName(flags.RPCLocalEnableFlag)) {
+		return nil
+	}
 	var err error
 	exitCh := make(chan interface{}, 0)
 	go func() {

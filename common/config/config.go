@@ -82,12 +82,14 @@ type BaseConfig struct {
 	ChannelRevealTimeout string `json:"ChannelRevealTimeout"`
 	ChannelSettleTimeout string `json:"ChannelSettleTimeout"`
 
-	DnsNetworkId      uint32 `json:"DnsNetworkId"`
-	DnsProtocol       string `json:"DnsProtocol"`
-	DnsPortOffset     uint   `json:"DnsPortOffset"`
-	DnsGovernDeposit  uint64 `json:"DnsGovernDeposit"`
-	DnsChannelDeposit uint64 `json:"DnsChannelDeposit"`
+	DnsNetworkId               uint32 `json:"DnsNetworkId"`
+	DnsProtocol                string `json:"DnsProtocol"`
+	DnsPortOffset              uint   `json:"DnsPortOffset"`
+	DnsGovernDeposit           uint64 `json:"DnsGovernDeposit"`
+	DnsChannelDeposit          uint64 `json:"DnsChannelDeposit"`
+	AutoSetupDNSRegisterEnable bool   `json:"AutoSetupDNSRegisterEnable"`
 
+	TrackerProtocol          string   `json:"TrackerProtocol"`
 	TrackerPortOffset        uint     `json:"TrackerPortOffset"`
 	TrackerFee               int      `json:"TrackerFee`
 	TrackerSeedList          []string `json:"TrackerSeedList"`
@@ -99,11 +101,10 @@ type BaseConfig struct {
 
 	DBPath string `json:"DBPath"`
 
-	AutoSetupDNSRegisterEnable bool     `json:"AutoSetupDNSRegisterEnable"`
-	DnsNodeMaxNum              int      `json:"DnsNodeMaxNum"`
-	SeedInterval               int      `json:"SeedInterval"`
-	Fee                        uint64   `json:"Fee"`
-	IgnoreConnectDNSAddrs      []string `json:"IgnoreConnectDNSAddrs"`
+	DnsNodeMaxNum         int      `json:"DnsNodeMaxNum"`
+	SeedInterval          int      `json:"SeedInterval"`
+	Fee                   uint64   `json:"Fee"`
+	IgnoreConnectDNSAddrs []string `json:"IgnoreConnectDNSAddrs"`
 
 	DumpMemory bool `json:"DumpMemory"`
 }

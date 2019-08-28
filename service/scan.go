@@ -16,7 +16,6 @@ import (
 	dns_actor_server "github.com/saveio/scan/p2p/actor/dns/server"
 	channel_net "github.com/saveio/scan/p2p/networks/channel"
 	dns_net "github.com/saveio/scan/p2p/networks/dns"
-	"github.com/saveio/scan/tracker"
 	themisSdk "github.com/saveio/themis-go-sdk"
 	"github.com/saveio/themis/account"
 	cutils "github.com/saveio/themis/cmd/utils"
@@ -47,6 +46,10 @@ func Init(acc *account.Account) (*Node, error) {
 	return this, nil
 }
 
+func (this *Node) CurrentAccount() *account.Account {
+	return this.Account
+}
+
 func (this *Node) StartScanNode(startChannelNetwork, startDnsNetwork bool) error {
 	channelListenAddr := fmt.Sprintf("127.0.0.1:%d", int(config.Parameters.Base.PortBase+config.Parameters.Base.ChannelPortOffset))
 	this.Config = &dspCfg.DspConfig{
@@ -74,7 +77,12 @@ func (this *Node) StartScanNode(startChannelNetwork, startDnsNetwork bool) error
 			return err
 		}
 
-		err = this.autoRegisterEndpoint()
+		err = this.RegOtherDnsEndpointsToSelf()
+		if err != nil {
+			return err
+		}
+
+		err = this.RegSelfEndpointToOtherDns()
 		if err != nil {
 			return err
 		}
@@ -152,42 +160,6 @@ func (this *Node) SetupDnsNetwork() error {
 	dnsActServer.SetNetwork(this.DnsNet)
 
 	return this.DnsNet.Start(dnsListenAddr)
-}
-
-func (this *Node) StartTrackerService() error {
-	tkSvr := tracker.NewTKServer()
-	tkSvr.Tsvr.SetPID(this.DnsNet.GetPID())
-	go tkSvr.StartTrackerListening()
-	log.Info("start tracker service success")
-	return nil
-}
-
-func (this Node) autoRegisterEndpoint() error {
-	publicAddr := this.ChannelNet.PublicAddr()
-	index := strings.Index(publicAddr, "://")
-	hostPort := publicAddr
-	if index != -1 {
-		hostPort = publicAddr[index+3:]
-	}
-	err := PutExternalIP(this.Account.Address.ToBase58(), hostPort)
-	if err != nil {
-		return err
-	}
-
-	ns, err := this.GetAllDnsNodes()
-	if err != nil {
-		return err
-	}
-	if len(ns) == 0 {
-		return errors.NewErr("no dns nodes")
-	}
-	for _, v := range ns {
-		err := PutExternalIP(v.WalletAddr.ToBase58(), fmt.Sprintf("%s:%s", string(v.IP), string(v.Port)))
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func (this *Node) autoRegisterDns() error {
@@ -269,25 +241,10 @@ func (this *Node) AutoSetupDNSChannelsWorking() error {
 			return err
 		}
 		log.Debugf("available balance %d\n", bal)
-
-		// transfer [loopTest], [TODO] remove this when Stable
-		err = this.Channel.CanTransfer(walletAddr, 10)
-		if err != nil {
-			log.Debug("loopTest cannot transfer!")
-		} else {
-			log.Debug("loopTest can transfer!")
-			for i := 0; i < 3; i++ {
-				err := this.Transfer(1, 1, walletAddr)
-				if err != nil {
-					log.Errorf("auto setup dns channel [loopTest] direct transfer failed: %v\n", err)
-				} else {
-					log.Debugf("auto setup dns channel [loopTest] direct transfer successful\n")
-				}
-			}
-		}
 		return nil
 	}
 
+	numDnsChannels := 0
 	for _, dns := range allDns {
 		var dnsWalletAddrStr = dns.WalletAddr.ToBase58()
 		var dnsUrlStr = fmt.Sprintf("%s://%s:%s", config.Parameters.Base.ChannelProtocol, dns.IP, dns.Port)
@@ -298,11 +255,56 @@ func (this *Node) AutoSetupDNSChannelsWorking() error {
 			this.channelExists(allChannels.Channels, dnsWalletAddrStr) {
 			continue
 		}
-
+		if numDnsChannels >= MAX_DNS_CHANNELS_NUM_AUTO_OPEN_WITH {
+			break
+		}
 		err = setDNSNodeFunc(dnsUrlStr, dnsWalletAddrStr)
 		if err != nil {
 			log.Error(err)
 		}
+		numDnsChannels++
 	}
 	return nil
+}
+
+var startChannelHeight uint32
+
+type FilterBlockProgress struct {
+	Progress float32
+	Start    uint32
+	End      uint32
+	Now      uint32
+}
+
+func (this *Node) GetFilterBlockProgress() (*FilterBlockProgress, error) {
+	progress := &FilterBlockProgress{}
+	if this.Channel == nil {
+		return progress, nil
+	}
+	endChannelHeight, err := this.Chain.GetCurrentBlockHeight()
+	if err != nil {
+		log.Debugf("get channel err %s", err)
+		return progress, err
+	}
+	if endChannelHeight == 0 {
+		return progress, nil
+	}
+	progress.Start = startChannelHeight
+	progress.End = endChannelHeight
+	now := this.Channel.GetCurrentFilterBlockHeight()
+	progress.Now = now
+	log.Debugf("endChannelHeight %d, start %d", endChannelHeight, startChannelHeight)
+	if endChannelHeight <= startChannelHeight {
+		progress.Progress = 1.0
+		return progress, nil
+	}
+	rangeHeight := endChannelHeight - startChannelHeight
+	if now >= rangeHeight+startChannelHeight {
+		progress.Progress = 1.0
+		return progress, nil
+	}
+	p := float32(now-startChannelHeight) / float32(rangeHeight)
+	progress.Progress = p
+	log.Debugf("GetFilterBlockProgress start %d, now %d, end %d, progress %v", startChannelHeight, now, endChannelHeight, progress)
+	return progress, nil
 }

@@ -23,7 +23,7 @@ func (ns *TKServer) Run() {
 }
 
 func (ns *TKServer) StartTrackerListening() error {
-	pc, err := net.ListenPacket("udp", fmt.Sprintf(":%d", config.Parameters.Base.TrackerPortOffset))
+	pc, err := net.ListenPacket(config.Parameters.Base.TrackerProtocol, fmt.Sprintf(":%d", config.Parameters.Base.TrackerPortOffset))
 	if err != nil {
 		log.Errorf("start tracker service net.ListenPacket err:%s", err)
 		return err

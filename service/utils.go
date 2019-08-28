@@ -3,36 +3,17 @@ package service
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"net"
 	"strings"
+	"time"
 
 	"github.com/saveio/themis/common/log"
 )
 
-type ProtocolHostPort struct {
-	Protocol string
-	Host     string
-	Port     string
-}
-
-func SplitHostAddr(endpointAddr string) (*ProtocolHostPort, error) {
-	index := strings.Index(endpointAddr, "://")
-	var hostPort, protocol string
-	if index != -1 {
-		hostPort = endpointAddr[index+3:]
-		protocol = endpointAddr[0:index]
-	}
-	host, port, err := net.SplitHostPort(hostPort)
-	log.Debugf("hostPort %v, host %v", hostPort, host)
-	if err != nil {
-		return nil, err
-	}
-	return &ProtocolHostPort{
-		Protocol: protocol,
-		Host:     host,
-		Port:     port,
-	}, nil
-}
+const (
+	MAX_DNS_TIMEWAIT_FOR_CHANNEL_CONNECT = time.Duration(10) * time.Second // max dns timewait for channel connect
+	TRACKER_SERVICE_TIMEOUT              = time.Duration(15) * time.Second
+	MAX_DNS_CHANNELS_NUM_AUTO_OPEN_WITH  = 5
+)
 
 type accountReader struct {
 	PublicKey []byte

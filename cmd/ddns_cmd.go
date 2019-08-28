@@ -125,8 +125,7 @@ func registerDns(ctx *cli.Context) error {
 	dnsRsp, failed := utils.DNSNodeReg(ip, port, initDeposit)
 
 	if failed != nil {
-		PrintErrorMsg("\nRegister dns failed. Failed message:")
-		PrintJsonObject(failed)
+		PrintErrorMsg("%v\n", failed.FailedMsg)
 		return nil
 	}
 	PrintInfoMsg("\nRegister dns success. \n\n  Tips: Using \"./ddns info status %s\" to query transaction status.\n", dnsRsp.Tx)
@@ -151,8 +150,7 @@ func unregisterDns(ctx *cli.Context) error {
 
 	dnsRsp, failed := utils.DNSNodeUnreg()
 	if failed != nil {
-		PrintErrorMsg("\nUnregister dns failed. Failed message:")
-		PrintJsonObject(failed)
+		PrintErrorMsg("%v\n", failed.FailedMsg)
 		return nil
 	}
 	PrintInfoMsg("\nUnregister dns success. \n\n  Tips: Using \"./ddns info status %s\" to query transaction status.\n", dnsRsp.Tx)
@@ -177,8 +175,7 @@ func quitDns(ctx *cli.Context) error {
 
 	dnsRsp, failed := utils.DNSNodeQuit()
 	if failed != nil {
-		PrintErrorMsg("\nQuit dns failed. Failed message:")
-		PrintJsonObject(failed)
+		PrintErrorMsg("%v\n", failed.FailedMsg)
 		return nil
 	}
 	PrintInfoMsg("\nQuit dns success. \n\n  Tips: Using \"./ddns info status %s\" to query transaction status.\n", dnsRsp.Tx)
@@ -210,8 +207,7 @@ func addPos(ctx *cli.Context) error {
 	deltaDeposit := ctx.Uint64(flags.GetFlagName(flags.DeltaDepositFlag))
 	dnsRsp, failed := utils.DNSAddPos(deltaDeposit)
 	if failed != nil {
-		PrintErrorMsg("\nAdd dns init deposit failed. Failed message:")
-		PrintJsonObject(failed)
+		PrintErrorMsg("%v\n", failed.FailedMsg)
 		return nil
 	}
 	PrintInfoMsg("\nAdd dns init deposit success. \n\n  Tips: Using \"./ddns info status %s\" to query transaction status.\n", dnsRsp.Tx)
@@ -243,8 +239,7 @@ func reducePos(ctx *cli.Context) error {
 	deltaDeposit := ctx.Uint64(flags.GetFlagName(flags.DeltaDepositFlag))
 	dnsRsp, failed := utils.DNSReducePos(deltaDeposit)
 	if failed != nil {
-		PrintErrorMsg("\nReduce dns init deposit failed. Failed message:")
-		PrintJsonObject(failed)
+		PrintErrorMsg("%v\n", failed.FailedMsg)
 		return nil
 	}
 	PrintInfoMsg("\nReduce dns init deposit success. \n\n  Tips: Using \"./ddns info status %s\" to query transaction status.\n", dnsRsp.Tx)
@@ -278,8 +273,7 @@ func getRegisterInfo(ctx *cli.Context) error {
 
 	dnsPPRsp, failed := utils.DNSRegisterInfo(dnsAll, peerPubkey)
 	if failed != nil {
-		PrintErrorMsg("\nGet dns register info failed. Failed message:")
-		PrintJsonObject(failed)
+		PrintErrorMsg("%v\n", failed.FailedMsg)
 		return nil
 	} else if dnsPPRsp != nil {
 		if dnsPPRsp.PeerPoolMap != nil {
@@ -345,8 +339,7 @@ func getHostInfo(ctx *cli.Context) error {
 
 	dnsNIRsp, failed := utils.DNSHostInfo(dnsAll, walletAddr)
 	if failed != nil {
-		PrintErrorMsg("\nGet dns host info failed. Failed message:")
-		PrintJsonObject(failed)
+		PrintErrorMsg("%v\n", failed.FailedMsg)
 		return nil
 	} else if dnsNIRsp != nil {
 		if dnsNIRsp.NodeInfoMap != nil {

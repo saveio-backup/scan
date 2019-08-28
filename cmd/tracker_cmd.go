@@ -1,8 +1,3 @@
-/**
- * Description:
- * Author: LiYong Zhang
- * Create: 2019-04-15
- */
 package cmd
 
 import (
@@ -100,8 +95,7 @@ func checkTorrent(ctx *cli.Context) error {
 
 	peers, failed := utils.CheckTorrent(fileHash)
 	if failed != nil {
-		PrintErrorMsg("Check torrent failed. Failed message:")
-		PrintJsonObject(failed)
+		PrintErrorMsg("%v\n", failed.FailedMsg)
 		return nil
 	}
 
@@ -146,12 +140,9 @@ func regEndPoint(ctx *cli.Context) error {
 
 	endpoint, failed := utils.RegEndPoint(wAddr, host)
 	if failed != nil {
-		PrintErrorMsg("Register endpoint failed. Failed message:")
-		PrintJsonObject(failed)
+		PrintErrorMsg("%v\n", failed.FailedMsg)
 		return nil
 	}
-
-	PrintInfoMsg("Register endpoint success. EndPoint message:")
 	PrintJsonObject(endpoint)
 	return nil
 }
@@ -186,12 +177,10 @@ func updateEndPoint(ctx *cli.Context) error {
 
 	endpoint, failed := utils.UpdateEndPoint(wAddr, host)
 	if failed != nil {
-		PrintErrorMsg("Update endpoint failed. Failed message:")
-		PrintJsonObject(failed)
+		PrintErrorMsg("%v\n", failed.FailedMsg)
 		return nil
 	}
-
-	PrintInfoMsg("Update endpoint success. EndPoint updated message:")
+	PrintInfoMsg("Update endpoint success.")
 	PrintJsonObject(endpoint)
 	return nil
 }
@@ -225,12 +214,11 @@ func unRegEndPoint(ctx *cli.Context) error {
 
 	endpoint, failed := utils.UnRegEndPoint(wAddr)
 	if failed != nil {
-		PrintErrorMsg("Unregister endpoint failed. Failed message:")
-		PrintJsonObject(failed)
+		PrintErrorMsg("%v\n", failed.FailedMsg)
 		return nil
 	}
 
-	PrintInfoMsg("Unregister endpoint success. Endpoint unregister message:")
+	PrintInfoMsg("Unregister endpoint success.")
 	PrintJsonObject(endpoint)
 	return nil
 }
@@ -265,12 +253,9 @@ func reqEndPoint(ctx *cli.Context) error {
 
 	endpoint, failed := utils.ReqEndPoint(wAddr)
 	if failed != nil {
-		PrintErrorMsg("Request endpoint failed. Failed message:")
-		PrintJsonObject(failed)
+		PrintErrorMsg("%v\n", failed.FailedMsg)
 		return nil
 	}
-
-	PrintInfoMsg("Request endpoint success. EndPoint message:")
 	PrintJsonObject(endpoint)
 	return nil
 }
