@@ -100,6 +100,7 @@ func (this *Node) StartScanNode(startChannelNetwork, startDnsNetwork bool) error
 		if err != nil {
 			return err
 		}
+
 	}
 	log.Info("scan node start success.")
 	return nil
@@ -159,7 +160,29 @@ func (this *Node) SetupDnsNetwork() error {
 	dns_net.DnsP2p = this.DnsNet
 	dnsActServer.SetNetwork(this.DnsNet)
 
-	return this.DnsNet.Start(dnsListenAddr)
+	err = this.DnsNet.Start(dnsListenAddr)
+	if err != nil {
+		return err
+	}
+
+	return this.SendConnectMsgToAllDns()
+}
+
+func (this *Node) SendConnectMsgToAllDns() error {
+	allDns, err := this.GetAllDnsNodes()
+	if err != nil {
+		return err
+	}
+
+	for _, dns := range allDns {
+		dnsPortOffset := config.Parameters.Base.PortBase + config.Parameters.Base.DnsPortOffset
+		log.Debugf("connect dns: %s\n", fmt.Sprintf("%s://%s:%d", config.Parameters.Base.DnsProtocol, dns.IP, dnsPortOffset))
+		err := this.DnsNet.ConnectAndWait(fmt.Sprintf("%s://%s:%d", config.Parameters.Base.DnsProtocol, dns.IP, dnsPortOffset))
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	return nil
 }
 
 func (this *Node) autoRegisterDns() error {
@@ -175,7 +198,8 @@ func (this *Node) autoRegisterDns() error {
 	}
 	balance, err := this.Chain.Native.Usdt.BalanceOf(this.Account.Address)
 	if err != nil || balance < config.Parameters.Base.DnsGovernDeposit {
-		log.Fatal("get dns balance: %s, governdeposit: %s, needs err: %v", cutils.FormatUsdt(balance), cutils.FormatUsdt(config.Parameters.Base.DnsGovernDeposit), err)
+		log.Errorf("get dns balance: %s, governdeposit: %s, needs err: %v", cutils.FormatUsdt(balance), cutils.FormatUsdt(config.Parameters.Base.DnsGovernDeposit), err)
+		return nil
 	}
 	ownNode, err := this.GetDnsNodeByAddr(this.Account.Address)
 	log.Debugf("ownNode: %v, err: %v\n", ownNode, err)
