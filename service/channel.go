@@ -74,6 +74,10 @@ func GetExternalIP(walletAddr string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	if nodeAddr == nil {
+		return "", errors.New("nodeAddr is nil")
+	}
+
 	log.Debugf("%s://%v", config.Parameters.Base.ChannelProtocol, nodeAddr.NodeAddr)
 	return fmt.Sprintf("%s://%v", config.Parameters.Base.ChannelProtocol, nodeAddr.NodeAddr), nil
 }

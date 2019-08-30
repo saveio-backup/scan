@@ -90,7 +90,7 @@ func (this *EndpointDB) UpdateEndpoint(walletAddr, hostAddr string) error {
 	ep, err := this.GetEndpoint(walletAddr)
 	if err != nil {
 		return err
-	} else if ep.NodeAddr.String() == hostAddr {
+	} else if ep != nil && ep.NodeAddr.String() == hostAddr {
 		return nil
 	}
 	return this.PutEndpoint(walletAddr, netIp, netPort)

@@ -78,7 +78,7 @@ func (this *PeerInfo) Serialize(w io.Writer) error {
 func (this *PeerInfo) DeSerialize(r io.Reader) error {
 	var err error
 	ID, err := serialization.ReadVarBytes(r)
-	if err != nil {
+	if err != nil || ID == nil {
 		return fmt.Errorf("[PeerInfo] ID DeSerialize error: %s", err.Error())
 	}
 	copy(this.ID[:], ID)
@@ -89,7 +89,7 @@ func (this *PeerInfo) DeSerialize(r io.Reader) error {
 	}
 
 	IP, err := serialization.ReadVarBytes(r)
-	if err != nil {
+	if err != nil || IP == nil {
 		return fmt.Errorf("[PeerInfo] IP DeSerialize error: %s", err.Error())
 	}
 	copy(this.IP[:], IP[:IP_LENGTH])
@@ -100,7 +100,7 @@ func (this *PeerInfo) DeSerialize(r io.Reader) error {
 	}
 
 	naBinarys, err := serialization.ReadVarBytes(r)
-	if err != nil {
+	if err != nil || naBinarys == nil {
 		return fmt.Errorf("[PeerInfo] ID NodeAddrBinarys error: %s", err.Error())
 	}
 	err = this.NodeAddr.UnmarshalBinary(naBinarys)
@@ -109,7 +109,7 @@ func (this *PeerInfo) DeSerialize(r io.Reader) error {
 	}
 
 	taBinarys, err := serialization.ReadVarBytes(r)
-	if err != nil {
+	if err != nil || taBinarys == nil {
 		return fmt.Errorf("[PeerInfo] ID TimestampBinary error: %s", err.Error())
 	}
 	err = this.Timestamp.UnmarshalBinary(taBinarys)

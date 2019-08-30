@@ -77,6 +77,9 @@ func EndPointQuery(walletAddr string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	if nodeAddr == nil {
+		return "", errors.NewErr("endpoint nil")
+	}
 	return fmt.Sprintf("%s", nodeAddr.NodeAddr), nil
 }
 
