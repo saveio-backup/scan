@@ -57,7 +57,7 @@ func (this *EndpointDB) PutEndpoint(walletAddr string, host net.IP, port int) er
 
 func (this *EndpointDB) GetEndpoint(walletAddr string) (*Endpoint, error) {
 	value, err := this.Db.Get([]byte(EP_WALLET_ADDR_KEY_PREFIX + walletAddr))
-	if err != nil && err != leveldb.ErrNotFound {
+	if err != nil && err != leveldb.ErrNotFound && err.Error() != "not found" {
 		return nil, err
 	}
 	if len(value) == 0 {

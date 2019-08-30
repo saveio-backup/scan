@@ -27,7 +27,7 @@ func TestGetEndpoint(t *testing.T) {
 		return
 	}
 	epDB := NewEndpointDB(db)
-	info, err := epDB.GetEndpoint("AUdg8DGDKvwUxyBbxpsMHSnGbYPxNCBSfg")
+	info, err := epDB.GetEndpoint("AUdg8DGDKvwUxyBbxpsMHSnGbYPxNCBSfb")
 	fmt.Printf("info:%v, err:%s\n", info, err)
 }
 
