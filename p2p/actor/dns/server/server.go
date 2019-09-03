@@ -89,7 +89,7 @@ func (this *P2PActor) Receive(ctx actor.Context) {
 			break
 		}
 
-		var peer *storage.PeerInfo
+		peer := storage.PeerInfo{}
 		log.Debugf("PeerInfo Binary: %v\n", msg.Peerinfo)
 
 		err := peer.Deserialize(msg.Peerinfo)
@@ -105,7 +105,7 @@ func (this *P2PActor) Receive(ctx actor.Context) {
 			go this.Broadcast(msg)
 			break
 		case 1:
-			err := storage.TDB.AddTorrentPeer(msg.InfoHash, msg.Left, peer.NodeAddr.String(), peer)
+			err := storage.TDB.AddTorrentPeer(msg.InfoHash, msg.Left, peer.NodeAddr.String(), &peer)
 			if err != nil {
 				log.Errorf("%v\n", err)
 			}
