@@ -1,14 +1,13 @@
 package storage
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"errors"
-	"fmt"
-	"io"
+	"hash/crc32"
 	"time"
 
 	"github.com/anacrolix/dht/krpc"
-	"github.com/ontio/ontology/common/serialization"
 	"github.com/saveio/scan/common/config"
 	"github.com/saveio/themis/common/log"
 )
@@ -21,6 +20,11 @@ const (
 	PEERID_LENGTH                    = 20
 	METAINFOHASH_LENGTH              = 46
 	IP_LENGTH                        = 4
+	PORT_LENGTH                      = 2
+	TIMESTAMP_BINARY_LENGTH          = 8
+	CHECKSUM_LEN                     = 4
+	PAYLOAD_LEN                      = 39
+	BUFFER_LEN                       = 50
 )
 
 type MetaInfoHash [METAINFOHASH_LENGTH]byte
@@ -39,84 +43,94 @@ type PeerInfo struct {
 	Timestamp time.Time
 }
 
-func (this *PeerInfo) Serialize(w io.Writer) error {
-	var err error
-	if err = serialization.WriteVarBytes(w, this.ID[:PEERID_LENGTH]); err != nil {
-		return fmt.Errorf("[PeerInfo] ID Serialize error: %s", err.Error())
+func (this *PeerInfo) Serialize() []byte {
+	var completeBuf [1]byte
+	completeBuf[0] = byte(0)
+	if this.Complete == true {
+		completeBuf[0] = byte(1)
 	}
 
-	if err = serialization.WriteBool(w, this.Complete); err != nil {
-		return fmt.Errorf("[PeerInfo] Complete Serialize error: %s", err.Error())
+	var portBuf [PORT_LENGTH]byte
+	binary.LittleEndian.PutUint16(portBuf[:], this.Port)
+
+	timestamp := make([]byte, TIMESTAMP_BINARY_LENGTH)
+	var timestampBuf [TIMESTAMP_BINARY_LENGTH]byte
+	u := uint64(this.Timestamp.Unix())
+	binary.BigEndian.PutUint64(timestamp, u)
+	copy(timestampBuf[:], timestamp[:TIMESTAMP_BINARY_LENGTH])
+
+	var result []byte
+	result = append(result, this.ID[:PEERID_LENGTH]...)
+	result = append(result, completeBuf[0])
+	result = append(result, this.IP[:IP_LENGTH]...)
+	result = append(result, portBuf[:PORT_LENGTH]...)
+	result = append(result, timestamp[:]...)
+
+	checkSum := crc32.ChecksumIEEE(result)
+	checkSumBuf := make([]byte, CHECKSUM_LEN)
+	binary.BigEndian.PutUint32(checkSumBuf, checkSum)
+
+	result = append(result, checkSumBuf...)
+
+	prefixResult := make([]byte, BUFFER_LEN)
+	copy(prefixResult, result)
+	return prefixResult
+}
+
+func (this *PeerInfo) Deserialize(base64Buf []byte) error {
+	if len(base64Buf) != BUFFER_LEN {
+		return errors.New("buffer length illegal")
+	}
+	buf := make([]byte, BUFFER_LEN)
+	copy(buf[:], base64Buf[:])
+
+	payload := buf[:PAYLOAD_LEN-CHECKSUM_LEN]
+	checkSum := crc32.ChecksumIEEE(payload)
+	check := binary.BigEndian.Uint32(buf[PAYLOAD_LEN-CHECKSUM_LEN:])
+	if checkSum != check {
+		return errors.New("checkSum failed")
 	}
 
-	if err = serialization.WriteVarBytes(w, this.IP[:IP_LENGTH]); err != nil {
-		return fmt.Errorf("[PeerInfo] IP Serialize error: %s", err.Error())
+	copy(this.ID[:], buf[:PEERID_LENGTH])
+	completeBuf := buf[PEERID_LENGTH]
+	this.Complete = false
+	if completeBuf == byte(1) {
+		this.Complete = true
 	}
 
-	if err = serialization.WriteUint16(w, this.Port); err != nil {
-		return fmt.Errorf("[PeerInfo] Port Serialize error: %s", err.Error())
-	}
+	completeEnd := PEERID_LENGTH + 1
+	ipEnd := completeEnd + IP_LENGTH
+	portEnd := ipEnd + PORT_LENGTH
+	timeEnd := portEnd + TIMESTAMP_BINARY_LENGTH
+	copy(this.IP[:], buf[completeEnd:ipEnd])
 
-	naBinarys, err := this.NodeAddr.MarshalBinary()
-	if err != nil {
-		return fmt.Errorf("[PeerInfo] NodeAddr Serialize error: %s", err.Error())
-	}
-	if err = serialization.WriteVarBytes(w, naBinarys); err != nil {
-		return fmt.Errorf("[PeerInfo] NodeAddrBinarys Serialize error: %s", err.Error())
-	}
+	var portBuf [PORT_LENGTH]byte
+	copy(portBuf[:], buf[ipEnd:portEnd])
+	this.Port = binary.LittleEndian.Uint16(portBuf[:])
+	i := int64(binary.BigEndian.Uint64(buf[portEnd:timeEnd]))
+	this.Timestamp = time.Unix(i, 0)
 
-	tsBinarys, err := this.Timestamp.MarshalBinary()
-	if err != nil {
-		return fmt.Errorf("[PeerInfo] Timestamp Serialize error: %s", err.Error())
-	}
-	if err = serialization.WriteVarBytes(w, tsBinarys); err != nil {
-		return fmt.Errorf("[PeerInfo] TimestampBynarys Serialize error: %s", err.Error())
+	this.NodeAddr = krpc.NodeAddr{
+		IP:   this.IP[:],
+		Port: int(this.Port),
 	}
 	return nil
 }
 
-func (this *PeerInfo) DeSerialize(r io.Reader) error {
-	var err error
-	ID, err := serialization.ReadVarBytes(r)
-	if err != nil || ID == nil {
-		return fmt.Errorf("[PeerInfo] ID DeSerialize error: %s", err.Error())
-	}
-	copy(this.ID[:], ID)
+func (this *PeerInfo) String() string {
+	buf := this.Serialize()
+	return string(buf)
+}
 
-	this.Complete, err = serialization.ReadBool(r)
-	if err != nil {
-		return fmt.Errorf("[PeerInfo] Complete DeSerialize error: %s", err.Error())
-	}
+func (this *PeerInfo) ParseFromString(base64Str string) {
+	this.Deserialize([]byte(base64Str))
+}
 
-	IP, err := serialization.ReadVarBytes(r)
-	if err != nil || IP == nil {
-		return fmt.Errorf("[PeerInfo] IP DeSerialize error: %s", err.Error())
-	}
-	copy(this.IP[:], IP[:IP_LENGTH])
-
-	this.Port, err = serialization.ReadUint16(r)
-	if err != nil {
-		return fmt.Errorf("[PeerInfo] ID Port error: %s", err.Error())
-	}
-
-	naBinarys, err := serialization.ReadVarBytes(r)
-	if err != nil || naBinarys == nil {
-		return fmt.Errorf("[PeerInfo] ID NodeAddrBinarys error: %s", err.Error())
-	}
-	err = this.NodeAddr.UnmarshalBinary(naBinarys)
-	if err != nil {
-		return fmt.Errorf("[PeerInfo] ID NodeAddr error: %s", err.Error())
-	}
-
-	taBinarys, err := serialization.ReadVarBytes(r)
-	if err != nil || taBinarys == nil {
-		return fmt.Errorf("[PeerInfo] ID TimestampBinary error: %s", err.Error())
-	}
-	err = this.Timestamp.UnmarshalBinary(taBinarys)
-	if err != nil {
-		return fmt.Errorf("[PeerInfo] ID Timestamp error: %s", err.Error())
-	}
-	return nil
+func (this *PeerInfo) Print() {
+	log.Infof("ID: %v", this.ID)
+	log.Infof("Complete: %v", this.Complete)
+	log.Infof("NodeAddr: %s", this.NodeAddr)
+	log.Infof("Timestamp: %s", this.Timestamp)
 }
 
 type Torrent struct {
@@ -248,7 +262,7 @@ func (this *TorrentDB) GetTorrentPeersByFileHash(fileHash []byte, numWant int32)
 		peersCount += 1
 	}
 
-	log.Debugf("retPeers \n", retPeers)
+	log.Debugf("retPeers: %v\n", retPeers)
 	// peers update strategy, needs more design
 	if peersCount >= MAX_PEERS_LENGTH {
 		err = this.PutTorrent(fileHash, &Torrent{Leechers: t.Leechers, Seeders: t.Seeders, Peers: peersNotExpire})
