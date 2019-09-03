@@ -29,7 +29,6 @@ func TestPeerInfo_Serialize(t *testing.T) {
 	buffer = pi.Serialize()
 	fmt.Printf("buf: %v\n", buffer)
 	dpi := PeerInfo{}
-	// var dpi *PeerInfo
 	err := dpi.Deserialize(buffer)
 	if err != nil {
 		fmt.Println(err)
