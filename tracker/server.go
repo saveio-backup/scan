@@ -333,12 +333,10 @@ func (s *Server) onAnnounceStarted(ar *AnnounceRequest, pi *storage.PeerInfo) er
 		return err
 	}
 
-	var piBinarys bytes.Buffer
-	err = pi.Serialize(&piBinarys)
-	if err != nil {
-		return err
-	}
-	s.p2p.Tell(&pm.Torrent{InfoHash: ar.InfoHash[:], Left: ar.Left, Peerinfo: piBinarys.Bytes(), Type: 0})
+	piBinarys := pi.Serialize()
+	pi.Print()
+	log.Debugf("PeerInfo Binary: %v\n", piBinarys)
+	s.p2p.Tell(&pm.Torrent{InfoHash: ar.InfoHash[:], Left: ar.Left, Peerinfo: piBinarys, Type: 0})
 	return err
 }
 
@@ -352,12 +350,10 @@ func (s *Server) onAnnounceUpdated(ar *AnnounceRequest, pi *storage.PeerInfo) er
 		return err
 	}
 
-	var piBinarys bytes.Buffer
-	err = pi.Serialize(&piBinarys)
-	if err != nil {
-		return err
-	}
-	s.p2p.Tell(&pm.Torrent{InfoHash: ar.InfoHash[:], Left: ar.Left, Peerinfo: piBinarys.Bytes(), Type: 0})
+	piBinarys := pi.Serialize()
+	pi.Print()
+	log.Debugf("PeerInfo Binary: %v\n", piBinarys)
+	s.p2p.Tell(&pm.Torrent{InfoHash: ar.InfoHash[:], Left: ar.Left, Peerinfo: piBinarys, Type: 0})
 	return err
 }
 
@@ -371,12 +367,10 @@ func (s *Server) onAnnounceStopped(ar *AnnounceRequest, pi *storage.PeerInfo) er
 		return err
 	}
 
-	var piBinarys bytes.Buffer
-	err = pi.Serialize(&piBinarys)
-	if err != nil {
-		return err
-	}
-	s.p2p.Tell(&pm.Torrent{InfoHash: ar.InfoHash[:], Left: ar.Left, Peerinfo: piBinarys.Bytes(), Type: 0})
+	piBinarys := pi.Serialize()
+	pi.Print()
+	log.Debugf("PeerInfo Binary: %v\n", piBinarys)
+	s.p2p.Tell(&pm.Torrent{InfoHash: ar.InfoHash[:], Left: ar.Left, Peerinfo: piBinarys, Type: 0})
 	return err
 }
 
@@ -397,12 +391,10 @@ func (s *Server) onAnnounceCompleted(ar *AnnounceRequest, pi *storage.PeerInfo) 
 	t.Peers[pi.NodeAddr.String()] = pi
 	storage.TDB.PutTorrent(ar.InfoHash[:], t)
 
-	var piBinarys bytes.Buffer
-	err = pi.Serialize(&piBinarys)
-	if err != nil {
-		return err
-	}
-	s.p2p.Tell(&pm.Torrent{InfoHash: ar.InfoHash[:], Left: ar.Left, Peerinfo: piBinarys.Bytes(), Type: 0})
+	piBinarys := pi.Serialize()
+	pi.Print()
+	log.Debugf("PeerInfo Binary: %v\n", piBinarys)
+	s.p2p.Tell(&pm.Torrent{InfoHash: ar.InfoHash[:], Left: ar.Left, Peerinfo: piBinarys, Type: 0})
 	return err
 }
 

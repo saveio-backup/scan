@@ -1,7 +1,6 @@
 package server
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 
@@ -91,9 +90,12 @@ func (this *P2PActor) Receive(ctx actor.Context) {
 		}
 
 		var peer *storage.PeerInfo
-		err := peer.DeSerialize(bytes.NewReader(msg.Peerinfo))
+		log.Debugf("PeerInfo Binary: %v\n", msg.Peerinfo)
+
+		err := peer.Deserialize(msg.Peerinfo)
+		peer.Print()
 		if err != nil {
-			log.Errorf("%v\n", err)
+			log.Errorf("pm.Torrent Deserialize err: %v\n", err)
 			break
 		}
 
