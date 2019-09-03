@@ -59,6 +59,7 @@ func (this *Node) StartScanNode(startChannelNetwork, startDnsNetwork bool) error
 		ChannelListenAddr:    channelListenAddr,
 		ChannelProtocol:      config.Parameters.Base.ChannelProtocol,
 		ChannelRevealTimeout: config.Parameters.Base.ChannelRevealTimeout,
+		ChannelSettleTimeout: config.Parameters.Base.ChannelSettleTimeout,
 		ChannelDBPath:        config.ChannelDBPath(),
 	}
 
