@@ -2,32 +2,71 @@ package tracker
 
 import (
 	"crypto/rand"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
 
 	"github.com/anacrolix/dht/krpc"
 	"github.com/saveio/scan/storage"
+	tkComm "github.com/saveio/scan/tracker/common"
 	themisComm "github.com/saveio/themis/common"
 	"github.com/saveio/themis/common/log"
 	"github.com/saveio/themis/crypto/keypair"
 )
 
+type ActionEndpointRegParams struct {
+	Wallet [20]byte
+	IP     net.IP
+	Port   uint16
+}
+
+type ActionTorrentCompleteParams struct {
+	InfoHash storage.MetaInfoHash
+	IP       net.IP
+	Port     uint16
+}
+
+type ActionGetTorrentPeersParams struct {
+	InfoHash storage.MetaInfoHash
+	NumWant  int32
+	Left     uint64
+}
+
 // CompleteTorrent Complete make torrent
-func CompleteTorrent(infoHash storage.MetaInfoHash, trackerUrl string, nodeIP net.IP, port uint16) error {
+func CompleteTorrent(trackerUrl string, params ActionTorrentCompleteParams, pubKey keypair.PublicKey, _sigCallback func(rawData []byte) ([]byte, error)) error {
 	id := storage.PeerID{}
 	rand.Read(id[:])
+
+	rawData, err := json.Marshal(params)
+	if err != nil {
+		return err
+	}
+	sigData, err := _sigCallback(rawData)
+	if err != nil {
+		log.Infof("_sigCallback err %v", err)
+		return err
+	}
+
+	fmt.Println("sigData", sigData, len(sigData))
+	fmt.Println("pubKey", pubKey)
+	fmt.Println("pubKey Binarys", keypair.SerializePublicKey(pubKey), len(keypair.SerializePublicKey(pubKey)))
+	log.Debugf("GetTorrentPeers Params %v\n", params)
 
 	announce := Announce{
 		TrackerUrl: trackerUrl,
 		Request: AnnounceRequest{
 			PeerId:    id,
 			Left:      0,
-			InfoHash:  infoHash,
-			IPAddress: ipconvert(nodeIP),
-			Port:      port,
+			InfoHash:  params.InfoHash,
+			IPAddress: ipconvert(params.IP),
+			Port:      params.Port,
 			Event:     AnnounceEventCompleted,
 			NumWant:   1,
+		},
+		RequestOptions: AnnounceRequestOptions{
+			PubKeyTLV:    tkComm.NewTLV(tkComm.TLV_TAG_PUBLIC_KEY, keypair.SerializePublicKey(pubKey)),
+			SignatureTLV: tkComm.NewTLV(tkComm.TLV_TAG_SIGNATURE, sigData),
 		},
 		flag: ActionAnnounce,
 	}
@@ -41,21 +80,42 @@ func CompleteTorrent(infoHash storage.MetaInfoHash, trackerUrl string, nodeIP ne
 	if len(ret.Peers) == 0 {
 		return errors.New("no peers")
 	}
-	log.Debugf("tracker.client.CompleteTorrent interval:%d, leechers:%d, seeders:%d, peer:%s fileHash: %s\n", ret.Interval, ret.Leechers, ret.Seeders, krpc.NodeAddr{IP: nodeIP, Port: int(port)}.String(), string(infoHash[:]))
+	log.Debugf("tracker.client.CompleteTorrent interval:%d, leechers:%d, seeders:%d, peer:%s fileHash: %s\n", ret.Interval, ret.Leechers, ret.Seeders, krpc.NodeAddr{IP: params.IP, Port: int(params.Port)}.String(), string(params.InfoHash[:]))
 	return nil
 }
 
 // GetTorrentPeers get peers of torrent
-func GetTorrentPeers(infoHash storage.MetaInfoHash, trackerUrl string, numWant int32, left uint64) []Peer {
+func GetTorrentPeers(trackerUrl string, params ActionGetTorrentPeersParams, pubKey keypair.PublicKey, _sigCallback func(rawData []byte) ([]byte, error)) ([]Peer, error) {
 	id := storage.PeerID{}
 	rand.Read(id[:])
+
+	rawData, err := json.Marshal(params)
+	if err != nil {
+		return []Peer{}, err
+	}
+	fmt.Println("rawData", rawData)
+	sigData, err := _sigCallback(rawData)
+	if err != nil {
+		log.Infof("_sigCallback err %v", err)
+		return []Peer{}, err
+	}
+
+	fmt.Println("sigData", sigData, len(sigData))
+	fmt.Println("pubKey", pubKey)
+	fmt.Println("pubKey Binarys", keypair.SerializePublicKey(pubKey), len(keypair.SerializePublicKey(pubKey)))
+	log.Debugf("GetTorrentPeers Params %v\n", params)
+
 	announce := Announce{
 		TrackerUrl: trackerUrl,
 		Request: AnnounceRequest{
 			PeerId:   id,
-			Left:     left,
-			InfoHash: infoHash,
-			NumWant:  numWant,
+			Left:     params.Left,
+			InfoHash: params.InfoHash,
+			NumWant:  params.NumWant,
+		},
+		RequestOptions: AnnounceRequestOptions{
+			PubKeyTLV:    tkComm.NewTLV(tkComm.TLV_TAG_PUBLIC_KEY, keypair.SerializePublicKey(pubKey)),
+			SignatureTLV: tkComm.NewTLV(tkComm.TLV_TAG_SIGNATURE, sigData),
 		},
 		flag: ActionAnnounce,
 	}
@@ -63,24 +123,43 @@ func GetTorrentPeers(infoHash storage.MetaInfoHash, trackerUrl string, numWant i
 	ret, err := announce.Do()
 	if err != nil {
 		log.Errorf("GetTorrentPeers failed err: %s\n", err)
-		return nil
+		return []Peer{}, nil
 	}
-	log.Debugf("tracker.client.CompleteTorrent interval:%d, leechers:%d, seeders:%d, peers:%v, infoHash:%v \n", ret.Interval, ret.Leechers, ret.Seeders, ret.Peers, string(infoHash[:]))
-	return ret.Peers
+	log.Debugf("tracker.client.CompleteTorrent interval:%d, leechers:%d, seeders:%d, peers:%v, infoHash:%v \n", ret.Interval, ret.Leechers, ret.Seeders, ret.Peers, string(params.InfoHash[:]))
+	return ret.Peers, nil
 }
 
-// ---------Tracker client relative action------------
-func RegEndPoint(trackerUrl string, sigData []byte, pubKey keypair.PublicKey, walletAddr [20]byte, nodeIP net.IP, port uint16) error {
-	log.Debugf("RegEndPoint Params: trackerUrl: %s, sigData: %v, pubKey: %v, WalletAddr: %v, nodeIP: %v, Port: %d", trackerUrl, sigData, pubKey, walletAddr, nodeIP, port)
+func RegEndPoint(trackerUrl string, params ActionEndpointRegParams, pubKey keypair.PublicKey, _sigCallback func(rawData []byte) ([]byte, error)) error {
+	rawData, err := json.Marshal(params)
+	if err != nil {
+		return err
+	}
+	fmt.Println("rawData", rawData)
+	sigData, err := _sigCallback(rawData)
+	if err != nil {
+		log.Infof("_sigCallback err %v", err)
+		return err
+	}
+
+	fmt.Println(params)
+	fmt.Println("sigData", sigData, len(sigData))
+	fmt.Println("pubKey", pubKey)
+	fmt.Println("pubKey Binarys", keypair.SerializePublicKey(pubKey), len(keypair.SerializePublicKey(pubKey)))
+	log.Debugf("RegEndPoint Params %v\n", params)
+
 	id := storage.PeerID{}
 	rand.Read(id[:])
 	announce := Announce{
 		TrackerUrl: trackerUrl,
 		Request: AnnounceRequest{
 			PeerId:    id,
-			IPAddress: ipconvert(nodeIP),
-			Port:      port,
-			Wallet:    walletAddr,
+			IPAddress: ipconvert(params.IP),
+			Port:      params.Port,
+			Wallet:    params.Wallet,
+		},
+		RequestOptions: AnnounceRequestOptions{
+			PubKeyTLV:    tkComm.NewTLV(tkComm.TLV_TAG_PUBLIC_KEY, keypair.SerializePublicKey(pubKey)),
+			SignatureTLV: tkComm.NewTLV(tkComm.TLV_TAG_SIGNATURE, sigData),
 		},
 		flag: ActionReg,
 	}

@@ -1,16 +1,13 @@
 package tracker
 
-import "fmt"
+import "net"
 
 var ipAddr [4]byte
 
-func ipconvert(ip []byte) [4]byte {
-	fmt.Println(ip)
-	// for i := range ip {
-	// 	ipAddr[i] = ip[i]
-	// }
-	// return ipAddr
-
+func ipconvert(ip net.IP) [4]byte {
+	if len(ip) != 4 {
+		ip = ip.To4()
+	}
 	copy(ipAddr[:4], ip[:4])
 	return ipAddr
 }

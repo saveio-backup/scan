@@ -21,7 +21,26 @@ type ApiParams struct {
 	Port       uint16
 }
 
-func ParamVerify(trackerUrl string, sigData []byte, pubKey keypair.PublicKey, walletAddr [20]byte, nodeIP net.IP, port uint16) error {
+// func GenSignAnnounceData(trackerUrl string, walletAddr [20]byte, nodeIP net.IP, port uint16) rawData {
+// 	params := ApiParams{
+// 		TrackerUrl: trackerUrl,
+// 		Wallet:     walletAddr,
+// 		IP:         nodeIP,
+// 		Port:       uint16(port),
+// 	}
+// 	rawData, err := json.Marshal(params)
+// 	if err != nil {
+// 		return err
+// 	}
+
+// 	sigData, err := chainsdk.Sign(this.CurrentAccount(), rawData)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	return nil
+// }
+
+func VerifyAnnounce(trackerUrl string, sigData []byte, pubKey keypair.PublicKey, walletAddr [20]byte, nodeIP net.IP, port uint16) error {
 	address := types.AddressFromPubKey(pubKey)
 	if address != common.Address(walletAddr) {
 		return errors.NewErr("walletAddr and public key do not match!")

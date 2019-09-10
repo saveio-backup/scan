@@ -7,7 +7,6 @@ package tracker
 
 import (
 	"fmt"
-	"net"
 	"testing"
 
 	"github.com/saveio/max/thirdparty/assert"
@@ -27,15 +26,15 @@ func TestCheckTorrent(t *testing.T) {
 }
 
 func TestRegEndPoint(t *testing.T) {
-	url := trackerUrl1
-	//ip:=net.ParseIP("192.168.1.1")
-	ip := net.IP{0x11, 0x1, 0x2, 0x3}
-	fmt.Printf("ip:%s\n", ip)
-	fmt.Println(ip)
-	port := uint16(8840)
-	wb, _ := common.AddressFromBase58(walletAddr1)
-	err := RegEndPoint(url, nil, nil, wb, ip, port)
-	assert.Nil(err, t)
+	// url := trackerUrl1
+	// //ip:=net.ParseIP("192.168.1.1")
+	// ip := net.IP{0x11, 0x1, 0x2, 0x3}
+	// fmt.Printf("ip:%s\n", ip)
+	// fmt.Println(ip)
+	// port := uint16(8840)
+	// wb, _ := common.AddressFromBase58(walletAddr1)
+	// err := RegEndPoint(url, nil, nil, wb, ip, port)
+	// assert.Nil(err, t)
 }
 
 func TestUnRegEndPoint(t *testing.T) {
