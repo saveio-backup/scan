@@ -1,7 +1,6 @@
 package service
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
@@ -11,8 +10,6 @@ import (
 
 	"github.com/saveio/scan/common/config"
 	"github.com/saveio/scan/tracker"
-	trackercomm "github.com/saveio/scan/tracker/common"
-	chainsdk "github.com/saveio/themis-go-sdk/utils"
 	"github.com/saveio/themis/common/log"
 )
 
@@ -105,37 +102,37 @@ func (this *Node) RegSelfEndpointToOtherDns() error {
 
 	for _, trackerUrl := range trackerUrls {
 		log.Debugf("trackerurl %s walletAddr: %v netIp:%v netPort:%v", trackerUrl, wallet, netIp, netPort)
-		params := trackercomm.ApiParams{
-			TrackerUrl: trackerUrl,
-			Wallet:     wallet,
-			IP:         netIp,
-			Port:       uint16(netPort),
-		}
-		rawData, err := json.Marshal(params)
-		if err != nil {
-			return err
-		}
+		// params := trackercomm.ApiParams{
+		// 	TrackerUrl: trackerUrl,
+		// 	Wallet:     wallet,
+		// 	IP:         netIp,
+		// 	Port:       uint16(netPort),
+		// }
+		// rawData, err := json.Marshal(params)
+		// if err != nil {
+		// 	return err
+		// }
 
-		sigData, err := chainsdk.Sign(this.CurrentAccount(), rawData)
-		if err != nil {
-			return err
-		}
-		request := func(resp chan *trackerResp) {
-			log.Debugf("start RegEndPoint %s ipport %v:%v", trackerUrl, netIp, netPort)
-			err := tracker.RegEndPoint(trackerUrl, sigData, this.CurrentAccount().PublicKey, wallet, netIp, uint16(netPort))
-			if err != nil {
-				log.Errorf("req endpoint failed, err %s", err)
-			}
-			resp <- &trackerResp{
-				ret: nil,
-				err: err,
-			}
-		}
-		_, err = this.trackerReq(trackerUrl, request)
+		// sigData, err := chainsdk.Sign(this.CurrentAccount(), rawData)
+		// if err != nil {
+		// 	return err
+		// }
+		// request := func(resp chan *trackerResp) {
+		// 	log.Debugf("start RegEndPoint %s ipport %v:%v", trackerUrl, netIp, netPort)
+		// 	err := tracker.RegEndPoint(trackerUrl, sigData, this.CurrentAccount().PublicKey, wallet, netIp, uint16(netPort))
+		// 	if err != nil {
+		// 		log.Errorf("req endpoint failed, err %s", err)
+		// 	}
+		// 	resp <- &trackerResp{
+		// 		ret: nil,
+		// 		err: err,
+		// 	}
+		// }
+		// _, err = this.trackerReq(trackerUrl, request)
 
-		if err != nil {
-			continue
-		}
+		// if err != nil {
+		// 	continue
+		// }
 	}
 
 	return nil
