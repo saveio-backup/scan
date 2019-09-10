@@ -4,16 +4,22 @@ import (
 	"bytes"
 	"encoding"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"math/rand"
 	"net"
+
+	"github.com/saveio/themis/crypto/keypair"
 
 	"github.com/anacrolix/dht/krpc"
 	"github.com/anacrolix/missinggo"
 	"github.com/ontio/ontology-eventbus/actor"
 	pm "github.com/saveio/scan/p2p/actor/messages"
 	"github.com/saveio/scan/storage"
+	tkComm "github.com/saveio/scan/tracker/common"
+	chainsdk "github.com/saveio/themis-go-sdk/utils"
 	Ccomon "github.com/saveio/themis/common"
 	"github.com/saveio/themis/common/log"
 )
@@ -96,7 +102,7 @@ func (s *Server) Accepted() (err error) {
 		err = readBody(r, &ar)
 		if err != nil {
 			log.Debugf("tracker.server.return readBody, err: %v\n", err)
-			return
+			return s.respond(addr, ResponseHeader{TransactionId: h.TransactionId, Action: ActionError}, []byte("read announcerequest body failed"))
 		}
 		log.Debugf("tracker.server.ActionAnnounce: %v, wallet: %s, fileHash: %s ", ar, ar.Wallet.ToBase58(), string(ar.InfoHash[:]))
 
@@ -105,7 +111,29 @@ func (s *Server) Accepted() (err error) {
 			return
 		}
 
+		pubKey, sigData, err := ParseOptions(r)
+		log.Debugf("ParseOptions: pubKey %v, sigData %v, err %v\n", pubKey, sigData, err)
+		if err != nil {
+			return s.respond(addr, ResponseHeader{TransactionId: h.TransactionId, Action: ActionError}, []byte("parse announcerequest options failed"))
+		}
+
 		nodeAddr := krpc.NodeAddr{IP: ar.IPAddress[:], Port: int(ar.Port)}
+
+		var rawData []byte
+		if ar.Event.String() == "completed" {
+			rawData, err = json.Marshal(ActionTorrentCompleteParams{InfoHash: ar.InfoHash, IP: nodeAddr.IP, Port: ar.Port})
+		} else {
+			rawData, err = json.Marshal(ActionGetTorrentPeersParams{InfoHash: ar.InfoHash, NumWant: ar.NumWant, Left: ar.Left})
+		}
+		if err != nil {
+			return s.respond(addr, ResponseHeader{TransactionId: h.TransactionId, Action: ActionError}, []byte("json.Marshal rawData failed"))
+		}
+
+		err = chainsdk.Verify(pubKey, rawData, sigData)
+		if err != nil {
+			return s.respond(addr, ResponseHeader{TransactionId: h.TransactionId, Action: ActionError}, []byte("verify signature failed"))
+		}
+
 		pi, err := storage.TDB.GetTorrentPeerByFileHashAndNodeAddr(ar.InfoHash[:], nodeAddr.String())
 		log.Debugf("pi %v, err %v\n", pi, err)
 		if err != nil {
@@ -184,10 +212,30 @@ func (s *Server) Accepted() (err error) {
 		}
 		var ar AnnounceRequest
 		err = readBody(r, &ar)
+		if err != nil {
+			return s.respond(addr, ResponseHeader{TransactionId: h.TransactionId, Action: ActionError}, []byte("read announcerequest body failed"))
+		}
+
+		pubKey, sigData, err := ParseOptions(r)
+		log.Debugf("ParseOptions: pubKey %v, sigData %v, err %v\n", pubKey, sigData, err)
+		if err != nil {
+			return s.respond(addr, ResponseHeader{TransactionId: h.TransactionId, Action: ActionError}, []byte("parse announcerequest options failed"))
+		}
+
+		nodeAddr := krpc.NodeAddr{IP: ar.IPAddress[:], Port: int(ar.Port)}
+		rawData, err := json.Marshal(ActionEndpointRegParams{Wallet: ar.Wallet, IP: nodeAddr.IP, Port: ar.Port})
+		if err != nil {
+			return s.respond(addr, ResponseHeader{TransactionId: h.TransactionId, Action: ActionError}, []byte("json.Marshal rawData failed"))
+		}
+
+		err = chainsdk.Verify(pubKey, rawData, sigData)
+		if err != nil {
+			return s.respond(addr, ResponseHeader{TransactionId: h.TransactionId, Action: ActionError}, []byte("verify signature failed"))
+		}
+
 		if err != nil || ar.Wallet == Ccomon.ADDRESS_EMPTY {
 			return s.respond(addr, ResponseHeader{TransactionId: h.TransactionId, Action: ActionError}, []byte("read announce request buffer failed"))
 		}
-		nodeAddr := krpc.NodeAddr{IP: ar.IPAddress[:], Port: int(ar.Port)}
 		err = storage.EDB.PutEndpoint(ar.Wallet.ToBase58(), nodeAddr.IP, int(ar.Port))
 		if err != nil {
 			return s.respond(addr, ResponseHeader{TransactionId: h.TransactionId, Action: ActionError}, []byte("db put endpoint failed"))
@@ -396,6 +444,28 @@ func (s *Server) onAnnounceCompleted(ar *AnnounceRequest, pi *storage.PeerInfo) 
 	log.Debugf("PeerInfo Binary: %v\n", piBinarys)
 	s.p2p.Tell(&pm.Torrent{InfoHash: ar.InfoHash[:], Left: ar.Left, Peerinfo: piBinarys, Type: 0})
 	return err
+}
+
+func ParseOptions(r io.Reader) (pubKey keypair.PublicKey, signData []byte, err error) {
+	i := 0
+	for i < 2 {
+		tlv, err := tkComm.Read(r)
+		if err != nil {
+			break
+		}
+
+		switch tlv.Tag {
+		case tkComm.TLV_TAG_PUBLIC_KEY:
+			pubKey, err = keypair.DeserializePublicKey(tlv.GetValue())
+			if err != nil {
+				break
+			}
+		case tkComm.TLV_TAG_SIGNATURE:
+			signData = tlv.GetValue()
+		}
+		i++
+	}
+	return
 }
 
 func marshal(parts ...interface{}) (ret []byte, err error) {
