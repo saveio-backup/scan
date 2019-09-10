@@ -115,14 +115,14 @@ func (c *udpAnnounce) ipv6() bool {
 	return rip.To16() != nil && rip.To4() == nil
 }
 
-func (c *udpAnnounce) Do(req AnnounceRequest) (res AnnounceResponse, err error) {
+func (c *udpAnnounce) Do(req AnnounceRequest, reqOptions AnnounceRequestOptions) (res AnnounceResponse, err error) {
 	err = c.connect()
 	if err != nil {
 		log.Error("Do connect err: ", err.Error())
 		return AnnounceResponse{}, err
 	}
 	log.Debugf("tracker.udp.Do AnnounceRequest: %+v , wallet: %s, fileHash: %s ", req, req.Wallet.ToBase58(), string(req.InfoHash[:]))
-	reqURI := c.url.RequestURI()
+	// reqURI := c.url.RequestURI()
 	//if c.ipv6() {
 	//	// BEP 15
 	//	req.IPAddress = [4]byte{0x0}
@@ -132,7 +132,28 @@ func (c *udpAnnounce) Do(req AnnounceRequest) (res AnnounceResponse, err error) 
 	//}
 	// Clearly this limits the request URI to 255 bytes. BEP 41 supports
 	// longer but I'm not fussed.
-	options := append([]byte{optionTypeURLData, byte(len(reqURI))}, []byte(reqURI)...)
+	// options := append([]byte{optionTypeURLData, byte(len(reqURI))}, []byte(reqURI)...)
+	var options []byte
+	// pkLength := make([]byte, 4)
+	// binary.BigEndian.PutUint16(pkLength, uint16(len(reqOptions.PubKey)))
+	// sigLength := make([]byte, 4)
+	// binary.BigEndian.PutUint16(sigLength, uint16(len(reqOptions.Signature)))
+	// options = append(options, pkLength...)
+	// options = append(options, reqOptions.PubKey...)
+	// options = append(options, sigLength...)
+	// options = append(options, reqOptions.Signature...)
+	var pubKeyBuf, signBuf bytes.Buffer
+	err = reqOptions.PubKeyTLV.Write(&pubKeyBuf)
+	if err != nil {
+		fmt.Println(err)
+	}
+	options = append(options, pubKeyBuf.Bytes()...)
+	err = reqOptions.SignatureTLV.Write(&signBuf)
+	if err != nil {
+		fmt.Println(err)
+	}
+	options = append(options, signBuf.Bytes()...)
+	fmt.Println("options: ", options)
 	var b *bytes.Buffer
 	flag := c.a.flag
 	if flag != 0 {
@@ -345,7 +366,7 @@ func announceUDP(opt Announce, _url *url.URL) (AnnounceResponse, error) {
 	var err error
 
 	for retryTimes < UDP_RETRY_TIMES {
-		ret, err = ua.Do(opt.Request)
+		ret, err = ua.Do(opt.Request, opt.RequestOptions)
 		if err != nil {
 			log.Errorf("tracker.udp.announceUDP err: %v\n", err)
 			if opE, ok := err.(*net.OpError); ok {

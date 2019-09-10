@@ -6,6 +6,7 @@ import (
 	"net/url"
 
 	"github.com/anacrolix/dht/krpc"
+	tkCommon "github.com/saveio/scan/tracker/common"
 	"github.com/saveio/themis/common"
 )
 
@@ -26,6 +27,11 @@ type AnnounceRequest struct {
 	Wallet    common.Address
 	NodeType  NodeType
 } // 82 bytes
+
+type AnnounceRequestOptions struct {
+	PubKeyTLV    tkCommon.TLV
+	SignatureTLV tkCommon.TLV
+}
 
 type AnnounceResponse struct {
 	Interval  int32 // Minimum seconds the local peer should wait before next announce.
@@ -65,13 +71,14 @@ var (
 )
 
 type Announce struct {
-	TrackerUrl string
-	Request    AnnounceRequest
-	HostHeader string
-	HTTPProxy  func(*http.Request) (*url.URL, error)
-	ServerName string
-	UserAgent  string
-	UdpNetwork string
+	TrackerUrl     string
+	Request        AnnounceRequest
+	RequestOptions AnnounceRequestOptions
+	HostHeader     string
+	HTTPProxy      func(*http.Request) (*url.URL, error)
+	ServerName     string
+	UserAgent      string
+	UdpNetwork     string
 	// If the Port is zero, it's assumed to be the same as the Request.Port
 	ClientIp4 krpc.NodeAddr
 	// If the Port is zero, it's assumed to be the same as the Request.Port
