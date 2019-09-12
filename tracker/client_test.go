@@ -126,18 +126,14 @@ func TestRegEndPointForClient(t *testing.T) {
 	assert.Nil(err, t)
 }
 
-func TestUnRegEndPointForClient(t *testing.T) {
-	url := trackerUrl
-	wb, _ := common.AddressFromBase58(wallet1Addr)
-	err := UnRegEndPoint(url, wb)
-	assert.Nil(err, t)
-}
-
 func TestReqEndPointForClient(t *testing.T) {
+	acc, err := GetAccount(walletfile, walletpwd)
+	assert.Nil(err, t)
+	fmt.Println(acc.Address.ToBase58())
 
-	url := trackerUrl
-	wb, _ := common.AddressFromBase58(wallet1Addr)
-	hostAddr, err := ReqEndPoint(url, wb)
+	wb, err := common.AddressFromBase58(acc.Address.ToBase58())
+	assert.Nil(err, t)
+	hostAddr, err := ReqEndPoint(trackerUrl, wb)
 	assert.Nil(err, t)
 	fmt.Printf("hostAddr:%s\n", hostAddr)
 }

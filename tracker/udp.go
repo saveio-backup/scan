@@ -121,7 +121,7 @@ func (c *udpAnnounce) Do(req AnnounceRequest, reqOptions AnnounceRequestOptions)
 		log.Error("Do connect err: ", err.Error())
 		return AnnounceResponse{}, err
 	}
-	log.Debugf("tracker.udp.Do AnnounceRequest: %+v , wallet: %s, fileHash: %s ", req, req.Wallet.ToBase58(), string(req.InfoHash[:]))
+	log.Infof("tracker.udp.Do AnnounceRequest: %+v , wallet: %s, fileHash: %s ", req, req.Wallet.ToBase58(), string(req.InfoHash[:]))
 	// reqURI := c.url.RequestURI()
 	//if c.ipv6() {
 	//	// BEP 15
@@ -143,17 +143,20 @@ func (c *udpAnnounce) Do(req AnnounceRequest, reqOptions AnnounceRequestOptions)
 	// options = append(options, sigLength...)
 	// options = append(options, reqOptions.Signature...)
 	var pubKeyBuf, signBuf bytes.Buffer
-	err = reqOptions.PubKeyTLV.Write(&pubKeyBuf)
-	if err != nil {
-		fmt.Println(err)
+	if reqOptions.PubKeyTLV != nil {
+		err = reqOptions.PubKeyTLV.Write(&pubKeyBuf)
+		if err != nil {
+			log.Error(err)
+		}
+		options = append(options, pubKeyBuf.Bytes()...)
 	}
-	options = append(options, pubKeyBuf.Bytes()...)
-	err = reqOptions.SignatureTLV.Write(&signBuf)
-	if err != nil {
-		fmt.Println(err)
+	if reqOptions.SignatureTLV != nil {
+		err = reqOptions.SignatureTLV.Write(&signBuf)
+		if err != nil {
+			log.Error(err)
+		}
+		options = append(options, signBuf.Bytes()...)
 	}
-	options = append(options, signBuf.Bytes()...)
-	fmt.Println("options: ", options)
 	var b *bytes.Buffer
 	flag := c.a.flag
 	if flag != 0 {
@@ -173,14 +176,14 @@ func (c *udpAnnounce) Do(req AnnounceRequest, reqOptions AnnounceRequestOptions)
 		err = fmt.Errorf("error parsing announce response: %s", err)
 		return AnnounceResponse{}, err
 	}
-	log.Debugf("tracker.udp.Do responseHeader: %+v , wallet: %s ", h, req.Wallet.ToBase58())
+	log.Infof("tracker.udp.Do responseHeader: %+v , wallet: %s ", h, req.Wallet.ToBase58())
 	res.Interval = h.Interval
 	res.Leechers = h.Leechers
 	res.Seeders = h.Seeders
 	res.IPAddress = h.IPAddress
 	res.Port = h.Port
 	res.Wallet = h.Wallet
-	log.Debugf("tracker.udp.Do res object: %v", res)
+	log.Infof("tracker.udp.Do res object: %v", res)
 
 	if c.a.flag == ActionAnnounce {
 		nas := func() interface {
@@ -205,7 +208,7 @@ func (c *udpAnnounce) Do(req AnnounceRequest, reqOptions AnnounceRequestOptions)
 		res.NodesInfo = &NodesInfoSt{}
 		err = res.NodesInfo.DeSerialize(b)
 	}
-	log.Debugf("tracker.udp.Do res object return: %v", res)
+	log.Infof("tracker.udp.Do res object return: %v", res)
 	return res, nil
 }
 

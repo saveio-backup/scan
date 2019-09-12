@@ -51,7 +51,7 @@ func CompleteTorrent(trackerUrl string, params ActionTorrentCompleteParams, pubK
 	fmt.Println("sigData", sigData, len(sigData))
 	fmt.Println("pubKey", pubKey)
 	fmt.Println("pubKey Binarys", keypair.SerializePublicKey(pubKey), len(keypair.SerializePublicKey(pubKey)))
-	log.Debugf("GetTorrentPeers Params %v\n", params)
+	log.Debugf("CompleteTorrent Params %v\n", params)
 
 	announce := Announce{
 		TrackerUrl: trackerUrl,
@@ -174,30 +174,6 @@ func RegEndPoint(trackerUrl string, params ActionEndpointRegParams, pubKey keypa
 		log.Debugf("decode ret.Wallet err: %v\n", err)
 	}
 	log.Infof("tracker client [RegEndPoint] wallet:%s, nodeAddr %s:%d\n", addr.ToBase58(), hostIP.String(), ret.Port)
-	return nil
-}
-
-func UnRegEndPoint(trackerUrl string, walletAddr [20]byte) error {
-	id := storage.PeerID{}
-	rand.Read(id[:])
-	announce := Announce{
-		TrackerUrl: trackerUrl,
-		Request: AnnounceRequest{
-			PeerId: id,
-			Wallet: walletAddr,
-		},
-		flag: ActionUnReg,
-	}
-	ret, err := announce.Do()
-	if err != nil {
-		log.Errorf("UnRegEndPoint failed err: %s\n", err)
-		return err
-	}
-	addr, err := themisComm.AddressParseFromBytes(ret.Wallet[:])
-	if err != nil {
-		log.Debugf("decode ret.Wallet err: %v\n", err)
-	}
-	log.Infof("tracker client [UnRegEndPoint] wallet:%s\n", addr.ToBase58())
 	return nil
 }
 

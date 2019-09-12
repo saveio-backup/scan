@@ -17,7 +17,7 @@ const (
 var (
 	ErrTLVRead     = fmt.Errorf("TLV read error")
 	ErrTLVWrite    = fmt.Errorf("TLV write error")
-	ErrTagNotFound = fmt.Errorf("tag not found")
+	ErrTagNotFound = fmt.Errorf("TLV tag not found")
 )
 
 const (

@@ -37,13 +37,6 @@ func TestRegEndPoint(t *testing.T) {
 	// assert.Nil(err, t)
 }
 
-func TestUnRegEndPoint(t *testing.T) {
-	url := trackerUrl1
-	wb, _ := common.AddressFromBase58(walletAddr1)
-	err := UnRegEndPoint(url, wb)
-	assert.Nil(err, t)
-}
-
 func TestReqEndPointEx(t *testing.T) {
 	url := trackerUrl1
 	wb, _ := common.AddressFromBase58(walletAddr1)
