@@ -95,7 +95,11 @@ func (this *Network) Start(address string) error {
 	}
 	protocol := address[:protocolIndex]
 	log.Debugf("channel address: %s", address)
-	builder := network.NewBuilderWithOptions(network.WriteFlushLatency(1 * time.Millisecond))
+	builderOpt := []network.BuilderOption{
+		network.WriteFlushLatency(1 * time.Millisecond),
+		network.WriteTimeout(time.Duration(30) * time.Second),
+	}
+	builder := network.NewBuilderWithOptions(builderOpt...)
 	if this.Keys != nil {
 		log.Debugf("channel use account key")
 		builder.SetKeys(this.Keys)
