@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gogo/protobuf/proto"
+	"github.com/ontio/ontology-eventbus/actor"
 	"github.com/saveio/carrier/crypto"
 	"github.com/saveio/carrier/crypto/ed25519"
 	"github.com/saveio/carrier/network"
@@ -16,14 +18,9 @@ import (
 	"github.com/saveio/carrier/types/opcode"
 	"github.com/saveio/dsp-go-sdk/network/common"
 	act "github.com/saveio/pylons/actor/server"
-	"github.com/saveio/themis/common/log"
-
 	"github.com/saveio/pylons/network/transport/messages"
-
-	//"github.com/golang/protobuf/proto"
-	"github.com/gogo/protobuf/proto"
-	"github.com/ontio/ontology-eventbus/actor"
 	"github.com/saveio/scan/common/config"
+	"github.com/saveio/themis/common/log"
 )
 
 var DDNSP2P *Network

@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gogo/protobuf/proto"
+	"github.com/ontio/ontology-eventbus/actor"
 	"github.com/saveio/carrier/crypto"
 	"github.com/saveio/carrier/crypto/ed25519"
 	"github.com/saveio/carrier/network"
@@ -15,13 +17,9 @@ import (
 	"github.com/saveio/carrier/network/components/proxy"
 	"github.com/saveio/carrier/types/opcode"
 	"github.com/saveio/dsp-go-sdk/network/common"
-	"github.com/saveio/themis/common/log"
-
-	//"github.com/golang/protobuf/proto"
-	"github.com/gogo/protobuf/proto"
-	"github.com/ontio/ontology-eventbus/actor"
 	"github.com/saveio/scan/common/config"
 	pm "github.com/saveio/scan/p2p/actor/messages"
+	"github.com/saveio/themis/common/log"
 )
 
 const (
@@ -33,7 +31,7 @@ var DnsP2p *Network
 var once sync.Once
 
 const (
-	OpCodeTorrent opcode.Opcode = 2000 + iota
+	OpCodeTorrent opcode.Opcode = 3000 + iota
 	OpCodeEndpoint
 )
 

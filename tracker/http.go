@@ -3,6 +3,7 @@ package tracker
 import (
 	"bytes"
 	"crypto/tls"
+	"expvar"
 	"fmt"
 	"io"
 	"net"
@@ -15,6 +16,8 @@ import (
 	"github.com/anacrolix/missinggo/httptoo"
 	"github.com/anacrolix/torrent/bencode"
 )
+
+var vars = expvar.NewMap("tracker")
 
 type httpResponse struct {
 	FailureReason string `bencode:"failure reason"`

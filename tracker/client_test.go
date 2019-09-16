@@ -22,7 +22,7 @@ var wallet1Addr = "AYMnqA65pJFKAbbpD8hi5gdNDBmeFBy5hS"
 var wallet2Addr = "AWaE84wqVf1yffjaR6VJ4NptLdqBAm8G9c"
 var wallet3Addr = "AXUhmdzcAJwaFW91q6UYuPGGJY3fimoTAj"
 var trackerUrl = "udp://localhost:6369/announce"
-var trackerUrlOnline = "udp://40.73.102.177:10338/announce"
+var trackerUrlOnline = "udp://52.187.109.234:6369/announce"
 var walletfile = "../wallet.dat"
 var walletpwd = "pwd"
 
@@ -117,10 +117,10 @@ func TestRegEndPointForClient(t *testing.T) {
 	apiParams := ActionEndpointRegParams{
 		Wallet: acc.Address,
 		IP:     net.ParseIP("192.168.1.1"),
-		Port:   uint16(8888),
+		Port:   uint16(8887),
 	}
 
-	err = RegEndPoint(trackerUrl, apiParams, acc.PublicKey, func(raw []byte) ([]byte, error) {
+	err = RegEndPoint(trackerUrlOnline, apiParams, acc.PublicKey, func(raw []byte) ([]byte, error) {
 		return chainsdk.Sign(acc, raw)
 	})
 	assert.Nil(err, t)
@@ -133,7 +133,7 @@ func TestReqEndPointForClient(t *testing.T) {
 
 	wb, err := common.AddressFromBase58(acc.Address.ToBase58())
 	assert.Nil(err, t)
-	hostAddr, err := ReqEndPoint(trackerUrl, wb)
+	hostAddr, err := ReqEndPoint(trackerUrlOnline, wb)
 	assert.Nil(err, t)
 	fmt.Printf("hostAddr:%s\n", hostAddr)
 }
