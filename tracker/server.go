@@ -20,7 +20,7 @@ import (
 	"github.com/saveio/scan/storage"
 	tkComm "github.com/saveio/scan/tracker/common"
 	chainsdk "github.com/saveio/themis-go-sdk/utils"
-	Ccomon "github.com/saveio/themis/common"
+	theComm "github.com/saveio/themis/common"
 	"github.com/saveio/themis/common/log"
 )
 
@@ -233,7 +233,7 @@ func (s *Server) Accepted() (err error) {
 			return s.respond(addr, ResponseHeader{TransactionId: h.TransactionId, Action: ActionError}, []byte("verify signature failed"))
 		}
 
-		if err != nil || ar.Wallet == Ccomon.ADDRESS_EMPTY {
+		if err != nil || ar.Wallet == theComm.ADDRESS_EMPTY {
 			return s.respond(addr, ResponseHeader{TransactionId: h.TransactionId, Action: ActionError}, []byte("read announce request buffer failed"))
 		}
 		err = storage.EDB.PutEndpoint(ar.Wallet.ToBase58(), nodeAddr.IP, int(ar.Port))
@@ -250,7 +250,7 @@ func (s *Server) Accepted() (err error) {
 		}
 		var ar AnnounceRequest
 		err = readBody(r, &ar)
-		if err != nil || ar.Wallet == Ccomon.ADDRESS_EMPTY {
+		if err != nil || ar.Wallet == theComm.ADDRESS_EMPTY {
 			return s.respond(addr, ResponseHeader{TransactionId: h.TransactionId, Action: ActionError}, []byte("read announce request buffer failed"))
 		}
 
@@ -275,7 +275,7 @@ func (s *Server) Accepted() (err error) {
 			return s.respond(addr, ResponseHeader{TransactionId: h.TransactionId, Action: ActionError}, []byte("read announce request buffer failed"))
 		}
 		nodeAddr, err := storage.EDB.GetEndpoint(ar.Wallet.ToBase58())
-		if ar.Wallet == Ccomon.ADDRESS_EMPTY || err != nil || nodeAddr == nil {
+		if ar.Wallet == theComm.ADDRESS_EMPTY || err != nil || nodeAddr == nil {
 			// return s.respond(addr, ResponseHeader{TransactionId: h.TransactionId, Action: ActionReq}, AnnounceResponseHeader{Wallet: ar.Wallet})
 			return s.respond(addr, ResponseHeader{TransactionId: h.TransactionId, Action: ActionError}, []byte("endpoint not found"))
 		}
@@ -296,7 +296,7 @@ func (s *Server) Accepted() (err error) {
 		if err != nil {
 			return
 		}
-		if ar.Wallet == Ccomon.ADDRESS_EMPTY {
+		if ar.Wallet == theComm.ADDRESS_EMPTY {
 			err = fmt.Errorf("nil walletAddr")
 			return
 		}
@@ -320,7 +320,7 @@ func (s *Server) Accepted() (err error) {
 			Port:      ar.Port,
 			Wallet:    ar.Wallet,
 		})
-		log.Infof("Tracker client  reg success,wallet:%s,nodeAddr:%s,nodeType:%d", Ccomon.ToHexString(ar.Wallet[:]), nodeAddr.String(), ar.NodeType)
+		log.Infof("Tracker client  reg success,wallet:%s,nodeAddr:%s,nodeType:%d", theComm.ToHexString(ar.Wallet[:]), nodeAddr.String(), ar.NodeType)
 		return err
 
 	case ActionGetNodesByType:

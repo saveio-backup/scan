@@ -6,9 +6,11 @@ import (
 	"testing"
 )
 
+var endpointDBPath string = "../testdata/db1"
+var walletAddr string = "AUdg8DGDKvwUxyBbxpsMHSnGbYPxNCBSfg"
+
 func TestPutEndpoint(t *testing.T) {
-	dbPath := "../testdata/db1"
-	db, err := NewLevelDBStore(dbPath)
+	db, err := NewLevelDBStore(endpointDBPath)
 	if err != nil || db == nil {
 		return
 	}
@@ -16,28 +18,26 @@ func TestPutEndpoint(t *testing.T) {
 	host := "127.0.0.1"
 	port := 3333
 	netHost := net.ParseIP(host)
-	err = epDB.PutEndpoint("AUdg8DGDKvwUxyBbxpsMHSnGbYPxNCBSfg", netHost, int(port))
+	err = epDB.PutEndpoint(walletAddr, netHost, int(port))
 	fmt.Printf("put err:%s\n", err)
 }
 
 func TestGetEndpoint(t *testing.T) {
-	dbPath := "../testdata/db1"
-	db, err := NewLevelDBStore(dbPath)
+	db, err := NewLevelDBStore(endpointDBPath)
 	if err != nil || db == nil {
 		return
 	}
 	epDB := NewEndpointDB(db)
-	info, err := epDB.GetEndpoint("AUdg8DGDKvwUxyBbxpsMHSnGbYPxNCBSfb")
+	info, err := epDB.GetEndpoint(walletAddr)
 	fmt.Printf("info:%v, err:%s\n", info, err)
 }
 
 func TestDelEndpoint(t *testing.T) {
-	dbPath := "../testdata/db1"
-	db, err := NewLevelDBStore(dbPath)
+	db, err := NewLevelDBStore(endpointDBPath)
 	if err != nil || db == nil {
 		return
 	}
 	epDB := NewEndpointDB(db)
-	err = epDB.DelEndpoint("AUdg8DGDKvwUxyBbxpsMHSnGbYPxNCBSfg")
+	err = epDB.DelEndpoint(walletAddr)
 	fmt.Printf("put err:%s\n", err)
 }

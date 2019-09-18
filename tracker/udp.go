@@ -2,6 +2,7 @@ package tracker
 
 import (
 	"bytes"
+	"encoding"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -11,14 +12,11 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/anacrolix/dht/krpc"
 	"github.com/anacrolix/missinggo"
 	"github.com/anacrolix/missinggo/pproffd"
+	theComm "github.com/saveio/themis/common"
 	"github.com/saveio/themis/common/log"
-
-	//"github.com/saveio/themis/common"
-	"encoding"
-
-	"github.com/anacrolix/dht/krpc"
 )
 
 type Action int32
@@ -76,6 +74,17 @@ type AnnounceResponseHeader struct {
 	Wallet    [20]byte
 }
 
+func (h *AnnounceResponseHeader) Print() {
+	nodeAddr := krpc.NodeAddr{IP: h.IPAddress[:], Port: int(h.Port)}
+	addr, err := theComm.AddressParseFromBytes(h.Wallet[:])
+	if err != nil {
+		log.Debugf("can not parse address from bytes, address: %v\n", h.Wallet)
+		log.Debugf("AnnounceResponseHeaderPrint. Interval: %d, Leechers: %d, Seeders: %d, HostPort: %s, Wallet: %v\n", h.Interval, h.Leechers, h.Seeders, nodeAddr.String(), h.Wallet)
+	} else {
+		log.Debugf("AnnounceResponseHeaderPrint. Interval: %d, Leechers: %d, Seeders: %d, HostPort: %s, Wallet: %s\n", h.Interval, h.Leechers, h.Seeders, nodeAddr.String(), addr.ToBase58())
+	}
+}
+
 func newTransactionId() int32 {
 	return int32(rand.Uint32())
 }
@@ -115,33 +124,7 @@ func (c *udpAnnounce) ipv6() bool {
 	return rip.To16() != nil && rip.To4() == nil
 }
 
-func (c *udpAnnounce) Do(req AnnounceRequest, reqOptions AnnounceRequestOptions) (res AnnounceResponse, err error) {
-	err = c.connect()
-	if err != nil {
-		log.Error("Do connect err: ", err.Error())
-		return AnnounceResponse{}, err
-	}
-	log.Infof("tracker.udp.Do AnnounceRequest: %+v , wallet: %s, fileHash: %s ", req, req.Wallet.ToBase58(), string(req.InfoHash[:]))
-	// reqURI := c.url.RequestURI()
-	//if c.ipv6() {
-	//	// BEP 15
-	//	req.IPAddress = [4]byte{0x0}
-	//} else if req.IPAddress == [4]byte{0x0} && c.a.ClientIp4.IP != nil {
-	//	log.Warnf("in c.ipv6 elif,req.ip:%v",req.IPAddress)
-	//	req.IPAddress = ipconvert(c.a.ClientIp4.IP.To4())
-	//}
-	// Clearly this limits the request URI to 255 bytes. BEP 41 supports
-	// longer but I'm not fussed.
-	// options := append([]byte{optionTypeURLData, byte(len(reqURI))}, []byte(reqURI)...)
-	var options []byte
-	// pkLength := make([]byte, 4)
-	// binary.BigEndian.PutUint16(pkLength, uint16(len(reqOptions.PubKey)))
-	// sigLength := make([]byte, 4)
-	// binary.BigEndian.PutUint16(sigLength, uint16(len(reqOptions.Signature)))
-	// options = append(options, pkLength...)
-	// options = append(options, reqOptions.PubKey...)
-	// options = append(options, sigLength...)
-	// options = append(options, reqOptions.Signature...)
+func SerializeReqOptionsToBytes(reqOptions AnnounceRequestOptions) (options []byte, err error) {
 	var pubKeyBuf, signBuf bytes.Buffer
 	if reqOptions.PubKeyTLV != nil {
 		err = reqOptions.PubKeyTLV.Write(&pubKeyBuf)
@@ -157,6 +140,29 @@ func (c *udpAnnounce) Do(req AnnounceRequest, reqOptions AnnounceRequestOptions)
 		}
 		options = append(options, signBuf.Bytes()...)
 	}
+	return options, err
+}
+
+func (c *udpAnnounce) Do(req AnnounceRequest, reqOptions AnnounceRequestOptions) (res AnnounceResponse, err error) {
+	err = c.connect()
+	if err != nil {
+		log.Error("Do connect err: ", err.Error())
+		return AnnounceResponse{}, err
+	}
+
+	req.Print()
+	// reqURI := c.url.RequestURI()
+	//if c.ipv6() {
+	//	// BEP 15
+	//	req.IPAddress = [4]byte{0x0}
+	//} else if req.IPAddress == [4]byte{0x0} && c.a.ClientIp4.IP != nil {
+	//	log.Warnf("in c.ipv6 elif,req.ip:%v",req.IPAddress)
+	//	req.IPAddress = ipconvert(c.a.ClientIp4.IP.To4())
+	//}
+	// Clearly this limits the request URI to 255 bytes. BEP 41 supports
+	// longer but I'm not fussed.
+	// options := append([]byte{optionTypeURLData, byte(len(reqURI))}, []byte(reqURI)...)
+	options, err := SerializeReqOptionsToBytes(reqOptions)
 	var b *bytes.Buffer
 	flag := c.a.flag
 	if flag != 0 {
@@ -176,14 +182,7 @@ func (c *udpAnnounce) Do(req AnnounceRequest, reqOptions AnnounceRequestOptions)
 		err = fmt.Errorf("error parsing announce response: %s", err)
 		return AnnounceResponse{}, err
 	}
-	log.Infof("tracker.udp.Do responseHeader: %+v , wallet: %s ", h, req.Wallet.ToBase58())
-	res.Interval = h.Interval
-	res.Leechers = h.Leechers
-	res.Seeders = h.Seeders
-	res.IPAddress = h.IPAddress
-	res.Port = h.Port
-	res.Wallet = h.Wallet
-	log.Infof("tracker.udp.Do res object: %v", res)
+	h.Print()
 
 	if c.a.flag == ActionAnnounce {
 		nas := func() interface {
@@ -208,7 +207,9 @@ func (c *udpAnnounce) Do(req AnnounceRequest, reqOptions AnnounceRequestOptions)
 		res.NodesInfo = &NodesInfoSt{}
 		err = res.NodesInfo.DeSerialize(b)
 	}
-	log.Infof("tracker.udp.Do res object return: %v", res)
+
+	res.Interval, res.Leechers, res.Seeders, res.IPAddress, res.Port, res.Wallet = h.Interval, h.Leechers, h.Seeders, h.IPAddress, h.Port, h.Wallet
+	res.Print()
 	return res, nil
 }
 
@@ -371,12 +372,12 @@ func announceUDP(opt Announce, _url *url.URL) (AnnounceResponse, error) {
 	for retryTimes < UDP_RETRY_TIMES {
 		ret, err = ua.Do(opt.Request, opt.RequestOptions)
 		if err != nil {
-			log.Errorf("tracker.udp.announceUDP err: %v\n", err)
+			log.Errorf(" announceUDP err: %v\n", err)
 			if opE, ok := err.(*net.OpError); ok {
-				log.Errorf("tracker.udp.announceUDP opE: %v\n", opE)
+				log.Errorf(" announceUDP err opE: %v\n", opE)
 				if opE.Timeout() {
 					retryTimes++
-					log.Errorf("tracker.udp.announceUDP timeout retryTimes: %d \n", retryTimes)
+					log.Errorf("announceUDP timeout retryTimes: %d \n", retryTimes)
 					continue
 				}
 			}

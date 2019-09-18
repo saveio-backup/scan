@@ -6,8 +6,9 @@ import (
 	"net/url"
 
 	"github.com/anacrolix/dht/krpc"
-	tkCommon "github.com/saveio/scan/tracker/common"
-	"github.com/saveio/themis/common"
+	tkComm "github.com/saveio/scan/tracker/common"
+	theComm "github.com/saveio/themis/common"
+	"github.com/saveio/themis/common/log"
 )
 
 // Marshalled as binary by the UDP client, so be careful making changes.
@@ -24,13 +25,13 @@ type AnnounceRequest struct {
 	Key       int32
 	NumWant   int32 // How many peer addresses are desired. -1 for default.
 	Port      uint16
-	Wallet    common.Address
+	Wallet    theComm.Address
 	NodeType  NodeType
 } // 82 bytes
 
 type AnnounceRequestOptions struct {
-	PubKeyTLV    tkCommon.TLV
-	SignatureTLV tkCommon.TLV
+	PubKeyTLV    tkComm.TLV
+	SignatureTLV tkComm.TLV
 }
 
 type AnnounceResponse struct {
@@ -42,6 +43,34 @@ type AnnounceResponse struct {
 	Port      uint16
 	Wallet    [20]byte
 	NodesInfo *NodesInfoSt
+}
+
+func (req *AnnounceRequest) Print() {
+	nodeAddr := krpc.NodeAddr{IP: req.IPAddress[:], Port: int(req.Port)}
+	addr, err := theComm.AddressParseFromBytes(req.Wallet[:])
+	log.Debugf("AnnounceRequestPrint. InfoHash: %v, PeerId: %v, Event: %s\n", string(req.InfoHash[:]), req.PeerId, req.Event)
+	if err != nil {
+		log.Debugf("can not parse address from bytes, address: %v\n", req.Wallet)
+		log.Debugf("AnnounceRequestPrint. Wallet: %v, HostPort: %s, Key: %d, NumWant: %d, NodeType: %d\n", req.Wallet, nodeAddr.String(), req.Key, req.NumWant, req.NodeType)
+	} else {
+		log.Debugf("AnnounceRequestPrint. Wallet: %s, HostPort: %s, Key: %d, NumWant: %d, NodeType: %d\n", addr.ToBase58(), nodeAddr.String(), req.Key, req.NumWant, req.NodeType)
+	}
+	log.Debugf("AnnounceRequestPrint. Downloaded: %d, Left: %d, Upoaded: %d\n", req.Downloaded, req.Left, req.Uploaded)
+}
+
+func (res *AnnounceResponse) Print() {
+	nodeAddr := krpc.NodeAddr{IP: res.IPAddress[:], Port: int(res.Port)}
+	addr, err := theComm.AddressParseFromBytes(res.Wallet[:])
+	if err != nil {
+		log.Debugf("can not parse address from bytes, address: %v\n", res.Wallet)
+		log.Debugf("AnnounceResponsePrint. Interval: %d, Leechers: %d, Seeders: %d, HostPort: %s, Wallet: %v\n", res.Interval, res.Leechers, res.Seeders, nodeAddr.String(), res.Wallet)
+	} else {
+		log.Debugf("AnnounceResponsePrint. Interval: %d, Leechers: %d, Seeders: %d, HostPort: %s, Wallet: %s\n", res.Interval, res.Leechers, res.Seeders, nodeAddr.String(), addr.ToBase58())
+	}
+
+	for i, peer := range res.Peers {
+		log.Debugf("AnnounceResponsePrint. Peer_%d: %s, ID: %v\n", i, krpc.NodeAddr{IP: peer.IP, Port: peer.Port}.String(), peer.ID)
+	}
 }
 
 type AnnounceEvent int32
