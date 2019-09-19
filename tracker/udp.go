@@ -40,7 +40,7 @@ const (
 	optionTypeURLData      = 2
 
 	// UDP timewait
-	UDP_TIMEWAIT    = 5
+	UDP_TIMEWAIT    = 15
 	UDP_RETRY_TIMES = 3
 )
 

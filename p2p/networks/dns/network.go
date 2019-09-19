@@ -95,7 +95,7 @@ func (this *Network) Start(address string) error {
 	log.Debugf("channel address: %s", address)
 	builderOpt := []network.BuilderOption{
 		network.WriteFlushLatency(1 * time.Millisecond),
-		network.WriteTimeout(time.Duration(30) * time.Second),
+		network.WriteTimeout(int(time.Duration(30))),
 	}
 	builder := network.NewBuilderWithOptions(builderOpt...)
 	if this.Keys != nil {
