@@ -32,7 +32,7 @@ const (
 	OpCodeDelivered
 	OpCodeSecretRequest
 	OpCodeRevealSecret
-	OpCodeSecretMsg
+	// OpCodeSecretMsg
 	OpCodeDirectTransfer
 	OpCodeLockedTransfer
 	OpCodeRefundTransfer
@@ -44,11 +44,11 @@ const (
 )
 
 var opCodes = map[opcode.Opcode]proto.Message{
-	OpCodeProcessed:                &messages.Processed{},
-	OpCodeDelivered:                &messages.Delivered{},
-	OpCodeSecretRequest:            &messages.SecretRequest{},
-	OpCodeRevealSecret:             &messages.RevealSecret{},
-	OpCodeSecretMsg:                &messages.Secret{},
+	OpCodeProcessed:     &messages.Processed{},
+	OpCodeDelivered:     &messages.Delivered{},
+	OpCodeSecretRequest: &messages.SecretRequest{},
+	OpCodeRevealSecret:  &messages.RevealSecret{},
+	// OpCodeSecretMsg:                &messages.Secret{},
 	OpCodeDirectTransfer:           &messages.DirectTransfer{},
 	OpCodeLockedTransfer:           &messages.LockedTransfer{},
 	OpCodeRefundTransfer:           &messages.RefundTransfer{},
@@ -393,8 +393,8 @@ func (this *Network) Receive(message proto.Message, from string) error {
 		act.OnBusinessMessage(message, from)
 	case *messages.RevealSecret:
 		act.OnBusinessMessage(message, from)
-	case *messages.Secret:
-		act.OnBusinessMessage(message, from)
+	// case *messages.Secret:
+	// 	act.OnBusinessMessage(message, from)
 	case *messages.DirectTransfer:
 		act.OnBusinessMessage(message, from)
 	case *messages.LockedTransfer:
