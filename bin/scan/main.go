@@ -9,7 +9,10 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/saveio/carrier/network"
+	"github.com/saveio/dsp-go-sdk"
 	"github.com/saveio/edge/common"
+	"github.com/saveio/pylons"
 	"github.com/saveio/scan/cmd"
 	"github.com/saveio/scan/cmd/flags"
 	"github.com/saveio/scan/common/config"
@@ -18,7 +21,6 @@ import (
 	"github.com/saveio/scan/http/restful"
 	"github.com/saveio/scan/service"
 	"github.com/saveio/scan/storage"
-
 	"github.com/saveio/themis/account"
 	thmsCmd "github.com/saveio/themis/cmd"
 	thmsComm "github.com/saveio/themis/cmd/common"
@@ -262,6 +264,10 @@ func startScan(ctx *cli.Context, acc *account.Account) {
 		log.Fatalf("channel service start err : %v", err)
 	}
 	log.Info("channel service started.")
+	log.Infof("scan version: %s", config.VERSION)
+	log.Infof("dsp-go-sdk version: %s", dsp.Version)
+	log.Infof("pylons version: %s", pylons.Version)
+	log.Infof("carrier version: %s", network.Version)
 }
 
 func getDefaultAccount(ctx *cli.Context) (*account.Account, error) {
