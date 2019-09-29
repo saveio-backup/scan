@@ -339,9 +339,7 @@ func (this *Network) Request(msg proto.Message, peer string) (proto.Message, err
 	if client == nil {
 		return nil, fmt.Errorf("get peer client is nil %s", peer)
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(common.REQUEST_MSG_TIMEOUT)*time.Second)
-	defer cancel()
-	return client.Request(ctx, msg)
+	return client.Request(context.Background(), msg, time.Duration(common.REQUEST_MSG_TIMEOUT)*time.Second)
 }
 
 // RequestWithRetry. send msg to peer and wait for response synchronously
@@ -358,9 +356,7 @@ func (this *Network) RequestWithRetry(msg proto.Message, peer string, retry int)
 	var res proto.Message
 	for i := 0; i < retry; i++ {
 		log.Debugf("send request msg to %s with retry %d", peer, i)
-		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(common.REQUEST_MSG_TIMEOUT)*time.Second)
-		defer cancel()
-		res, err = client.Request(ctx, msg)
+		res, err = client.Request(context.Background(), msg, time.Duration(common.REQUEST_MSG_TIMEOUT)*time.Second)
 		if err == nil || err.Error() != "context deadline exceeded" {
 			break
 		}
