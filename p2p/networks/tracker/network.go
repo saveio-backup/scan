@@ -1,4 +1,4 @@
-package network
+package tracker
 
 import (
 	"context"
@@ -17,9 +17,8 @@ import (
 	"github.com/saveio/carrier/network/components/proxy"
 	"github.com/saveio/carrier/types/opcode"
 	"github.com/saveio/dsp-go-sdk/network/common"
-	act "github.com/saveio/pylons/actor/server"
-	"github.com/saveio/pylons/network/transport/messages"
 	"github.com/saveio/scan/common/config"
+	pm "github.com/saveio/scan/p2p/actor/messages"
 	"github.com/saveio/themis/common/log"
 )
 
@@ -28,40 +27,20 @@ const (
 	REQUEST_MSG_TIMEOUT = 30
 )
 
-var DDNSP2P *Network
+var TkP2p *Network
 
 var once sync.Once
 
 const (
-	OpCodeProcessed opcode.Opcode = 1000 + iota
-	OpCodeDelivered
-	OpCodeSecretRequest
-	OpCodeRevealSecret
-	OpCodeSecretMsg
-	OpCodeDirectTransfer
-	OpCodeLockedTransfer
-	OpCodeRefundTransfer
-	OpCodeLockExpired
-	OpCodeWithdrawRequest
-	OpCodeWithdraw
-	OpCodeCooperativeSettleRequest
-	OpCodeCooperativeSettle
+	OpCodeAnnounceRequest opcode.Opcode = 4000 + iota
+	OpCodeAnnounceRequestMessage
+	OpCodeAnnounceResponseMessage
 )
 
 var opCodes = map[opcode.Opcode]proto.Message{
-	OpCodeProcessed:                &messages.Processed{},
-	OpCodeDelivered:                &messages.Delivered{},
-	OpCodeSecretRequest:            &messages.SecretRequest{},
-	OpCodeRevealSecret:             &messages.RevealSecret{},
-	OpCodeSecretMsg:                &messages.BalanceProof{},
-	OpCodeDirectTransfer:           &messages.DirectTransfer{},
-	OpCodeLockedTransfer:           &messages.LockedTransfer{},
-	OpCodeRefundTransfer:           &messages.RefundTransfer{},
-	OpCodeLockExpired:              &messages.LockExpired{},
-	OpCodeWithdrawRequest:          &messages.WithdrawRequest{},
-	OpCodeWithdraw:                 &messages.Withdraw{},
-	OpCodeCooperativeSettleRequest: &messages.CooperativeSettleRequest{},
-	OpCodeCooperativeSettle:        &messages.CooperativeSettle{},
+	OpCodeAnnounceRequest:         &pm.AnnounceRequest{},
+	OpCodeAnnounceRequestMessage:  &pm.AnnounceRequestMessage{},
+	OpCodeAnnounceResponseMessage: &pm.AnnounceResponseMessage{},
 }
 
 type Network struct {
@@ -116,17 +95,17 @@ func (this *Network) Start(address string) error {
 		return errors.New("invalid address")
 	}
 	protocol := address[:protocolIndex]
-	log.Debugf("channel address: %s", address)
+	log.Debugf("tracker address: %s", address)
 	builderOpt := []network.BuilderOption{
 		network.WriteFlushLatency(1 * time.Millisecond),
 		network.WriteTimeout(int(time.Duration(30))),
 	}
 	builder := network.NewBuilderWithOptions(builderOpt...)
 	if this.Keys != nil {
-		log.Debugf("channel use account key")
+		log.Debugf("tracker use account key")
 		builder.SetKeys(this.Keys)
 	} else {
-		log.Debugf("channel use RandomKeyPair key")
+		log.Debugf("tracker use RandomKeyPair key")
 		builder.SetKeys(ed25519.RandomKeyPair())
 	}
 
@@ -181,12 +160,12 @@ func (this *Network) Start(address string) error {
 		this.P2p.EnableProxyMode(true)
 		this.P2p.SetProxyServer(this.proxyAddr)
 	}
-	this.P2p.SetNetworkID(config.Parameters.Base.ChannelNetworkId)
+	this.P2p.SetNetworkID(1567481543)
 	go this.P2p.Listen()
 	// go this.PeerStateChange(this.syncPeerState)
 
 	this.P2p.BlockUntilListening()
-	log.Debugf("channel will BlockUntilProxyFinish..., networkid %d", config.Parameters.Base.ChannelNetworkId)
+	log.Debugf("tracker will BlockUntilProxyFinish..., networkid %d", 1567481543)
 	if len(this.proxyAddr) > 0 {
 		switch protocol {
 		case "udp":
@@ -199,7 +178,7 @@ func (this *Network) Start(address string) error {
 			this.P2p.BlockUntilTcpProxyFinish()
 		}
 	}
-	log.Debugf("finish BlockUntilProxyFinish...")
+	log.Debugf("tracker BlockUntilProxyFinish...")
 	if len(this.P2p.ID.Address) == 6 {
 		return errors.New("invalid address")
 	}
@@ -387,37 +366,31 @@ func (this *Network) RequestWithRetry(msg proto.Message, peer string, retry int)
 	return res, nil
 }
 
-//P2P network msg receive. torrent msg, reg msg, unReg msg
+// P2P network msg receive. torrent msg, reg msg, unReg msg
 func (this *Network) Receive(message proto.Message, from string) error {
+	log.Infof("tkReceive %v from %s", message, from)
 	switch message.(type) {
-	case *messages.Processed:
-		act.OnBusinessMessage(message, from)
-	case *messages.Delivered:
-		act.OnBusinessMessage(message, from)
-	case *messages.SecretRequest:
-		act.OnBusinessMessage(message, from)
-	case *messages.RevealSecret:
-		act.OnBusinessMessage(message, from)
-	case *messages.BalanceProof:
-		act.OnBusinessMessage(message, from)
-	case *messages.DirectTransfer:
-		act.OnBusinessMessage(message, from)
-	case *messages.LockedTransfer:
-		act.OnBusinessMessage(message, from)
-	case *messages.RefundTransfer:
-		act.OnBusinessMessage(message, from)
-	case *messages.LockExpired:
-		act.OnBusinessMessage(message, from)
-	case *messages.WithdrawRequest:
-		act.OnBusinessMessage(message, from)
-	case *messages.Withdraw:
-		act.OnBusinessMessage(message, from)
-	case *messages.CooperativeSettleRequest:
-		act.OnBusinessMessage(message, from)
-	case *messages.CooperativeSettle:
-		act.OnBusinessMessage(message, from)
+	case *pm.AnnounceRequest:
+		log.Debugf("[MSB Receive] receive AnnounceRequest message from peer:%s.", from)
+		this.OnBusinessMessage(message, from)
+	case *pm.AnnounceRequestMessage:
+		log.Debugf("[MSB Receive] receive AnnounceRequestMessage message from peer:%s.", from)
+		this.OnBusinessMessage(message, from)
+	case *pm.AnnounceResponseMessage:
+		log.Debugf("[MSB Receive] receive AnnounceResponseMessage message from peer:%s.", from)
+		this.OnBusinessMessage(message, from)
 	default:
-		// log.Errorf("[MSB Receive] unknown message type:%s", msg.String())
+		log.Debugf("[MSB Receive] receive Unknown message from peer:%s.", from)
+	}
+	return nil
+}
+
+func (this *Network) OnBusinessMessage(message proto.Message, from string) error {
+	future := this.GetPID().RequestFuture(message,
+		REQ_TIMEOUT*time.Second)
+	if _, err := future.Result(); err != nil {
+		log.Error("[OnBusinessMessage] error: ", err)
+		return err
 	}
 	return nil
 }
@@ -430,49 +403,22 @@ func getProtocolFromAddr(addr string) string {
 	return addr[:idx]
 }
 
-func (this *Network) healthCheckProxyService() {
-	ti := time.NewTicker(time.Duration(5) * time.Second)
-	first := false
-	for {
-		select {
-		case <-ti.C:
-			if !first {
-				log.Debugf("start check proxy %s", this.proxyAddr)
-				first = true
-			}
-			this.healthCheckPeer(this.proxyAddr)
-		case <-this.kill:
-			log.Debugf("stop health check proxy service when receive kill")
-			return
-		}
-	}
-}
-
-func (this *Network) healthCheckPeer(addr string) error {
-	if len(addr) == 0 {
+func (this *Network) healthCheckProxyServer() error {
+	if len(this.proxyAddr) == 0 {
 		return nil
 	}
-	proxyState, err := this.GetPeerStateByAddress(addr)
-	if err == nil && proxyState == network.PEER_REACHABLE {
+	proxyState, err := this.GetPeerStateByAddress(this.proxyAddr)
+	if err != nil {
+		return err
+	}
+	if proxyState == network.PEER_REACHABLE {
 		return nil
 	}
-	log.Debugf("health check peer: %s unreachable, err: %s ", addr, err)
-	if addr == this.proxyAddr {
-		log.Debugf("backoff proxy server ....")
-		err = this.P2p.ReconnectProxyServer(this.proxyAddr)
-		if err != nil {
-			log.Errorf("proxy reconnect failed, err %s", err)
-			return err
-		}
-		log.Debugf("backoff proxyserver success")
-	} else {
-		err := this.P2p.ReconnectPeer(addr)
-		if err != nil {
-			return err
-		}
-		log.Debugf("reconnect peer success: %s", addr)
+	client := this.P2p.GetPeerClient(this.proxyAddr)
+	if client == nil {
+		return fmt.Errorf("get peer client is nil: %s", this.proxyAddr)
 	}
-	proxyState, err = this.GetPeerStateByAddress(addr)
+	proxyState, err = this.GetPeerStateByAddress(this.proxyAddr)
 	if err != nil || proxyState != network.PEER_REACHABLE {
 		return fmt.Errorf("back off proxy failed state: %d, err: %s", proxyState, err)
 	}

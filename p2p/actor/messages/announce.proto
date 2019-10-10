@@ -1,0 +1,60 @@
+syntax = "proto3";
+
+package messages;
+
+message MessageID {
+    uint64 message_id = 1;
+}
+
+message AnnounceRequest {
+    MessageID messageIdentifier = 1;
+    bytes infoHash = 2;
+    bytes peerId = 3;
+    bytes ip = 4;
+    uint64 port = 5;
+    uint64 left = 6;
+    uint64 numWant = 7;
+
+    enum AnnounceEvent {
+        EMPTY = 0;
+        EMPTY_SEND = 1;
+        COMPLETED = 2;
+        COMPLETED_SEND = 3;
+    }
+
+    AnnounceEvent event = 8;
+    string target = 9;
+}
+
+message AnnounceResponse {
+    MessageID messageIdentifier = 1;
+    uint64 interval = 2;
+    uint64 leechers = 3;
+    uint64 seeders = 4;
+    repeated string peers = 5;
+
+    enum AnnounceEvent {
+        EMPTY = 0;
+        EMPTY_SEND = 1;
+        COMPLETED = 2;
+        COMPLETED_SEND = 3;
+    }
+
+    AnnounceEvent event = 6;
+    string target = 7;
+}
+
+message AnnounceRequestMessage {
+    AnnounceRequest request = 1;
+    SignedMessage signature = 2;
+}
+
+message AnnounceResponseMessage {
+    AnnounceResponse response = 1;
+    SignedMessage signature = 2;
+}
+
+message SignedMessage {
+    bytes signature = 1;
+    bytes publikkey = 2;
+}

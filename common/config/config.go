@@ -89,6 +89,7 @@ type BaseConfig struct {
 	DnsChannelDeposit          uint64 `json:"DnsChannelDeposit"`
 	AutoSetupDNSRegisterEnable bool   `json:"AutoSetupDNSRegisterEnable"`
 
+	TrackerNetworkId         uint32   `json:"TrackerNetworkId"`
 	TrackerProtocol          string   `json:"TrackerProtocol"`
 	TrackerPortOffset        uint     `json:"TrackerPortOffset"`
 	TrackerFee               int      `json:"TrackerFee`

@@ -14,9 +14,13 @@ import (
 	"github.com/saveio/scan/common/config"
 	ch_actor_server "github.com/saveio/scan/p2p/actor/channel/server"
 	dns_actor_server "github.com/saveio/scan/p2p/actor/dns/server"
+	tk_actor_server "github.com/saveio/scan/p2p/actor/tracker/server"
 	channel_net "github.com/saveio/scan/p2p/networks/channel"
 	dns_net "github.com/saveio/scan/p2p/networks/dns"
+	tk_net "github.com/saveio/scan/p2p/networks/tracker"
+	tk "github.com/saveio/scan/service/tk"
 	themisSdk "github.com/saveio/themis-go-sdk"
+	chainsdk "github.com/saveio/themis-go-sdk/utils"
 	"github.com/saveio/themis/account"
 	cutils "github.com/saveio/themis/cmd/utils"
 	"github.com/saveio/themis/common/log"
@@ -33,6 +37,7 @@ type Node struct {
 	Chain      *themisSdk.Chain
 	DnsNet     *dns_net.Network
 	ChannelNet *channel_net.Network
+	TkNet      *tk_net.Network
 	Channel    *channel.Channel
 	// Db         *storage.LevelDBStore
 	PublicIp string
@@ -50,7 +55,7 @@ func (this *Node) CurrentAccount() *account.Account {
 	return this.Account
 }
 
-func (this *Node) StartScanNode(startChannelNetwork, startDnsNetwork bool) error {
+func (this *Node) StartScanNode(startChannelNetwork, startDnsNetwork, startTkNetwork bool) error {
 	channelListenAddr := fmt.Sprintf("127.0.0.1:%d", int(config.Parameters.Base.PortBase+config.Parameters.Base.ChannelPortOffset))
 	this.Config = &dspCfg.DspConfig{
 		DBPath:               config.DspDBPath(),
@@ -101,8 +106,15 @@ func (this *Node) StartScanNode(startChannelNetwork, startDnsNetwork bool) error
 		if err != nil {
 			return err
 		}
-
 	}
+
+	if startTkNetwork {
+		err := this.SetupTkNetwork()
+		if err != nil {
+			return err
+		}
+	}
+
 	log.Info("scan node start success.")
 	return nil
 }
@@ -167,6 +179,44 @@ func (this *Node) SetupDnsNetwork() error {
 	}
 
 	return this.SendConnectMsgToAllDns()
+}
+
+func (this *Node) SetupTkNetwork() error {
+	tkSrv := tk.NewTrackerService(nil, nil, this.Account.PublicKey, func(raw []byte) ([]byte, error) {
+		return chainsdk.Sign(this.Account, raw)
+	})
+	tkActServer, err := tk_actor_server.NewTrackerActor(tkSrv)
+	if err != nil {
+		return err
+	}
+
+	dPub := keypair.SerializePublicKey(this.Account.PubKey())
+	tkPub, tkPri, err := ed25519.GenerateKey(&accountReader{
+		PublicKey: append(dPub, []byte("tk")...),
+	})
+	tkNetworkKey := &crypto.KeyPair{
+		PublicKey:  tkPub,
+		PrivateKey: tkPri,
+	}
+	this.TkNet = tk_net.NewP2P()
+	this.TkNet.SetNetworkKey(tkNetworkKey)
+	this.TkNet.SetProxyServer(config.Parameters.Base.NATProxyServerAddr)
+	this.TkNet.SetPID(tkActServer.GetLocalPID())
+	tkListenAddr := fmt.Sprintf("%s://%s:%d",
+		config.Parameters.Base.TrackerProtocol,
+		config.Parameters.Base.PublicIP,
+		int(config.Parameters.Base.PortBase+config.Parameters.Base.TrackerPortOffset))
+	log.Infof("goto start tk network %s", tkListenAddr)
+	tk_net.TkP2p = this.TkNet
+	tkActServer.SetNetwork(this.TkNet)
+
+	err = this.TkNet.Start(tkListenAddr)
+	if err != nil {
+		return err
+	}
+
+	log.Infof("tk public ip is %s", this.TkNet.PublicAddr())
+	return nil
 }
 
 func (this *Node) SendConnectMsgToAllDns() error {

@@ -23,7 +23,8 @@ import (
 )
 
 const (
-	REQ_TIMEOUT = 15
+	REQ_TIMEOUT         = 15
+	REQUEST_MSG_TIMEOUT = 30
 )
 
 var DnsP2p *Network
@@ -341,7 +342,7 @@ func (this *Network) Request(msg proto.Message, peer string) (proto.Message, err
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(common.REQUEST_MSG_TIMEOUT)*time.Second)
 	defer cancel()
-	return client.Request(ctx, msg)
+	return client.Request(ctx, msg, time.Duration(REQUEST_MSG_TIMEOUT)*time.Second)
 }
 
 // RequestWithRetry. send msg to peer and wait for response synchronously
@@ -360,7 +361,7 @@ func (this *Network) RequestWithRetry(msg proto.Message, peer string, retry int)
 		log.Debugf("send request msg to %s with retry %d", peer, i)
 		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(common.REQUEST_MSG_TIMEOUT)*time.Second)
 		defer cancel()
-		res, err = client.Request(ctx, msg)
+		res, err = client.Request(ctx, msg, time.Duration(REQUEST_MSG_TIMEOUT)*time.Second)
 		if err == nil || err.Error() != "context deadline exceeded" {
 			break
 		}
@@ -375,19 +376,18 @@ func (this *Network) RequestWithRetry(msg proto.Message, peer string, retry int)
 func (this *Network) Receive(message proto.Message, from string) error {
 	switch message.(type) {
 	case *pm.Torrent:
-		log.Errorf("[MSB Receive] receive from peer:%s, nil Torrent message", from)
+		log.Debugf("[MSB Receive] receive Torrent message from peer: %s.", from)
 		this.OnBusinessMessage(message, from)
 	case *pm.Endpoint:
-		log.Errorf("[MSB Receive] receive from peer:%s, nil Reg message", from)
+		log.Debugf("[MSB Receive] receive Endpoint message from peer: %s.", from)
 		this.OnBusinessMessage(message, from)
 	default:
-		// log.Errorf("[MSB Receive] unknown message type:%s", msg.String())
+		log.Debugf("[MSB Receive] receive Unknown message from peer: %s.", from)
 	}
 	return nil
 }
 
 func (this *Network) OnBusinessMessage(message proto.Message, from string) error {
-	log.Debugf("[OnBusinessMessage] receive message from peer:%s", from)
 	future := this.GetPID().RequestFuture(message,
 		REQ_TIMEOUT*time.Second)
 	if _, err := future.Result(); err != nil {
