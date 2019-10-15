@@ -233,7 +233,7 @@ func startScan(ctx *cli.Context, acc *account.Account) {
 	}
 	storage.EDB = storage.NewEndpointDB(edb)
 
-	startChannelNetwork, startDnsNetwork, startTkNetwork := true, true, true
+	startChannelNetwork, startDnsNetwork, startTkNetwork := true, false, true
 	err = service.ScanNode.StartScanNode(startChannelNetwork, startDnsNetwork, startTkNetwork)
 	if err != nil {
 		log.Fatal(err)

@@ -1,8 +1,11 @@
 package client
 
 import (
+	"net"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/ontio/ontology-eventbus/actor"
+	"github.com/saveio/scan/storage"
 	"github.com/saveio/themis/common/log"
 )
 
@@ -59,6 +62,7 @@ type RecvMsg struct {
 }
 
 func P2pConnect(address string) error {
+	log.Infof("p2pConnnect address: %s", address)
 	ret := &ConnectRet{
 		Done: make(chan bool, 1),
 		Err:  nil,
@@ -93,6 +97,10 @@ func P2pSend(address string, data proto.Message) error {
 	<-chReq.Ret.Done
 	close(chReq.Ret.Done)
 	return chReq.Ret.Err
+	// log.Infof("P2pTell2")
+	// TrackerServerPid.Tell(&actor.Started{})
+	// TrackerServerPid.Tell(&actor.Started{})
+	// return nil
 }
 
 func P2pTell() {
@@ -120,3 +128,31 @@ func P2pTell() {
 // 		return ret.(*pm.AnnounceResponse), nil
 // 	}
 // }
+
+type ActEndpointRegistParams struct {
+	Wallet [20]byte
+	Ip     net.IP
+	Port   uint64
+}
+
+type ActGetEndpointAddrParams struct {
+	Wallet [20]byte
+}
+
+type ActCompleteTorrentParams struct {
+	InfoHash storage.MetaInfoHash
+	Ip       net.IP
+	Port     uint64
+}
+
+type ActTorrentPeersParams struct {
+	InfoHash storage.MetaInfoHash
+	NumWant  int32
+	Left     uint64
+}
+
+type ActNodesTypeRegistParams struct {
+}
+
+type ActGetNodesByTypeParams struct {
+}

@@ -25,29 +25,11 @@ import (
 )
 
 const (
-	MAX_ANNOUNCE_REQUEST_TIMES  = 3
+	MAX_ANNOUNCE_REQUEST_TIMES  = 1
 	MAX_ANNOUNCE_RESPONSE_TIMES = 1
 	MAX_ANNOUNCE_WAIT_SECONDS   = 30 * time.Second
 	MEMORY_HEARTBEAT_DURATION   = 5 * time.Second
 )
-
-type ActionEndpointRegParams struct {
-	Wallet [20]byte
-	IP     net.IP
-	Port   uint16
-}
-
-type ActionTorrentCompleteParams struct {
-	InfoHash storage.MetaInfoHash
-	IP       net.IP
-	Port     uint16
-}
-
-type ActionGetTorrentPeersParams struct {
-	InfoHash storage.MetaInfoHash
-	NumWant  int32
-	Left     uint64
-}
 
 type AnnounceAction int32
 type AnnounceMessageStatus int32
@@ -95,8 +77,9 @@ func (this *TrackerService) SetDnsActor(dnsAct *actor.PID) {
 	this.DnsAct = dnsAct
 }
 
-func (this *TrackerService) Start() {
+func (this *TrackerService) Start(targetDnsAddr string) {
 	log.Info("tkSrv started")
+	go tkActClient.P2pConnect(targetDnsAddr)
 	tkActClient.SetTrackerServerPid(this.TkAct)
 	for {
 		t := time.NewTimer(time.Duration(MEMORY_HEARTBEAT_DURATION))
@@ -125,73 +108,83 @@ func (this *TrackerService) HandleAnnounceRequestEvent(annReq *tkpm.AnnounceRequ
 	}
 
 	log.Infof("SignAndSend %v %v %v", annReq.Target, annReq.MessageIdentifier, annReq)
-	// this.AnnounceMessageMap.Store(annReq.MessageIdentifier.MessageId, annReq)
-	this.SignAndSend(annReq.Target, annReq.MessageIdentifier, annReq)
+	this.AnnounceMessageMap.Store(annReq.MessageIdentifier.MessageId, annMsgItem)
+	go this.SignAndSend(annReq.Target, annReq.MessageIdentifier, annReq)
 
 	var result *tkpm.AnnounceResponse
-	var interval time.Duration = MAX_ANNOUNCE_REQUEST_TIMES
-	t := time.NewTimer(interval * time.Second)
-
+	var interval time.Duration = 15
+	retry_times := 0
 	// Waiting & Retry
-	for {
+	// done := make(chan bool, 1)
+	// go func() {
+	for retry_times < MAX_ANNOUNCE_REQUEST_TIMES {
+		t := time.NewTimer(interval * time.Second)
 		select {
-		case <-time.After(time.Duration(MAX_ANNOUNCE_WAIT_SECONDS)):
-			log.Debugf("Timeout finally")
-			msgItem, ok := this.AnnounceMessageMap.Load(annReq.MessageIdentifier)
-			if ok && msgItem != nil {
-				this.AnnounceMessageMap.Delete(annReq.MessageIdentifier)
-			}
-			break
 		case <-t.C:
 			log.Debugf("SignAndSend [QueueSend] <-t.C Time: %s queue: %+v\n", time.Now().String(), annMsgItem.AnnRequest)
-			this.SignAndSend(annReq.Target, annReq.MessageIdentifier, annReq)
-			log.Warnf("Timeout retry for msg = %+v\n", annReq)
-			t.Reset(interval * time.Second)
+			go this.SignAndSend(annReq.Target, annReq.MessageIdentifier, annReq)
+			// log.Warnf("Timeout retry for msg = %+v\n", annReq)
+			// t.Reset(interval * time.Second)
+			retry_times++
+			log.Debugf("retry_times %d", retry_times)
+			// done <- false
 		case status := <-annMsgItem.ChStatus:
-			msgItem_, ok := this.AnnounceMessageMap.Load(annMsgItem.MsgID)
+			log.Infof("gotit")
+			retry_times = MAX_ANNOUNCE_REQUEST_TIMES
+			msgItem_, ok := this.AnnounceMessageMap.Load(annMsgItem.MsgID.MessageId)
 			msgItem := msgItem_.(*AnnounceMessageItem)
 			if ok && annMsgItem.MsgID == msgItem.MsgID && status == AnnounceMessageProcessed {
-				this.AnnounceMessageMap.Delete(annReq.MessageIdentifier)
+				result = annMsgItem.AnnResponse
+				this.AnnounceMessageMap.Delete(annReq.MessageIdentifier.MessageId)
+				log.Infof("done")
 				break
+				// done <- true
 			}
 		}
 	}
+	// }()
+	log.Debugf("break retry_times")
+
+	// select {
+	// case <-done:
+	// 	close(done)
+	// 	// return nil
+	// case <-time.After(time.Duration(15000) * time.Millisecond):
+	// 	return nil, fmt.Errorf("function:[%s] timeout", "done")
+	// }
 
 	// Sweeper, remove msg from map
-	msgItemI, ok := this.AnnounceMessageMap.Load(annReq.MessageIdentifier)
+	msgItemI, ok := this.AnnounceMessageMap.Load(annReq.MessageIdentifier.MessageId)
 	if ok && msgItemI != nil {
-		this.AnnounceMessageMap.Delete(annReq.MessageIdentifier)
+		this.AnnounceMessageMap.Delete(annReq.MessageIdentifier.MessageId)
 	}
 	return result, nil
 }
 
 func (this *TrackerService) HandleAnnounceResponseEvent(annRes *tkpm.AnnounceResponse, from string) error {
-	this.SignAndSend(from, annRes.MessageIdentifier, annRes)
+	go this.SignAndSend(from, annRes.MessageIdentifier, annRes)
+	return nil
 
-	var interval time.Duration = MAX_ANNOUNCE_RESPONSE_TIMES
-	ti := time.NewTimer(interval * time.Second)
+	// var interval time.Duration = MAX_ANNOUNCE_RESPONSE_TIMES
+	// ti := time.NewTimer(interval * time.Second)
 	// Waiting & Retry
-	for {
-		select {
-		case <-time.After(time.Duration(MAX_ANNOUNCE_WAIT_SECONDS)):
-			log.Debugf("")
-		case <-ti.C:
-			log.Debugf("[QueueSend] <-t.C Time: %s queue: %+v\n", time.Now().String(), annRes)
-			this.SignAndSend(from, annRes.MessageIdentifier, annRes)
-			log.Warnf("Timeout retry for msg = %+v\n", annRes)
-			ti.Reset(interval * time.Second)
-		}
-	}
+
+	// select {
+	// case <-time.After(time.Duration(MAX_ANNOUNCE_WAIT_SECONDS)):
+	// 	log.Debugf("timeout finally, response")
+	// case <-ti.C:
+	// 	log.Debugf("[QueueSend] <-t.C Time: %s from: %s %+v\n", time.Now().String(), from, annRes)
+	// 	annRes.Event = tkpm.AnnounceResponse_COMPLETED_SEND
+	// 	this.SignAndSend(from, annRes.MessageIdentifier, annRes)
+	// 	log.Warnf("Timeout retry for msg = %+v\n", annRes)
+	// }
 }
 
-func (this *TrackerService) SignAndSend(from string, msgId *tkpm.MessageID, message proto.Message) error {
-	params := ActionEndpointRegParams{}
-	rawData, err := json.Marshal(params)
+func (this *TrackerService) SignAndSend(target string, msgId *tkpm.MessageID, message proto.Message) error {
+	rawData, err := json.Marshal(message)
 	if err != nil {
 		return err
 	}
-
-	// signature, err := chainsdk.Sign(acc, rawData)
 	signature, err := this.SignFn(rawData)
 	if err != nil {
 		return errors.New("gen message signature failed.")
@@ -200,7 +193,8 @@ func (this *TrackerService) SignAndSend(from string, msgId *tkpm.MessageID, mess
 	switch msg := message.(type) {
 	case *tkpm.AnnounceRequest:
 		log.Debugf("tkpm.AnnounceRequestMessage Request: %v, Signature: %v", msg, tkpm.SignedMessage{Signature: signature, Publikkey: keypair.SerializePublicKey(this.PublicKey)})
-		go tkActClient.P2pSend(from, &tkpm.AnnounceRequestMessage{
+		// go tkActClient.P2pConnect(target)
+		go tkActClient.P2pSend(target, &tkpm.AnnounceRequestMessage{
 			Request: msg,
 			Signature: &tkpm.SignedMessage{
 				Signature: signature,
@@ -209,7 +203,8 @@ func (this *TrackerService) SignAndSend(from string, msgId *tkpm.MessageID, mess
 		})
 		break
 	case *tkpm.AnnounceResponse:
-		go tkActClient.P2pSend(from, &tkpm.AnnounceResponseMessage{
+		// go tkActClient.P2pConnect(target)
+		go tkActClient.P2pSend(target, &tkpm.AnnounceResponseMessage{
 			Response: msg,
 			Signature: &tkpm.SignedMessage{
 				Signature: signature,
@@ -232,30 +227,46 @@ func (this *TrackerService) ReceiveAnnounceMessage(message proto.Message, from s
 	switch msg := message.(type) {
 	case *tkpm.AnnounceRequestMessage:
 		switch msg.GetRequest().GetEvent() {
-		case tkpm.AnnounceRequest_EMPTY:
-		case tkpm.AnnounceRequest_COMPLETED:
-		case tkpm.AnnounceRequest_EMPTY_SEND:
-		case tkpm.AnnounceRequest_COMPLETED_SEND:
-			annResp, err := this.onAnnounce(msg.GetRequest())
-			if err != nil {
-				this.HandleAnnounceResponseEvent(&tkpm.AnnounceResponse{}, from)
-			}
-			this.HandleAnnounceResponseEvent(annResp, from)
+		case tkpm.AnnounceEvent_COMPLETE_TORRENT:
+			log.Debugf("AnnounceEvent_COMPLETE_TORRENT")
+		case tkpm.AnnounceEvent_QUERY_TORRENT_PEERS:
+			log.Debugf("AnnounceEvent_QUERY_TORRENT_PEERS")
+		case tkpm.AnnounceEvent_ENDPOINT_REGISTRY:
+			log.Debugf("AnnounceEvent_ENDPOINT_REGISTRY")
+		case tkpm.AnnounceEvent_QUERY_ENDPOINT:
+			log.Debugf("AnnounceEvent_QUERY_ENDPOINT")
+		default:
+			log.Debugf("Unknown AnnounceEvent type")
 		}
+		annResp, err := this.onAnnounce(msg.GetRequest())
+		log.Debugf("onAnnounce annResp: %v, Err: %v", annResp, err)
+		if err != nil {
+			this.HandleAnnounceResponseEvent(&tkpm.AnnounceResponse{}, from)
+		}
+		this.HandleAnnounceResponseEvent(annResp, from)
 	case *tkpm.AnnounceResponseMessage:
+		this.ReceiveAnnounceResponseMessage(msg, from)
 		switch msg.GetResponse().GetEvent() {
-		case tkpm.AnnounceResponse_EMPTY:
-		case tkpm.AnnounceResponse_EMPTY_SEND:
-		case tkpm.AnnounceResponse_COMPLETED:
-		case tkpm.AnnounceResponse_COMPLETED_SEND:
-			this.ReceiveAnnounceResponseMessage(msg, from)
+		case tkpm.AnnounceEvent_COMPLETE_TORRENT:
+			log.Debugf("AnnounceEvent_COMPLETE_TORRENT")
+		case tkpm.AnnounceEvent_QUERY_TORRENT_PEERS:
+			log.Debugf("AnnounceEvent_QUERY_TORRENT_PEERS")
+		case tkpm.AnnounceEvent_ENDPOINT_REGISTRY:
+			log.Debugf("AnnounceEvent_ENDPOINT_REGISTRY")
+		case tkpm.AnnounceEvent_QUERY_ENDPOINT:
+			log.Debugf("AnnounceEvent_QUERY_ENDPOINT")
+		default:
+			log.Debugf("Unknown AnnounceEvent type")
 		}
+		this.ReceiveAnnounceResponseMessage(msg, from)
 	}
 }
 
 func (this *TrackerService) ReceiveAnnounceResponseMessage(annRespMsg *tkpm.AnnounceResponseMessage, from string) {
-	msg, ok := this.AnnounceMessageMap.Load(annRespMsg.Response.MessageIdentifier)
+	log.Infof("ReceiveAnnounceResponseMessage %v", annRespMsg)
+	msg, ok := this.AnnounceMessageMap.Load(annRespMsg.Response.MessageIdentifier.MessageId)
 	if ok && msg != nil {
+		log.Debugf("msg: %v", msg)
 		msgItem := msg.(*AnnounceMessageItem)
 		msgItem.AnnResponse = annRespMsg.Response
 		this.AnnounceMessageMap.Store(annRespMsg.Response.MessageIdentifier.MessageId, msgItem)
@@ -263,19 +274,19 @@ func (this *TrackerService) ReceiveAnnounceResponseMessage(annRespMsg *tkpm.Anno
 	}
 }
 
-func (this *TrackerService) onAnnounce(arq *tkpm.AnnounceRequest) (*tkpm.AnnounceResponse, error) {
-	switch arq.Event {
-	case tkpm.AnnounceRequest_EMPTY_SEND:
-		return this.onAnnounceQuery(arq)
-	case tkpm.AnnounceRequest_COMPLETED_SEND:
-		return this.onAnnounceComplete(arq)
+func (this *TrackerService) onAnnounce(aReq *tkpm.AnnounceRequest) (*tkpm.AnnounceResponse, error) {
+	switch aReq.Event {
+	case tkpm.AnnounceEvent_COMPLETE_TORRENT:
+		return this.onAnnounceCompleteTorrent(aReq)
+	case tkpm.AnnounceEvent_QUERY_TORRENT_PEERS:
+		return this.onAnnounceQueryTorrentPeers(aReq)
 	}
 	return nil, errors.New("Unknown announce event type")
 }
 
-func (this *TrackerService) onAnnounceQuery(arq *tkpm.AnnounceRequest) (*tkpm.AnnounceResponse, error) {
+func (this *TrackerService) onAnnounceQueryTorrentPeers(arq *tkpm.AnnounceRequest) (*tkpm.AnnounceResponse, error) {
 	t, err := storage.TDB.GetTorrent(arq.InfoHash[:])
-	if err != nil {
+	if err != nil && err.Error() != "not found" {
 		return nil, err
 	}
 
@@ -285,28 +296,24 @@ func (this *TrackerService) onAnnounceQuery(arq *tkpm.AnnounceRequest) (*tkpm.An
 	}
 	return &tkpm.AnnounceResponse{
 		MessageIdentifier: arq.MessageIdentifier,
-		Interval:          900,
+		Interval:          800,
 		Leechers:          uint64(t.Leechers),
 		Seeders:           uint64(t.Seeders),
 		Peers:             peers,
 	}, nil
 }
 
-func (this *TrackerService) onAnnounceComplete(arq *tkpm.AnnounceRequest) (*tkpm.AnnounceResponse, error) {
-	t, err := storage.TDB.GetTorrent(arq.InfoHash)
-	if err != nil {
-		return nil, err
-	}
-
+func (this *TrackerService) onAnnounceCompleteTorrent(arq *tkpm.AnnounceRequest) (*tkpm.AnnounceResponse, error) {
 	peer := krpc.NodeAddr{IP: arq.Ip[:], Port: int(arq.Port)}
 	pi, err := storage.TDB.GetTorrentPeerByFileHashAndNodeAddr(arq.InfoHash[:], peer.String())
 	if err != nil {
-		return nil, err
+		log.Errorf("get peerinfo err: %v", err)
 	}
 
 	if pi == nil {
 		var peerID storage.PeerID
-		copy(peerID[:storage.PEERID_LENGTH], arq.PeerId[:storage.PEERID_LENGTH])
+		// copy(peerID[:storage.PEERID_LENGTH], arq.PeerId[:storage.PEERID_LENGTH])
+		peerID = [20]byte{}
 		pi = &storage.PeerInfo{
 			ID:       peerID,
 			Complete: arq.Left == 0,
@@ -333,8 +340,12 @@ func (this *TrackerService) onAnnounceComplete(arq *tkpm.AnnounceRequest) (*tkpm
 
 	piBinarys := pi.Serialize()
 	log.Debugf("PeerInfo Binary: %v\n", piBinarys)
-	this.DnsAct.Tell(&tkpm.Torrent{InfoHash: arq.InfoHash[:], Left: arq.Left, Peerinfo: piBinarys, Type: 0})
+	// this.DnsAct.Tell(&tkpm.Torrent{InfoHash: arq.InfoHash[:], Left: arq.Left, Peerinfo: piBinarys, Type: 0})
 
+	t, err := storage.TDB.GetTorrent(arq.InfoHash)
+	if err != nil && err.Error() != "not found" {
+		return nil, err
+	}
 	var peers []string
 	for peer, _ := range t.Peers {
 		peers = append(peers, peer)

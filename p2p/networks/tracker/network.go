@@ -368,24 +368,23 @@ func (this *Network) RequestWithRetry(msg proto.Message, peer string, retry int)
 
 // P2P network msg receive. torrent msg, reg msg, unReg msg
 func (this *Network) Receive(message proto.Message, from string) error {
-	log.Infof("tkReceive %v from %s", message, from)
-	switch message.(type) {
-	case *pm.AnnounceRequest:
-		log.Debugf("[MSB Receive] receive AnnounceRequest message from peer:%s.", from)
-		this.OnBusinessMessage(message, from)
+	log.Infof("tkReceive %v, from %s", message, from)
+	switch msg := message.(type) {
 	case *pm.AnnounceRequestMessage:
 		log.Debugf("[MSB Receive] receive AnnounceRequestMessage message from peer:%s.", from)
-		this.OnBusinessMessage(message, from)
+		msg.GetRequest().From = from
+		this.OnBusinessMessage(msg)
 	case *pm.AnnounceResponseMessage:
 		log.Debugf("[MSB Receive] receive AnnounceResponseMessage message from peer:%s.", from)
-		this.OnBusinessMessage(message, from)
+		msg.GetResponse().From = from
+		this.OnBusinessMessage(msg)
 	default:
 		log.Debugf("[MSB Receive] receive Unknown message from peer:%s.", from)
 	}
 	return nil
 }
 
-func (this *Network) OnBusinessMessage(message proto.Message, from string) error {
+func (this *Network) OnBusinessMessage(message proto.Message) error {
 	future := this.GetPID().RequestFuture(message,
 		REQ_TIMEOUT*time.Second)
 	if _, err := future.Result(); err != nil {

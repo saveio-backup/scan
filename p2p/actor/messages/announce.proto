@@ -6,6 +6,18 @@ message MessageID {
     uint64 message_id = 1;
 }
 
+message SignedMessage {
+    bytes signature = 1;
+    bytes publikkey = 2;
+}
+
+enum AnnounceEvent {
+    COMPLETE_TORRENT = 0;
+    QUERY_TORRENT_PEERS = 1;
+    ENDPOINT_REGISTRY = 2;
+    QUERY_ENDPOINT = 3;
+}
+
 message AnnounceRequest {
     MessageID messageIdentifier = 1;
     bytes infoHash = 2;
@@ -14,16 +26,10 @@ message AnnounceRequest {
     uint64 port = 5;
     uint64 left = 6;
     uint64 numWant = 7;
-
-    enum AnnounceEvent {
-        EMPTY = 0;
-        EMPTY_SEND = 1;
-        COMPLETED = 2;
-        COMPLETED_SEND = 3;
-    }
-
-    AnnounceEvent event = 8;
-    string target = 9;
+    bytes wallet = 8;
+    AnnounceEvent event = 9;
+    string target = 10;
+    string from = 11;
 }
 
 message AnnounceResponse {
@@ -32,16 +38,10 @@ message AnnounceResponse {
     uint64 leechers = 3;
     uint64 seeders = 4;
     repeated string peers = 5;
-
-    enum AnnounceEvent {
-        EMPTY = 0;
-        EMPTY_SEND = 1;
-        COMPLETED = 2;
-        COMPLETED_SEND = 3;
-    }
-
-    AnnounceEvent event = 6;
-    string target = 7;
+    string addr = 6;
+    AnnounceEvent event = 7;
+    string target = 8;
+    string from = 9;
 }
 
 message AnnounceRequestMessage {
@@ -52,9 +52,4 @@ message AnnounceRequestMessage {
 message AnnounceResponseMessage {
     AnnounceResponse response = 1;
     SignedMessage signature = 2;
-}
-
-message SignedMessage {
-    bytes signature = 1;
-    bytes publikkey = 2;
 }

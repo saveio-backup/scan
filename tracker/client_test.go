@@ -65,7 +65,6 @@ func TestSignatureVerify(t *testing.T) {
 }
 
 func TestTorrentComplete(t *testing.T) {
-
 	acc, err := GetAccount(walletfile, walletpwd)
 	assert.Nil(err, t)
 	fmt.Println(acc.Address.ToBase58())
@@ -87,7 +86,6 @@ func TestTorrentComplete(t *testing.T) {
 }
 
 func TestGetTorrentPeers(t *testing.T) {
-
 	acc, err := GetAccount(walletfile, walletpwd)
 	assert.Nil(err, t)
 	fmt.Println(acc.Address.ToBase58())
