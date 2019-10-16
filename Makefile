@@ -1,8 +1,6 @@
 GOFMT=gofmt
 GC=go build --tags json1
 VERSION := $(shell git tag -l --sort=-v:refname | grep v1.0. | head -1)
-
-SRC_FILES = $(shell git ls-files | grep -e .go$ | grep -v _test.go)
 PYLONS_GITCOMMIT=$(shell cd .. && cd pylons && git log -1 --pretty=format:"%H")
 CARRIER_GITCOMMIT=$(shell cd .. && cd carrier && git log -1 --pretty=format:"%H")
 DSP_GITCOMMIT=$(shell cd .. && cd dsp-go-sdk && git log -1 --pretty=format:"%H")
