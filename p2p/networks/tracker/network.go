@@ -32,13 +32,11 @@ var TkP2p *Network
 var once sync.Once
 
 const (
-	OpCodeAnnounceRequest opcode.Opcode = 4000 + iota
-	OpCodeAnnounceRequestMessage
+	OpCodeAnnounceRequestMessage opcode.Opcode = 4000 + iota
 	OpCodeAnnounceResponseMessage
 )
 
 var opCodes = map[opcode.Opcode]proto.Message{
-	OpCodeAnnounceRequest:         &pm.AnnounceRequest{},
 	OpCodeAnnounceRequestMessage:  &pm.AnnounceRequestMessage{},
 	OpCodeAnnounceResponseMessage: &pm.AnnounceResponseMessage{},
 }

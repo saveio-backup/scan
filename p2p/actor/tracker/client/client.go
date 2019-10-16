@@ -97,10 +97,6 @@ func P2pSend(address string, data proto.Message) error {
 	<-chReq.Ret.Done
 	close(chReq.Ret.Done)
 	return chReq.Ret.Err
-	// log.Infof("P2pTell2")
-	// TrackerServerPid.Tell(&actor.Started{})
-	// TrackerServerPid.Tell(&actor.Started{})
-	// return nil
 }
 
 func P2pTell() {
@@ -108,26 +104,6 @@ func P2pTell() {
 	TrackerServerPid.Tell(&actor.Started{})
 	TrackerServerPid.Tell(&actor.Started{})
 }
-
-// func P2pTell() error {
-// 	future := TrackerServerPid.RequestFuture(&actor.Started{}, 30*time.Second)
-// 	if _, err := future.Result(); err != nil {
-// 		log.Error("future.Result", err)
-// 		return err
-// 	} else {
-// 		return nil
-// 	}
-// }
-
-// func (this *TrackerActorServer) AnnounceRequest(req *pm.AnnounceRequest) (*pm.AnnounceResponse, error) {
-// 	future := this.GetLocalPID().RequestFuture(req, 30*time.Second)
-// 	if ret, err := future.Result(); err != nil {
-// 		log.Error("", err)
-// 		return nil, err
-// 	} else {
-// 		return ret.(*pm.AnnounceResponse), nil
-// 	}
-// }
 
 type ActEndpointRegistParams struct {
 	Wallet [20]byte

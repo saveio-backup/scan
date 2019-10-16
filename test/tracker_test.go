@@ -14,6 +14,7 @@ import (
 	"github.com/saveio/carrier/crypto"
 	"github.com/saveio/carrier/crypto/ed25519"
 	"github.com/saveio/max/thirdparty/assert"
+	pm "github.com/saveio/scan/p2p/actor/messages"
 	tkActClient "github.com/saveio/scan/p2p/actor/tracker/client"
 	tkActServer "github.com/saveio/scan/p2p/actor/tracker/server"
 	tk_net "github.com/saveio/scan/p2p/networks/tracker"
@@ -28,69 +29,62 @@ import (
 
 var natProxyServerAddr = "tcp://40.73.100.114:6007"
 var tkListenAddr = "tcp://127.0.0.1:10887"
-var targetDnsAddr = "tcp://40.73.100.114:37835"
+var targetDnsAddr = "tcp://40.73.100.114:30668"
 var walletFile = "./wallet.dat"
 var walletPwd = "pwd"
 
+var ids = "QmaRDZPe3QdnvCaUPUafk3EUMkWfsc4mtTosTDQQ9m4aaa"
+
+// var ids = "zb2rhmiu2V1kTDk5SRRo2F7b5WAivNDzQeDq7Qm3RNVndh5Gz"
+// var ids = "zb2rhmFsUmnSMrZodXs9vjjZePJPdxjVjXzbNRQNXpahe4"
+
 func TestAnnounceRequestCompleteTorrent(t *testing.T) {
 	tkActSrv, _ := InitializeService()
-	infoHash := storage.MetaInfoHash{}
-	ids := "QmaRDZPe3QdnvCaUPUafk3EUMkWfsc4mtTosTDQQ9m4aaa"
-	// ids := "zb2rhmiu2V1kTDk5SRRo2F7b5WAivNDzQeDq7Qm3RNVndh5Gz"
-	// ids := "zb2rhmFsUmnSMrZodXs9vjjZePJPdxjVjXzbNRQNXpahe4"
-	copy(infoHash[:], []byte(ids))
-
-	annResp, err := tkActSrv.AnnounceRequestCompleteTorrent(&tkActClient.ActCompleteTorrentParams{
-		InfoHash: infoHash,
+	annResp, err := tkActSrv.AnnounceRequestCompleteTorrent(&pm.CompleteTorrentReq{
+		InfoHash: []byte(ids),
 		Ip:       net.ParseIP("192.168.1.1"),
-		Port:     uint64(8878),
+		Port:     uint64(1111),
 	}, targetDnsAddr)
-	// assert.Nil(err, nil)
-
-	fmt.Errorf("announce response: %v, err %v\n", annResp, err)
+	log.Debugf("announce response: %v, err %v\n", annResp, err)
+	assert.Nil(err, nil)
 
 	// WaitToExit()
 }
 
 func TestAnnounceRequestTorrentPeers(t *testing.T) {
 	tkActSrv, _ := InitializeService()
-	infoHash := storage.MetaInfoHash{}
-	ids := "QmaRDZPe3QdnvCaUPUafk3EUMkWfsc4mtTosTDQQ9m4aaa"
-	copy(infoHash[:], []byte(ids))
-
-	annResp, err := tkActSrv.AnnounceRequestTorrentPeers(&tkActClient.ActTorrentPeersParams{
-		InfoHash: infoHash,
-		NumWant:  1,
-		Left:     0,
+	annResp, err := tkActSrv.AnnounceRequestTorrentPeers(&pm.GetTorrentPeersReq{
+		InfoHash: []byte(ids),
+		NumWant:  2,
 	}, targetDnsAddr)
-
-	fmt.Errorf("announce response: %v, err %v\n", annResp, err)
+	log.Debugf("announce response: %v, err %v\n", annResp, err)
+	assert.Nil(err, nil)
 
 	// WaitToExit()
 }
 
-func TestAnnounceRequestEndpointRegist(t *testing.T) {
+func TestAnnounceRequestEndpointRegistry(t *testing.T) {
 	tkActSrv, acc := InitializeService()
-	annResp, err := tkActSrv.AnnounceReqestEndpointRegist(&tkActClient.ActEndpointRegistParams{
-		Wallet: acc.Address,
+	annResp, err := tkActSrv.AnnounceRequestEndpointRegistry(&pm.EndpointRegistryReq{
+		Wallet: acc.Address[:],
 		Ip:     net.ParseIP("192.168.1.1"),
-		Port:   uint64(8888),
+		Port:   uint64(1111),
 	}, targetDnsAddr)
+	log.Debugf("announce response: %v, err %v\n", annResp, err)
+	assert.Nil(err, nil)
 
-	fmt.Errorf("announce response: %v, err %v\n", annResp, err)
-
-	WaitToExit()
+	// WaitToExit()
 }
 
 func TestAnnounceRequestGetEndpointAddr(t *testing.T) {
 	tkActSrv, acc := InitializeService()
-	annResp, err := tkActSrv.AnnounceRequestGetEndpointAddr(&tkActClient.ActGetEndpointAddrParams{
-		Wallet: acc.Address,
+	annResp, err := tkActSrv.AnnounceRequestGetEndpointAddr(&pm.QueryEndpointReq{
+		Wallet: acc.Address[:],
 	}, targetDnsAddr)
+	log.Debugf("announce response: %v, err %v\n", annResp, err)
+	assert.Nil(err, nil)
 
-	fmt.Errorf("announce response: %v, err %v\n", annResp, err)
-
-	WaitToExit()
+	// WaitToExit()
 }
 
 func InitializeService() (*tkActServer.TrackerActorServer, *account.Account) {
@@ -99,7 +93,7 @@ func InitializeService() (*tkActServer.TrackerActorServer, *account.Account) {
 	assert.Nil(err, nil)
 	fmt.Println(acc.Address.ToBase58())
 
-	tkSrv := tk.NewTrackerService(nil, nil, acc.PublicKey, func(raw []byte) ([]byte, error) {
+	tkSrv := tk.NewTrackerService(nil, acc.PublicKey, func(raw []byte) ([]byte, error) {
 		return chainsdk.Sign(acc, raw)
 	})
 
@@ -107,14 +101,20 @@ func InitializeService() (*tkActServer.TrackerActorServer, *account.Account) {
 	assert.Nil(err, nil)
 
 	tkActClient.SetTrackerServerPid(tkActSrv.GetLocalPID())
-	tkSrv.SetTkActor(tkActSrv.GetLocalPID())
 	go tkSrv.Start(targetDnsAddr)
 
+	// cilent does't needs to do db setup
 	tdb, err := storage.NewLevelDBStore(filepath.Join("../DB", acc.Address.ToBase58(), "tracker"))
 	if err != nil {
 		log.Fatal(err)
 	}
 	storage.TDB = storage.NewTorrentDB(tdb)
+
+	edb, err := storage.NewLevelDBStore(filepath.Join("../DB", acc.Address.ToBase58(), "endpoint"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	storage.EDB = storage.NewEndpointDB(edb)
 	return tkActSrv, acc
 }
 

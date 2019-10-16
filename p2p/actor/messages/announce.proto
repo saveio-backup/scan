@@ -18,30 +18,77 @@ enum AnnounceEvent {
     QUERY_ENDPOINT = 3;
 }
 
+enum AnnounceRetStatus {
+    NONE = 0;
+    SUCCESS = 1;
+    FAIL = 2;
+}
+
+message CompleteTorrentRet {
+    AnnounceRetStatus status = 1;
+    string peer = 2;
+    string errMsg = 3;
+}
+
+message CompleteTorrentReq {
+    bytes infoHash = 1;
+    bytes ip = 2;
+    uint64 port = 3;
+}
+
+message GetTorrentPeersRet {
+    AnnounceRetStatus status = 1;
+    repeated string peers = 2;
+    string errMsg = 3;
+}
+
+message GetTorrentPeersReq {
+    bytes infoHash = 1;
+    uint64 numWant = 2;
+}
+
+message EndpointRegistryRet {
+    AnnounceRetStatus status = 1;
+    string errMsg = 2;
+}
+
+message EndpointRegistryReq {
+    bytes wallet = 1;
+    bytes ip = 2;
+    uint64 port = 3;
+}
+
+message QueryEndpointRet {
+    AnnounceRetStatus status = 1;
+    string peer = 2;
+    string errMsg = 3;
+}
+
+message QueryEndpointReq {
+    bytes wallet = 1;
+}
+
 message AnnounceRequest {
     MessageID messageIdentifier = 1;
-    bytes infoHash = 2;
-    bytes peerId = 3;
-    bytes ip = 4;
-    uint64 port = 5;
-    uint64 left = 6;
-    uint64 numWant = 7;
-    bytes wallet = 8;
-    AnnounceEvent event = 9;
-    string target = 10;
-    string from = 11;
+    CompleteTorrentReq completeTorrentReq = 2;
+    GetTorrentPeersReq getTorrentPeersReq = 3;
+    EndpointRegistryReq endpointRegistryReq = 4;
+    QueryEndpointReq queryEndpointReq = 5;
+    AnnounceEvent event = 6;
+    string target = 7;
+    string from = 8;
 }
 
 message AnnounceResponse {
     MessageID messageIdentifier = 1;
-    uint64 interval = 2;
-    uint64 leechers = 3;
-    uint64 seeders = 4;
-    repeated string peers = 5;
-    string addr = 6;
-    AnnounceEvent event = 7;
-    string target = 8;
-    string from = 9;
+    CompleteTorrentRet completeTorrentRet = 2;
+    GetTorrentPeersRet getTorrentPeersRet = 3;
+    EndpointRegistryRet endpointRegistryRet = 4;
+    QueryEndpointRet queryEndpointRet = 5;
+    AnnounceEvent event = 6;
+    string target = 7;
+    string from = 8;
+    bool timeout = 9;
 }
 
 message AnnounceRequestMessage {

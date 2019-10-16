@@ -16,7 +16,7 @@ var TDB *TorrentDB
 
 const (
 	MAX_PEERS_LENGTH                 = 100
-	DEFAULT_NUMWANT_TO_GET_ALL_PEERS = -1
+	DEFAULT_NUMWANT_TO_GET_ALL_PEERS = 0
 	PEERID_LENGTH                    = 20
 	METAINFOHASH_LENGTH              = 46
 	IP_LENGTH                        = 4
@@ -237,7 +237,7 @@ func (this *TorrentDB) GetTorrentPeersByFileHash(fileHash []byte, numWant int32)
 	}
 	leechers = t.Leechers
 	seeders = t.Seeders
-	log.Debugf("torrent %v\n", t)
+	log.Debugf("torrent %v", t.Peers)
 
 	peersCount, peersNotExpireCount := 0, 0
 	peersNotExpire := make(map[string]*PeerInfo)
@@ -248,11 +248,11 @@ func (this *TorrentDB) GetTorrentPeersByFileHash(fileHash []byte, numWant int32)
 		return retPeers, leechers, seeders, err
 	}
 
-	log.Debugf("peers num %d\n", len(t.Peers))
+	log.Debugf("peers num %d", len(t.Peers))
 	for peer, info := range t.Peers {
-		log.Debugf("peer %v\n", info)
+		log.Debugf("peer %v", info.NodeAddr.String())
 		if info.Timestamp.After(now.Add(expireDuration)) {
-			log.Debugf("before\n")
+			log.Debugf("before")
 			if peersNotExpireCount < int(numWant) || numWant == DEFAULT_NUMWANT_TO_GET_ALL_PEERS {
 				retPeers = append(retPeers, info)
 			}
@@ -262,7 +262,7 @@ func (this *TorrentDB) GetTorrentPeersByFileHash(fileHash []byte, numWant int32)
 		peersCount += 1
 	}
 
-	log.Debugf("retPeers: %v\n", retPeers)
+	log.Debugf("retPeers: %v", retPeers)
 	// peers update strategy, needs more design
 	if peersCount >= MAX_PEERS_LENGTH {
 		err = this.PutTorrent(fileHash, &Torrent{Leechers: t.Leechers, Seeders: t.Seeders, Peers: peersNotExpire})

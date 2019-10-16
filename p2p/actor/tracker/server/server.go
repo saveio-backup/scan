@@ -1,6 +1,7 @@
 package server
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -86,7 +87,7 @@ func (this *TrackerActorServer) Receive(ctx actor.Context) {
 				msg.Ret.Ret = annResp
 				msg.Ret.Err = nil
 			} else {
-				msg.Ret.Ret = nil
+				msg.Ret.Ret = annResp
 				msg.Ret.Err = err
 			}
 			msg.Ret.Done <- true
@@ -122,42 +123,53 @@ func (this *TrackerActorServer) TKService() *tk.TrackerService {
 	return this.tkSrv
 }
 
-func (this *TrackerActorServer) AnnounceReqestEndpointRegist(p *tkAct.ActEndpointRegistParams, targetDnsAddr string) (*pm.AnnounceResponse, error) {
-	return this.AnnounceRequest(&pm.AnnounceRequest{
-		Wallet: p.Wallet[:],
-		Ip:     p.Ip,
-		Port:   p.Port,
-		Target: targetDnsAddr,
-		Event:  pm.AnnounceEvent_ENDPOINT_REGISTRY,
+func (this *TrackerActorServer) AnnounceRequestEndpointRegistry(req *pm.EndpointRegistryReq, targetDnsAddr string) (*pm.EndpointRegistryRet, error) {
+	ret, err := this.AnnounceRequest(&pm.AnnounceRequest{
+		EndpointRegistryReq: req,
+		Event:               pm.AnnounceEvent_ENDPOINT_REGISTRY,
+		Target:              targetDnsAddr,
 	})
+	if err != nil {
+		return nil, err
+	}
+	return ret.EndpointRegistryRet, nil
 }
 
-func (this *TrackerActorServer) AnnounceRequestGetEndpointAddr(p *tkAct.ActGetEndpointAddrParams, targetDnsAddr string) (*pm.AnnounceResponse, error) {
-	return this.AnnounceRequest(&pm.AnnounceRequest{
-		Wallet: p.Wallet[:],
-		Target: targetDnsAddr,
-		Event:  pm.AnnounceEvent_QUERY_ENDPOINT,
+func (this *TrackerActorServer) AnnounceRequestGetEndpointAddr(req *pm.QueryEndpointReq, targetDnsAddr string) (*pm.QueryEndpointRet, error) {
+	ret, err := this.AnnounceRequest(&pm.AnnounceRequest{
+		QueryEndpointReq: req,
+		Event:            pm.AnnounceEvent_QUERY_ENDPOINT,
+		Target:           targetDnsAddr,
 	})
+	log.Debugf("response %v %v", ret, err)
+	if err != nil {
+		return nil, err
+	}
+	return ret.QueryEndpointRet, nil
 }
 
-func (this *TrackerActorServer) AnnounceRequestCompleteTorrent(p *tkAct.ActCompleteTorrentParams, targetDnsAddr string) (*pm.AnnounceResponse, error) {
-	return this.AnnounceRequest(&pm.AnnounceRequest{
-		InfoHash: p.InfoHash[:],
-		Ip:       p.Ip,
-		Port:     p.Port,
-		Target:   targetDnsAddr,
-		Event:    pm.AnnounceEvent_COMPLETE_TORRENT,
+func (this *TrackerActorServer) AnnounceRequestCompleteTorrent(req *pm.CompleteTorrentReq, targetDnsAddr string) (*pm.CompleteTorrentRet, error) {
+	ret, err := this.AnnounceRequest(&pm.AnnounceRequest{
+		CompleteTorrentReq: req,
+		Event:              pm.AnnounceEvent_COMPLETE_TORRENT,
+		Target:             targetDnsAddr,
 	})
+	if err != nil {
+		return nil, err
+	}
+	return ret.CompleteTorrentRet, nil
 }
 
-func (this *TrackerActorServer) AnnounceRequestTorrentPeers(p *tkAct.ActTorrentPeersParams, targetDnsAddr string) (*pm.AnnounceResponse, error) {
-	return this.AnnounceRequest(&pm.AnnounceRequest{
-		InfoHash: p.InfoHash[:],
-		NumWant:  1,
-		Left:     0,
-		Target:   targetDnsAddr,
-		Event:    pm.AnnounceEvent_QUERY_TORRENT_PEERS,
+func (this *TrackerActorServer) AnnounceRequestTorrentPeers(req *pm.GetTorrentPeersReq, targetDnsAddr string) (*pm.GetTorrentPeersRet, error) {
+	ret, err := this.AnnounceRequest(&pm.AnnounceRequest{
+		GetTorrentPeersReq: req,
+		Event:              pm.AnnounceEvent_QUERY_TORRENT_PEERS,
+		Target:             targetDnsAddr,
 	})
+	if err != nil {
+		return nil, err
+	}
+	return ret.GetTorrentPeersRet, nil
 }
 
 func (this *TrackerActorServer) AnnounceRequest(req *pm.AnnounceRequest) (*pm.AnnounceResponse, error) {
@@ -173,10 +185,13 @@ func (this *TrackerActorServer) AnnounceRequest(req *pm.AnnounceRequest) (*pm.An
 	this.GetLocalPID().Tell(announceReq)
 
 	if err := waitForCallDone(announceReq.Ret.Done, "AnnounceRequest", defaultMaxTimeOut); err != nil {
-		log.Errorf("AnnounceDone nil, err : %v", nil)
+		log.Debugf("AnnounceDone nil, err : %v", nil)
 		return nil, err
 	} else {
-		log.Errorf("AnnounceDone %v, err: nil", announceReq.Ret.Ret)
+		log.Debugf("AnnounceDone %v, err: nil", announceReq.Ret.Ret)
+		if announceReq.Ret.Ret.Timeout {
+			return nil, errors.New("Timeout")
+		}
 		return announceReq.Ret.Ret, nil
 	}
 }

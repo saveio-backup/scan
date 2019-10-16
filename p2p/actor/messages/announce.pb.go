@@ -51,6 +51,34 @@ func (AnnounceEvent) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_4442f6fce4730d4e, []int{0}
 }
 
+type AnnounceRetStatus int32
+
+const (
+	AnnounceRetStatus_NONE    AnnounceRetStatus = 0
+	AnnounceRetStatus_SUCCESS AnnounceRetStatus = 1
+	AnnounceRetStatus_FAIL    AnnounceRetStatus = 2
+)
+
+var AnnounceRetStatus_name = map[int32]string{
+	0: "NONE",
+	1: "SUCCESS",
+	2: "FAIL",
+}
+
+var AnnounceRetStatus_value = map[string]int32{
+	"NONE":    0,
+	"SUCCESS": 1,
+	"FAIL":    2,
+}
+
+func (x AnnounceRetStatus) String() string {
+	return proto.EnumName(AnnounceRetStatus_name, int32(x))
+}
+
+func (AnnounceRetStatus) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_4442f6fce4730d4e, []int{1}
+}
+
 type MessageID struct {
 	MessageId            uint64   `protobuf:"varint,1,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
@@ -137,28 +165,433 @@ func (m *SignedMessage) GetPublikkey() []byte {
 	return nil
 }
 
+type CompleteTorrentRet struct {
+	Status               AnnounceRetStatus `protobuf:"varint,1,opt,name=status,proto3,enum=messages.AnnounceRetStatus" json:"status,omitempty"`
+	Peer                 string            `protobuf:"bytes,2,opt,name=peer,proto3" json:"peer,omitempty"`
+	ErrMsg               string            `protobuf:"bytes,3,opt,name=errMsg,proto3" json:"errMsg,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
+	XXX_unrecognized     []byte            `json:"-"`
+	XXX_sizecache        int32             `json:"-"`
+}
+
+func (m *CompleteTorrentRet) Reset()         { *m = CompleteTorrentRet{} }
+func (m *CompleteTorrentRet) String() string { return proto.CompactTextString(m) }
+func (*CompleteTorrentRet) ProtoMessage()    {}
+func (*CompleteTorrentRet) Descriptor() ([]byte, []int) {
+	return fileDescriptor_4442f6fce4730d4e, []int{2}
+}
+
+func (m *CompleteTorrentRet) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CompleteTorrentRet.Unmarshal(m, b)
+}
+func (m *CompleteTorrentRet) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CompleteTorrentRet.Marshal(b, m, deterministic)
+}
+func (m *CompleteTorrentRet) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CompleteTorrentRet.Merge(m, src)
+}
+func (m *CompleteTorrentRet) XXX_Size() int {
+	return xxx_messageInfo_CompleteTorrentRet.Size(m)
+}
+func (m *CompleteTorrentRet) XXX_DiscardUnknown() {
+	xxx_messageInfo_CompleteTorrentRet.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CompleteTorrentRet proto.InternalMessageInfo
+
+func (m *CompleteTorrentRet) GetStatus() AnnounceRetStatus {
+	if m != nil {
+		return m.Status
+	}
+	return AnnounceRetStatus_NONE
+}
+
+func (m *CompleteTorrentRet) GetPeer() string {
+	if m != nil {
+		return m.Peer
+	}
+	return ""
+}
+
+func (m *CompleteTorrentRet) GetErrMsg() string {
+	if m != nil {
+		return m.ErrMsg
+	}
+	return ""
+}
+
+type CompleteTorrentReq struct {
+	InfoHash             []byte   `protobuf:"bytes,1,opt,name=infoHash,proto3" json:"infoHash,omitempty"`
+	Ip                   []byte   `protobuf:"bytes,2,opt,name=ip,proto3" json:"ip,omitempty"`
+	Port                 uint64   `protobuf:"varint,3,opt,name=port,proto3" json:"port,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *CompleteTorrentReq) Reset()         { *m = CompleteTorrentReq{} }
+func (m *CompleteTorrentReq) String() string { return proto.CompactTextString(m) }
+func (*CompleteTorrentReq) ProtoMessage()    {}
+func (*CompleteTorrentReq) Descriptor() ([]byte, []int) {
+	return fileDescriptor_4442f6fce4730d4e, []int{3}
+}
+
+func (m *CompleteTorrentReq) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CompleteTorrentReq.Unmarshal(m, b)
+}
+func (m *CompleteTorrentReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CompleteTorrentReq.Marshal(b, m, deterministic)
+}
+func (m *CompleteTorrentReq) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CompleteTorrentReq.Merge(m, src)
+}
+func (m *CompleteTorrentReq) XXX_Size() int {
+	return xxx_messageInfo_CompleteTorrentReq.Size(m)
+}
+func (m *CompleteTorrentReq) XXX_DiscardUnknown() {
+	xxx_messageInfo_CompleteTorrentReq.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CompleteTorrentReq proto.InternalMessageInfo
+
+func (m *CompleteTorrentReq) GetInfoHash() []byte {
+	if m != nil {
+		return m.InfoHash
+	}
+	return nil
+}
+
+func (m *CompleteTorrentReq) GetIp() []byte {
+	if m != nil {
+		return m.Ip
+	}
+	return nil
+}
+
+func (m *CompleteTorrentReq) GetPort() uint64 {
+	if m != nil {
+		return m.Port
+	}
+	return 0
+}
+
+type GetTorrentPeersRet struct {
+	Status               AnnounceRetStatus `protobuf:"varint,1,opt,name=status,proto3,enum=messages.AnnounceRetStatus" json:"status,omitempty"`
+	Peers                []string          `protobuf:"bytes,2,rep,name=peers,proto3" json:"peers,omitempty"`
+	ErrMsg               string            `protobuf:"bytes,3,opt,name=errMsg,proto3" json:"errMsg,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
+	XXX_unrecognized     []byte            `json:"-"`
+	XXX_sizecache        int32             `json:"-"`
+}
+
+func (m *GetTorrentPeersRet) Reset()         { *m = GetTorrentPeersRet{} }
+func (m *GetTorrentPeersRet) String() string { return proto.CompactTextString(m) }
+func (*GetTorrentPeersRet) ProtoMessage()    {}
+func (*GetTorrentPeersRet) Descriptor() ([]byte, []int) {
+	return fileDescriptor_4442f6fce4730d4e, []int{4}
+}
+
+func (m *GetTorrentPeersRet) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_GetTorrentPeersRet.Unmarshal(m, b)
+}
+func (m *GetTorrentPeersRet) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_GetTorrentPeersRet.Marshal(b, m, deterministic)
+}
+func (m *GetTorrentPeersRet) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetTorrentPeersRet.Merge(m, src)
+}
+func (m *GetTorrentPeersRet) XXX_Size() int {
+	return xxx_messageInfo_GetTorrentPeersRet.Size(m)
+}
+func (m *GetTorrentPeersRet) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetTorrentPeersRet.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetTorrentPeersRet proto.InternalMessageInfo
+
+func (m *GetTorrentPeersRet) GetStatus() AnnounceRetStatus {
+	if m != nil {
+		return m.Status
+	}
+	return AnnounceRetStatus_NONE
+}
+
+func (m *GetTorrentPeersRet) GetPeers() []string {
+	if m != nil {
+		return m.Peers
+	}
+	return nil
+}
+
+func (m *GetTorrentPeersRet) GetErrMsg() string {
+	if m != nil {
+		return m.ErrMsg
+	}
+	return ""
+}
+
+type GetTorrentPeersReq struct {
+	InfoHash             []byte   `protobuf:"bytes,1,opt,name=infoHash,proto3" json:"infoHash,omitempty"`
+	NumWant              uint64   `protobuf:"varint,2,opt,name=numWant,proto3" json:"numWant,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *GetTorrentPeersReq) Reset()         { *m = GetTorrentPeersReq{} }
+func (m *GetTorrentPeersReq) String() string { return proto.CompactTextString(m) }
+func (*GetTorrentPeersReq) ProtoMessage()    {}
+func (*GetTorrentPeersReq) Descriptor() ([]byte, []int) {
+	return fileDescriptor_4442f6fce4730d4e, []int{5}
+}
+
+func (m *GetTorrentPeersReq) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_GetTorrentPeersReq.Unmarshal(m, b)
+}
+func (m *GetTorrentPeersReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_GetTorrentPeersReq.Marshal(b, m, deterministic)
+}
+func (m *GetTorrentPeersReq) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetTorrentPeersReq.Merge(m, src)
+}
+func (m *GetTorrentPeersReq) XXX_Size() int {
+	return xxx_messageInfo_GetTorrentPeersReq.Size(m)
+}
+func (m *GetTorrentPeersReq) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetTorrentPeersReq.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetTorrentPeersReq proto.InternalMessageInfo
+
+func (m *GetTorrentPeersReq) GetInfoHash() []byte {
+	if m != nil {
+		return m.InfoHash
+	}
+	return nil
+}
+
+func (m *GetTorrentPeersReq) GetNumWant() uint64 {
+	if m != nil {
+		return m.NumWant
+	}
+	return 0
+}
+
+type EndpointRegistryRet struct {
+	Status               AnnounceRetStatus `protobuf:"varint,1,opt,name=status,proto3,enum=messages.AnnounceRetStatus" json:"status,omitempty"`
+	ErrMsg               string            `protobuf:"bytes,2,opt,name=errMsg,proto3" json:"errMsg,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
+	XXX_unrecognized     []byte            `json:"-"`
+	XXX_sizecache        int32             `json:"-"`
+}
+
+func (m *EndpointRegistryRet) Reset()         { *m = EndpointRegistryRet{} }
+func (m *EndpointRegistryRet) String() string { return proto.CompactTextString(m) }
+func (*EndpointRegistryRet) ProtoMessage()    {}
+func (*EndpointRegistryRet) Descriptor() ([]byte, []int) {
+	return fileDescriptor_4442f6fce4730d4e, []int{6}
+}
+
+func (m *EndpointRegistryRet) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_EndpointRegistryRet.Unmarshal(m, b)
+}
+func (m *EndpointRegistryRet) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_EndpointRegistryRet.Marshal(b, m, deterministic)
+}
+func (m *EndpointRegistryRet) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_EndpointRegistryRet.Merge(m, src)
+}
+func (m *EndpointRegistryRet) XXX_Size() int {
+	return xxx_messageInfo_EndpointRegistryRet.Size(m)
+}
+func (m *EndpointRegistryRet) XXX_DiscardUnknown() {
+	xxx_messageInfo_EndpointRegistryRet.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_EndpointRegistryRet proto.InternalMessageInfo
+
+func (m *EndpointRegistryRet) GetStatus() AnnounceRetStatus {
+	if m != nil {
+		return m.Status
+	}
+	return AnnounceRetStatus_NONE
+}
+
+func (m *EndpointRegistryRet) GetErrMsg() string {
+	if m != nil {
+		return m.ErrMsg
+	}
+	return ""
+}
+
+type EndpointRegistryReq struct {
+	Wallet               []byte   `protobuf:"bytes,1,opt,name=wallet,proto3" json:"wallet,omitempty"`
+	Ip                   []byte   `protobuf:"bytes,2,opt,name=ip,proto3" json:"ip,omitempty"`
+	Port                 uint64   `protobuf:"varint,3,opt,name=port,proto3" json:"port,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *EndpointRegistryReq) Reset()         { *m = EndpointRegistryReq{} }
+func (m *EndpointRegistryReq) String() string { return proto.CompactTextString(m) }
+func (*EndpointRegistryReq) ProtoMessage()    {}
+func (*EndpointRegistryReq) Descriptor() ([]byte, []int) {
+	return fileDescriptor_4442f6fce4730d4e, []int{7}
+}
+
+func (m *EndpointRegistryReq) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_EndpointRegistryReq.Unmarshal(m, b)
+}
+func (m *EndpointRegistryReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_EndpointRegistryReq.Marshal(b, m, deterministic)
+}
+func (m *EndpointRegistryReq) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_EndpointRegistryReq.Merge(m, src)
+}
+func (m *EndpointRegistryReq) XXX_Size() int {
+	return xxx_messageInfo_EndpointRegistryReq.Size(m)
+}
+func (m *EndpointRegistryReq) XXX_DiscardUnknown() {
+	xxx_messageInfo_EndpointRegistryReq.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_EndpointRegistryReq proto.InternalMessageInfo
+
+func (m *EndpointRegistryReq) GetWallet() []byte {
+	if m != nil {
+		return m.Wallet
+	}
+	return nil
+}
+
+func (m *EndpointRegistryReq) GetIp() []byte {
+	if m != nil {
+		return m.Ip
+	}
+	return nil
+}
+
+func (m *EndpointRegistryReq) GetPort() uint64 {
+	if m != nil {
+		return m.Port
+	}
+	return 0
+}
+
+type QueryEndpointRet struct {
+	Status               AnnounceRetStatus `protobuf:"varint,1,opt,name=status,proto3,enum=messages.AnnounceRetStatus" json:"status,omitempty"`
+	Peer                 string            `protobuf:"bytes,2,opt,name=peer,proto3" json:"peer,omitempty"`
+	ErrMsg               string            `protobuf:"bytes,3,opt,name=errMsg,proto3" json:"errMsg,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
+	XXX_unrecognized     []byte            `json:"-"`
+	XXX_sizecache        int32             `json:"-"`
+}
+
+func (m *QueryEndpointRet) Reset()         { *m = QueryEndpointRet{} }
+func (m *QueryEndpointRet) String() string { return proto.CompactTextString(m) }
+func (*QueryEndpointRet) ProtoMessage()    {}
+func (*QueryEndpointRet) Descriptor() ([]byte, []int) {
+	return fileDescriptor_4442f6fce4730d4e, []int{8}
+}
+
+func (m *QueryEndpointRet) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_QueryEndpointRet.Unmarshal(m, b)
+}
+func (m *QueryEndpointRet) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_QueryEndpointRet.Marshal(b, m, deterministic)
+}
+func (m *QueryEndpointRet) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryEndpointRet.Merge(m, src)
+}
+func (m *QueryEndpointRet) XXX_Size() int {
+	return xxx_messageInfo_QueryEndpointRet.Size(m)
+}
+func (m *QueryEndpointRet) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryEndpointRet.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryEndpointRet proto.InternalMessageInfo
+
+func (m *QueryEndpointRet) GetStatus() AnnounceRetStatus {
+	if m != nil {
+		return m.Status
+	}
+	return AnnounceRetStatus_NONE
+}
+
+func (m *QueryEndpointRet) GetPeer() string {
+	if m != nil {
+		return m.Peer
+	}
+	return ""
+}
+
+func (m *QueryEndpointRet) GetErrMsg() string {
+	if m != nil {
+		return m.ErrMsg
+	}
+	return ""
+}
+
+type QueryEndpointReq struct {
+	Wallet               []byte   `protobuf:"bytes,1,opt,name=wallet,proto3" json:"wallet,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *QueryEndpointReq) Reset()         { *m = QueryEndpointReq{} }
+func (m *QueryEndpointReq) String() string { return proto.CompactTextString(m) }
+func (*QueryEndpointReq) ProtoMessage()    {}
+func (*QueryEndpointReq) Descriptor() ([]byte, []int) {
+	return fileDescriptor_4442f6fce4730d4e, []int{9}
+}
+
+func (m *QueryEndpointReq) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_QueryEndpointReq.Unmarshal(m, b)
+}
+func (m *QueryEndpointReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_QueryEndpointReq.Marshal(b, m, deterministic)
+}
+func (m *QueryEndpointReq) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryEndpointReq.Merge(m, src)
+}
+func (m *QueryEndpointReq) XXX_Size() int {
+	return xxx_messageInfo_QueryEndpointReq.Size(m)
+}
+func (m *QueryEndpointReq) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryEndpointReq.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryEndpointReq proto.InternalMessageInfo
+
+func (m *QueryEndpointReq) GetWallet() []byte {
+	if m != nil {
+		return m.Wallet
+	}
+	return nil
+}
+
 type AnnounceRequest struct {
-	MessageIdentifier    *MessageID    `protobuf:"bytes,1,opt,name=messageIdentifier,proto3" json:"messageIdentifier,omitempty"`
-	InfoHash             []byte        `protobuf:"bytes,2,opt,name=infoHash,proto3" json:"infoHash,omitempty"`
-	PeerId               []byte        `protobuf:"bytes,3,opt,name=peerId,proto3" json:"peerId,omitempty"`
-	Ip                   []byte        `protobuf:"bytes,4,opt,name=ip,proto3" json:"ip,omitempty"`
-	Port                 uint64        `protobuf:"varint,5,opt,name=port,proto3" json:"port,omitempty"`
-	Left                 uint64        `protobuf:"varint,6,opt,name=left,proto3" json:"left,omitempty"`
-	NumWant              uint64        `protobuf:"varint,7,opt,name=numWant,proto3" json:"numWant,omitempty"`
-	Wallet               []byte        `protobuf:"bytes,8,opt,name=wallet,proto3" json:"wallet,omitempty"`
-	Event                AnnounceEvent `protobuf:"varint,9,opt,name=event,proto3,enum=messages.AnnounceEvent" json:"event,omitempty"`
-	Target               string        `protobuf:"bytes,10,opt,name=target,proto3" json:"target,omitempty"`
-	From                 string        `protobuf:"bytes,11,opt,name=from,proto3" json:"from,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
-	XXX_unrecognized     []byte        `json:"-"`
-	XXX_sizecache        int32         `json:"-"`
+	MessageIdentifier    *MessageID           `protobuf:"bytes,1,opt,name=messageIdentifier,proto3" json:"messageIdentifier,omitempty"`
+	CompleteTorrentReq   *CompleteTorrentReq  `protobuf:"bytes,2,opt,name=completeTorrentReq,proto3" json:"completeTorrentReq,omitempty"`
+	GetTorrentPeersReq   *GetTorrentPeersReq  `protobuf:"bytes,3,opt,name=getTorrentPeersReq,proto3" json:"getTorrentPeersReq,omitempty"`
+	EndpointRegistryReq  *EndpointRegistryReq `protobuf:"bytes,4,opt,name=endpointRegistryReq,proto3" json:"endpointRegistryReq,omitempty"`
+	QueryEndpointReq     *QueryEndpointReq    `protobuf:"bytes,5,opt,name=queryEndpointReq,proto3" json:"queryEndpointReq,omitempty"`
+	Event                AnnounceEvent        `protobuf:"varint,6,opt,name=event,proto3,enum=messages.AnnounceEvent" json:"event,omitempty"`
+	Target               string               `protobuf:"bytes,7,opt,name=target,proto3" json:"target,omitempty"`
+	From                 string               `protobuf:"bytes,8,opt,name=from,proto3" json:"from,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
+	XXX_unrecognized     []byte               `json:"-"`
+	XXX_sizecache        int32                `json:"-"`
 }
 
 func (m *AnnounceRequest) Reset()         { *m = AnnounceRequest{} }
 func (m *AnnounceRequest) String() string { return proto.CompactTextString(m) }
 func (*AnnounceRequest) ProtoMessage()    {}
 func (*AnnounceRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_4442f6fce4730d4e, []int{2}
+	return fileDescriptor_4442f6fce4730d4e, []int{10}
 }
 
 func (m *AnnounceRequest) XXX_Unmarshal(b []byte) error {
@@ -186,51 +619,30 @@ func (m *AnnounceRequest) GetMessageIdentifier() *MessageID {
 	return nil
 }
 
-func (m *AnnounceRequest) GetInfoHash() []byte {
+func (m *AnnounceRequest) GetCompleteTorrentReq() *CompleteTorrentReq {
 	if m != nil {
-		return m.InfoHash
+		return m.CompleteTorrentReq
 	}
 	return nil
 }
 
-func (m *AnnounceRequest) GetPeerId() []byte {
+func (m *AnnounceRequest) GetGetTorrentPeersReq() *GetTorrentPeersReq {
 	if m != nil {
-		return m.PeerId
+		return m.GetTorrentPeersReq
 	}
 	return nil
 }
 
-func (m *AnnounceRequest) GetIp() []byte {
+func (m *AnnounceRequest) GetEndpointRegistryReq() *EndpointRegistryReq {
 	if m != nil {
-		return m.Ip
+		return m.EndpointRegistryReq
 	}
 	return nil
 }
 
-func (m *AnnounceRequest) GetPort() uint64 {
+func (m *AnnounceRequest) GetQueryEndpointReq() *QueryEndpointReq {
 	if m != nil {
-		return m.Port
-	}
-	return 0
-}
-
-func (m *AnnounceRequest) GetLeft() uint64 {
-	if m != nil {
-		return m.Left
-	}
-	return 0
-}
-
-func (m *AnnounceRequest) GetNumWant() uint64 {
-	if m != nil {
-		return m.NumWant
-	}
-	return 0
-}
-
-func (m *AnnounceRequest) GetWallet() []byte {
-	if m != nil {
-		return m.Wallet
+		return m.QueryEndpointReq
 	}
 	return nil
 }
@@ -257,25 +669,25 @@ func (m *AnnounceRequest) GetFrom() string {
 }
 
 type AnnounceResponse struct {
-	MessageIdentifier    *MessageID    `protobuf:"bytes,1,opt,name=messageIdentifier,proto3" json:"messageIdentifier,omitempty"`
-	Interval             uint64        `protobuf:"varint,2,opt,name=interval,proto3" json:"interval,omitempty"`
-	Leechers             uint64        `protobuf:"varint,3,opt,name=leechers,proto3" json:"leechers,omitempty"`
-	Seeders              uint64        `protobuf:"varint,4,opt,name=seeders,proto3" json:"seeders,omitempty"`
-	Peers                []string      `protobuf:"bytes,5,rep,name=peers,proto3" json:"peers,omitempty"`
-	Addr                 string        `protobuf:"bytes,6,opt,name=addr,proto3" json:"addr,omitempty"`
-	Event                AnnounceEvent `protobuf:"varint,7,opt,name=event,proto3,enum=messages.AnnounceEvent" json:"event,omitempty"`
-	Target               string        `protobuf:"bytes,8,opt,name=target,proto3" json:"target,omitempty"`
-	From                 string        `protobuf:"bytes,9,opt,name=from,proto3" json:"from,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
-	XXX_unrecognized     []byte        `json:"-"`
-	XXX_sizecache        int32         `json:"-"`
+	MessageIdentifier    *MessageID           `protobuf:"bytes,1,opt,name=messageIdentifier,proto3" json:"messageIdentifier,omitempty"`
+	CompleteTorrentRet   *CompleteTorrentRet  `protobuf:"bytes,2,opt,name=completeTorrentRet,proto3" json:"completeTorrentRet,omitempty"`
+	GetTorrentPeersRet   *GetTorrentPeersRet  `protobuf:"bytes,3,opt,name=getTorrentPeersRet,proto3" json:"getTorrentPeersRet,omitempty"`
+	EndpointRegistryRet  *EndpointRegistryRet `protobuf:"bytes,4,opt,name=endpointRegistryRet,proto3" json:"endpointRegistryRet,omitempty"`
+	QueryEndpointRet     *QueryEndpointRet    `protobuf:"bytes,5,opt,name=queryEndpointRet,proto3" json:"queryEndpointRet,omitempty"`
+	Event                AnnounceEvent        `protobuf:"varint,6,opt,name=event,proto3,enum=messages.AnnounceEvent" json:"event,omitempty"`
+	Target               string               `protobuf:"bytes,7,opt,name=target,proto3" json:"target,omitempty"`
+	From                 string               `protobuf:"bytes,8,opt,name=from,proto3" json:"from,omitempty"`
+	Timeout              bool                 `protobuf:"varint,9,opt,name=timeout,proto3" json:"timeout,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
+	XXX_unrecognized     []byte               `json:"-"`
+	XXX_sizecache        int32                `json:"-"`
 }
 
 func (m *AnnounceResponse) Reset()         { *m = AnnounceResponse{} }
 func (m *AnnounceResponse) String() string { return proto.CompactTextString(m) }
 func (*AnnounceResponse) ProtoMessage()    {}
 func (*AnnounceResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_4442f6fce4730d4e, []int{3}
+	return fileDescriptor_4442f6fce4730d4e, []int{11}
 }
 
 func (m *AnnounceResponse) XXX_Unmarshal(b []byte) error {
@@ -303,39 +715,32 @@ func (m *AnnounceResponse) GetMessageIdentifier() *MessageID {
 	return nil
 }
 
-func (m *AnnounceResponse) GetInterval() uint64 {
+func (m *AnnounceResponse) GetCompleteTorrentRet() *CompleteTorrentRet {
 	if m != nil {
-		return m.Interval
-	}
-	return 0
-}
-
-func (m *AnnounceResponse) GetLeechers() uint64 {
-	if m != nil {
-		return m.Leechers
-	}
-	return 0
-}
-
-func (m *AnnounceResponse) GetSeeders() uint64 {
-	if m != nil {
-		return m.Seeders
-	}
-	return 0
-}
-
-func (m *AnnounceResponse) GetPeers() []string {
-	if m != nil {
-		return m.Peers
+		return m.CompleteTorrentRet
 	}
 	return nil
 }
 
-func (m *AnnounceResponse) GetAddr() string {
+func (m *AnnounceResponse) GetGetTorrentPeersRet() *GetTorrentPeersRet {
 	if m != nil {
-		return m.Addr
+		return m.GetTorrentPeersRet
 	}
-	return ""
+	return nil
+}
+
+func (m *AnnounceResponse) GetEndpointRegistryRet() *EndpointRegistryRet {
+	if m != nil {
+		return m.EndpointRegistryRet
+	}
+	return nil
+}
+
+func (m *AnnounceResponse) GetQueryEndpointRet() *QueryEndpointRet {
+	if m != nil {
+		return m.QueryEndpointRet
+	}
+	return nil
 }
 
 func (m *AnnounceResponse) GetEvent() AnnounceEvent {
@@ -359,6 +764,13 @@ func (m *AnnounceResponse) GetFrom() string {
 	return ""
 }
 
+func (m *AnnounceResponse) GetTimeout() bool {
+	if m != nil {
+		return m.Timeout
+	}
+	return false
+}
+
 type AnnounceRequestMessage struct {
 	Request              *AnnounceRequest `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
 	Signature            *SignedMessage   `protobuf:"bytes,2,opt,name=signature,proto3" json:"signature,omitempty"`
@@ -371,7 +783,7 @@ func (m *AnnounceRequestMessage) Reset()         { *m = AnnounceRequestMessage{}
 func (m *AnnounceRequestMessage) String() string { return proto.CompactTextString(m) }
 func (*AnnounceRequestMessage) ProtoMessage()    {}
 func (*AnnounceRequestMessage) Descriptor() ([]byte, []int) {
-	return fileDescriptor_4442f6fce4730d4e, []int{4}
+	return fileDescriptor_4442f6fce4730d4e, []int{12}
 }
 
 func (m *AnnounceRequestMessage) XXX_Unmarshal(b []byte) error {
@@ -418,7 +830,7 @@ func (m *AnnounceResponseMessage) Reset()         { *m = AnnounceResponseMessage
 func (m *AnnounceResponseMessage) String() string { return proto.CompactTextString(m) }
 func (*AnnounceResponseMessage) ProtoMessage()    {}
 func (*AnnounceResponseMessage) Descriptor() ([]byte, []int) {
-	return fileDescriptor_4442f6fce4730d4e, []int{5}
+	return fileDescriptor_4442f6fce4730d4e, []int{13}
 }
 
 func (m *AnnounceResponseMessage) XXX_Unmarshal(b []byte) error {
@@ -455,8 +867,17 @@ func (m *AnnounceResponseMessage) GetSignature() *SignedMessage {
 
 func init() {
 	proto.RegisterEnum("messages.AnnounceEvent", AnnounceEvent_name, AnnounceEvent_value)
+	proto.RegisterEnum("messages.AnnounceRetStatus", AnnounceRetStatus_name, AnnounceRetStatus_value)
 	proto.RegisterType((*MessageID)(nil), "messages.MessageID")
 	proto.RegisterType((*SignedMessage)(nil), "messages.SignedMessage")
+	proto.RegisterType((*CompleteTorrentRet)(nil), "messages.CompleteTorrentRet")
+	proto.RegisterType((*CompleteTorrentReq)(nil), "messages.CompleteTorrentReq")
+	proto.RegisterType((*GetTorrentPeersRet)(nil), "messages.GetTorrentPeersRet")
+	proto.RegisterType((*GetTorrentPeersReq)(nil), "messages.GetTorrentPeersReq")
+	proto.RegisterType((*EndpointRegistryRet)(nil), "messages.EndpointRegistryRet")
+	proto.RegisterType((*EndpointRegistryReq)(nil), "messages.EndpointRegistryReq")
+	proto.RegisterType((*QueryEndpointRet)(nil), "messages.QueryEndpointRet")
+	proto.RegisterType((*QueryEndpointReq)(nil), "messages.QueryEndpointReq")
 	proto.RegisterType((*AnnounceRequest)(nil), "messages.AnnounceRequest")
 	proto.RegisterType((*AnnounceResponse)(nil), "messages.AnnounceResponse")
 	proto.RegisterType((*AnnounceRequestMessage)(nil), "messages.AnnounceRequestMessage")
@@ -466,39 +887,52 @@ func init() {
 func init() { proto.RegisterFile("announce.proto", fileDescriptor_4442f6fce4730d4e) }
 
 var fileDescriptor_4442f6fce4730d4e = []byte{
-	// 539 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x94, 0x4d, 0x6f, 0xd3, 0x4e,
-	0x10, 0xc6, 0xff, 0x76, 0x9d, 0x17, 0x4f, 0xff, 0x0d, 0xee, 0xb6, 0x34, 0x4b, 0x05, 0x52, 0x94,
-	0x53, 0x54, 0x89, 0x1c, 0x5a, 0xc1, 0xbd, 0xa2, 0x16, 0x44, 0xd0, 0x24, 0x6c, 0x82, 0x50, 0x4f,
-	0x91, 0x5b, 0x4f, 0x52, 0xab, 0x8e, 0x6d, 0x76, 0x37, 0x45, 0xdc, 0x39, 0xf0, 0x61, 0xf8, 0x2a,
-	0x7c, 0x27, 0xb4, 0x2f, 0x76, 0xd2, 0x97, 0x0b, 0x88, 0xdb, 0x3c, 0xcf, 0xcc, 0x7a, 0x1e, 0xff,
-	0xe2, 0x0d, 0xb4, 0xa2, 0x2c, 0xcb, 0x57, 0xd9, 0x15, 0xf6, 0x0b, 0x9e, 0xcb, 0x9c, 0x34, 0x97,
-	0x28, 0x44, 0xb4, 0x40, 0xd1, 0x3d, 0x02, 0xff, 0xdc, 0xd4, 0x83, 0x33, 0xf2, 0x02, 0xc0, 0x36,
-	0x66, 0x49, 0x4c, 0x9d, 0x8e, 0xd3, 0xf3, 0x98, 0x6f, 0x9d, 0x41, 0xdc, 0x7d, 0x0f, 0x3b, 0x93,
-	0x64, 0x91, 0x61, 0x6c, 0x4f, 0x90, 0xe7, 0xe0, 0x8b, 0x64, 0x91, 0x45, 0x72, 0xc5, 0x51, 0x8f,
-	0xff, 0xcf, 0xd6, 0x86, 0xea, 0x16, 0xab, 0xcb, 0x34, 0xb9, 0xb9, 0xc1, 0x6f, 0xd4, 0x35, 0xdd,
-	0xca, 0xe8, 0xfe, 0x72, 0xe1, 0xc9, 0xa9, 0x4d, 0xc5, 0xf0, 0xcb, 0x0a, 0x85, 0x24, 0xa7, 0xb0,
-	0x5b, 0x6d, 0xc3, 0x4c, 0x26, 0xf3, 0x04, 0xb9, 0x7e, 0xee, 0xf6, 0xf1, 0x5e, 0xbf, 0x8c, 0xdc,
-	0xaf, 0xf2, 0xb2, 0x87, 0xd3, 0xe4, 0x10, 0x9a, 0x49, 0x36, 0xcf, 0xdf, 0x45, 0xe2, 0xda, 0xee,
-	0xac, 0x34, 0x39, 0x80, 0x7a, 0x81, 0xc8, 0x07, 0x31, 0xdd, 0xd2, 0x1d, 0xab, 0x48, 0x0b, 0xdc,
-	0xa4, 0xa0, 0x9e, 0xf6, 0xdc, 0xa4, 0x20, 0x04, 0xbc, 0x22, 0xe7, 0x92, 0xd6, 0x34, 0x00, 0x5d,
-	0x2b, 0x2f, 0xc5, 0xb9, 0xa4, 0x75, 0xe3, 0xa9, 0x9a, 0x50, 0x68, 0x64, 0xab, 0xe5, 0xe7, 0x28,
-	0x93, 0xb4, 0xa1, 0xed, 0x52, 0xaa, 0x4d, 0x5f, 0xa3, 0x34, 0x45, 0x49, 0x9b, 0x66, 0x93, 0x51,
-	0xe4, 0x25, 0xd4, 0xf0, 0x16, 0x33, 0x49, 0xfd, 0x8e, 0xd3, 0x6b, 0x1d, 0xb7, 0xd7, 0x2f, 0x55,
-	0xa2, 0x08, 0x55, 0x9b, 0x99, 0x29, 0xf5, 0x18, 0x19, 0xf1, 0x05, 0x4a, 0x0a, 0x1d, 0xa7, 0xe7,
-	0x33, 0xab, 0x54, 0x98, 0x39, 0xcf, 0x97, 0x74, 0x5b, 0xbb, 0xba, 0xee, 0xfe, 0x74, 0x21, 0x58,
-	0xf3, 0x14, 0x45, 0x9e, 0x09, 0xfc, 0x67, 0x40, 0x25, 0xf2, 0xdb, 0x28, 0xd5, 0x40, 0x3d, 0x56,
-	0x69, 0xd5, 0x4b, 0x11, 0xaf, 0xae, 0x91, 0x0b, 0x8d, 0xd4, 0x63, 0x95, 0x56, 0x70, 0x04, 0x62,
-	0xac, 0x5a, 0x9e, 0x81, 0x63, 0x25, 0xd9, 0x87, 0x9a, 0x02, 0x2f, 0x68, 0xad, 0xb3, 0xd5, 0xf3,
-	0x99, 0x11, 0xea, 0x9d, 0xa2, 0x38, 0xe6, 0x1a, 0xb0, 0xcf, 0x74, 0xbd, 0xc6, 0xd5, 0xf8, 0x43,
-	0x5c, 0xcd, 0x47, 0x71, 0xf9, 0x1b, 0xb8, 0xbe, 0x3b, 0x70, 0x70, 0xef, 0xf3, 0x2b, 0xbf, 0xea,
-	0x13, 0x68, 0x70, 0xe3, 0x58, 0x54, 0xcf, 0x1e, 0xee, 0xb5, 0x47, 0x58, 0x39, 0x49, 0x5e, 0x6d,
-	0x5e, 0x05, 0x57, 0x1f, 0xdb, 0x88, 0x7b, 0xe7, 0xda, 0x6c, 0xdc, 0x91, 0xee, 0x0f, 0x07, 0xda,
-	0xf7, 0x7f, 0xb5, 0x32, 0xc7, 0x6b, 0x68, 0x72, 0x6b, 0xd9, 0x20, 0x87, 0x8f, 0x05, 0x31, 0x13,
-	0xac, 0x9a, 0xfd, 0xcb, 0x28, 0x47, 0x09, 0xec, 0xdc, 0xa1, 0x4a, 0xf6, 0x21, 0x78, 0x33, 0x3a,
-	0x1f, 0x7f, 0x08, 0xa7, 0xe1, 0x6c, 0x3a, 0x62, 0x2c, 0x1c, 0x4e, 0x83, 0xff, 0x48, 0x1b, 0xf6,
-	0x3e, 0x7e, 0x0a, 0xd9, 0x45, 0x69, 0xcd, 0xc6, 0x61, 0xc8, 0x26, 0x81, 0x43, 0x9e, 0xc2, 0x6e,
-	0x38, 0x3c, 0x1b, 0x8f, 0x06, 0xc3, 0xe9, 0x8c, 0x85, 0x6f, 0x07, 0x93, 0x29, 0xbb, 0x08, 0x5c,
-	0x42, 0xa0, 0x65, 0xe6, 0xcb, 0x66, 0xb0, 0x75, 0x59, 0xd7, 0xff, 0x42, 0x27, 0xbf, 0x03, 0x00,
-	0x00, 0xff, 0xff, 0xd7, 0x51, 0x29, 0x3f, 0x97, 0x04, 0x00, 0x00,
+	// 740 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xbc, 0x56, 0x4d, 0x4f, 0xdb, 0x4c,
+	0x10, 0x26, 0x1f, 0xe4, 0x63, 0x78, 0xc9, 0x6b, 0x36, 0x14, 0x5c, 0x0a, 0x12, 0xf2, 0x09, 0x45,
+	0x2a, 0x07, 0x68, 0x7b, 0x47, 0xc1, 0xd0, 0xb4, 0x90, 0x84, 0x4d, 0x50, 0xc5, 0x29, 0x32, 0x64,
+	0x71, 0x2d, 0x12, 0xdb, 0xd9, 0x1d, 0x17, 0x71, 0xef, 0xa1, 0x3f, 0xb4, 0xff, 0xa3, 0x95, 0xd7,
+	0x76, 0x4c, 0xe2, 0xa5, 0x8d, 0x90, 0xe8, 0x6d, 0x67, 0x76, 0xe6, 0x99, 0x99, 0x7d, 0x1e, 0xef,
+	0x1a, 0x6a, 0x96, 0xeb, 0x7a, 0x81, 0x7b, 0xc3, 0xf6, 0x7d, 0xee, 0xa1, 0x47, 0x2a, 0x63, 0x26,
+	0x84, 0x65, 0x33, 0x61, 0x34, 0xa0, 0x7a, 0x1e, 0xad, 0x5b, 0xc7, 0x64, 0x07, 0x20, 0xde, 0x18,
+	0x38, 0x43, 0x3d, 0xb7, 0x9b, 0xdb, 0x2b, 0xd2, 0x6a, 0xec, 0x69, 0x0d, 0x8d, 0xcf, 0xb0, 0xda,
+	0x73, 0x6c, 0x97, 0x0d, 0xe3, 0x0c, 0xb2, 0x0d, 0x55, 0xe1, 0xd8, 0xae, 0x85, 0x01, 0x67, 0x32,
+	0xfc, 0x3f, 0x9a, 0x3a, 0xc2, 0x5d, 0x3f, 0xb8, 0x1e, 0x39, 0x77, 0x77, 0xec, 0x41, 0xcf, 0x47,
+	0xbb, 0x53, 0x87, 0x11, 0x00, 0x69, 0x7a, 0x63, 0x7f, 0xc4, 0x90, 0xf5, 0x3d, 0xce, 0x99, 0x8b,
+	0x94, 0x21, 0x39, 0x84, 0x92, 0x40, 0x0b, 0x03, 0x21, 0xe1, 0x6a, 0x07, 0x6f, 0xf6, 0x93, 0x4e,
+	0xf7, 0x8f, 0xe2, 0x11, 0x28, 0xc3, 0x9e, 0x0c, 0xa1, 0x71, 0x28, 0x21, 0x50, 0xf4, 0x19, 0xe3,
+	0xb2, 0x46, 0x95, 0xca, 0x35, 0xd9, 0x80, 0x12, 0xe3, 0xfc, 0x5c, 0xd8, 0x7a, 0x41, 0x7a, 0x63,
+	0xcb, 0xe8, 0x2b, 0xca, 0x4e, 0xc8, 0x16, 0x54, 0x1c, 0xf7, 0xd6, 0xfb, 0x68, 0x89, 0xaf, 0xf1,
+	0x1c, 0x53, 0x9b, 0xd4, 0x20, 0xef, 0xf8, 0x71, 0xff, 0x79, 0xc7, 0x97, 0xd5, 0x3c, 0x8e, 0x12,
+	0xb7, 0x48, 0xe5, 0xda, 0xb8, 0x07, 0x72, 0xca, 0x30, 0x06, 0xec, 0x32, 0xc6, 0xc5, 0xb3, 0x87,
+	0x59, 0x87, 0xe5, 0x70, 0x00, 0xa1, 0xe7, 0x77, 0x0b, 0x7b, 0x55, 0x1a, 0x19, 0x4f, 0x8e, 0xf3,
+	0x49, 0x51, 0xf8, 0xcf, 0xe3, 0xe8, 0x50, 0x76, 0x83, 0xf1, 0x17, 0xcb, 0x45, 0x39, 0x53, 0x91,
+	0x26, 0xa6, 0x71, 0x0d, 0x75, 0xd3, 0x1d, 0xfa, 0x9e, 0x13, 0x9e, 0x89, 0xed, 0x08, 0xe4, 0x0f,
+	0xcf, 0x9e, 0x22, 0xed, 0x37, 0x3f, 0xd3, 0xef, 0x85, 0xaa, 0xc6, 0x24, 0x0c, 0xbf, 0xb7, 0x46,
+	0x23, 0x86, 0x71, 0xbb, 0xb1, 0xb5, 0xd0, 0xd9, 0x0b, 0xd0, 0x2e, 0x02, 0xc6, 0x1f, 0x52, 0xdc,
+	0x7f, 0x20, 0xa3, 0x46, 0xa6, 0xe8, 0x93, 0x43, 0x18, 0x3f, 0x0b, 0xf0, 0x7f, 0x5a, 0x75, 0x12,
+	0x30, 0x81, 0xe4, 0x08, 0xd6, 0xa6, 0xdf, 0x15, 0x73, 0xd1, 0xb9, 0x75, 0x18, 0x97, 0x69, 0x2b,
+	0x07, 0xf5, 0xb4, 0xd7, 0xe9, 0x97, 0x49, 0xb3, 0xd1, 0xe4, 0x0c, 0xc8, 0x4d, 0x46, 0xc9, 0xb2,
+	0xf9, 0x95, 0x83, 0xed, 0x14, 0x23, 0xab, 0x76, 0xaa, 0xc8, 0x0b, 0xd1, 0xec, 0x8c, 0x90, 0xe4,
+	0xd0, 0x33, 0x68, 0x59, 0xb1, 0x51, 0x45, 0x1e, 0xe9, 0x40, 0x9d, 0x65, 0x69, 0xd6, 0x8b, 0x12,
+	0x6e, 0x27, 0x85, 0x53, 0x68, 0x81, 0xaa, 0x32, 0xc9, 0x09, 0x68, 0x93, 0xb9, 0xf3, 0xd6, 0x97,
+	0x25, 0xda, 0x56, 0x8a, 0x36, 0xcf, 0x08, 0xcd, 0xe4, 0x90, 0xb7, 0xb0, 0xcc, 0xbe, 0x31, 0x17,
+	0xf5, 0x92, 0xd4, 0xc5, 0x66, 0x56, 0x17, 0x66, 0xb8, 0x4d, 0xa3, 0xa8, 0x90, 0x52, 0xb4, 0xb8,
+	0xcd, 0x50, 0x2f, 0x47, 0xf4, 0x47, 0x56, 0x28, 0x95, 0x5b, 0xee, 0x8d, 0xf5, 0x4a, 0x24, 0x95,
+	0x70, 0x6d, 0xfc, 0x2a, 0x80, 0x96, 0xd2, 0x2c, 0x7c, 0xcf, 0x15, 0xec, 0xa5, 0x78, 0xc6, 0x05,
+	0x78, 0x46, 0x05, 0xcf, 0xa8, 0xe4, 0x19, 0x17, 0xe0, 0x19, 0x15, 0x3c, 0xa3, 0x9a, 0x67, 0x5c,
+	0x84, 0x67, 0x54, 0xf1, 0x8c, 0x0a, 0x9e, 0xf1, 0xaf, 0x3c, 0x63, 0x86, 0x67, 0x7c, 0x41, 0x9e,
+	0xc3, 0x0b, 0x14, 0x9d, 0x31, 0xf3, 0x02, 0xd4, 0xab, 0xbb, 0xb9, 0xbd, 0x0a, 0x4d, 0x4c, 0xe3,
+	0x7b, 0x0e, 0x36, 0xe6, 0x3e, 0xf4, 0xe4, 0xa5, 0x3c, 0x84, 0x32, 0x8f, 0x3c, 0x31, 0xfb, 0xaf,
+	0x55, 0x37, 0x92, 0x0c, 0xa0, 0x49, 0x24, 0x79, 0xff, 0xf8, 0x79, 0x8d, 0x08, 0x7f, 0x34, 0xc8,
+	0xcc, 0x53, 0xfc, 0xe8, 0xdd, 0x35, 0x7e, 0xe4, 0x60, 0x73, 0x5e, 0x88, 0x49, 0x1f, 0x1f, 0xa0,
+	0xc2, 0x63, 0x57, 0xdc, 0xc8, 0x96, 0xaa, 0x91, 0x28, 0x82, 0x4e, 0x63, 0x9f, 0xd9, 0x4a, 0xc3,
+	0x81, 0xd5, 0x99, 0xf3, 0x26, 0xeb, 0xa0, 0x35, 0x3b, 0xe7, 0xdd, 0x33, 0xb3, 0x6f, 0x0e, 0xfa,
+	0x1d, 0x4a, 0xcd, 0x76, 0x5f, 0x5b, 0x22, 0x9b, 0x50, 0xbf, 0xb8, 0x34, 0xe9, 0x55, 0xe2, 0x1a,
+	0x74, 0x4d, 0x93, 0xf6, 0xb4, 0x1c, 0x79, 0x05, 0x6b, 0x66, 0xfb, 0xb8, 0xdb, 0x69, 0xb5, 0xfb,
+	0x03, 0x6a, 0x9e, 0xb6, 0x7a, 0x7d, 0x7a, 0xa5, 0xe5, 0x09, 0x81, 0x5a, 0x14, 0x9f, 0x6c, 0x6a,
+	0x85, 0xc6, 0x3b, 0x58, 0xcb, 0x5c, 0xed, 0xa4, 0x02, 0xc5, 0x76, 0xa7, 0x6d, 0x6a, 0x4b, 0x64,
+	0x05, 0xca, 0xbd, 0xcb, 0x66, 0xd3, 0xec, 0x85, 0xb0, 0x15, 0x28, 0x9e, 0x1c, 0xb5, 0xce, 0xb4,
+	0xfc, 0x75, 0x49, 0xfe, 0x0f, 0x1d, 0xfe, 0x0e, 0x00, 0x00, 0xff, 0xff, 0xe8, 0xd1, 0xf8, 0xe0,
+	0x21, 0x09, 0x00, 0x00,
 }

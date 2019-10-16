@@ -2,7 +2,6 @@ package tk
 
 import (
 	"crypto/rand"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -19,7 +18,7 @@ import (
 	tkActClient "github.com/saveio/scan/p2p/actor/tracker/client"
 	"github.com/saveio/scan/storage"
 	chainsdk "github.com/saveio/themis-go-sdk/utils"
-	"github.com/saveio/themis/account"
+	theComm "github.com/saveio/themis/common"
 	"github.com/saveio/themis/common/log"
 	"github.com/saveio/themis/crypto/keypair"
 )
@@ -28,7 +27,8 @@ const (
 	MAX_ANNOUNCE_REQUEST_TIMES  = 1
 	MAX_ANNOUNCE_RESPONSE_TIMES = 1
 	MAX_ANNOUNCE_WAIT_SECONDS   = 30 * time.Second
-	MEMORY_HEARTBEAT_DURATION   = 5 * time.Second
+	MEMORY_HEARTBEAT_DURATION   = 45 * time.Second
+	MAX_TORRENT_PEERS_RET_NUM   = 30
 )
 
 type AnnounceAction int32
@@ -53,24 +53,18 @@ type AnnounceMessageItem struct {
 
 type TrackerService struct {
 	AnnounceMessageMap *sync.Map
-	TkAct              *actor.PID
 	DnsAct             *actor.PID
 	PublicKey          keypair.PublicKey
 	SignFn             func(rawData []byte) ([]byte, error)
 }
 
-func NewTrackerService(tkAct, dnsAct *actor.PID, pubKey keypair.PublicKey, _sigCallback func(rawData []byte) ([]byte, error)) *TrackerService {
+func NewTrackerService(dnsAct *actor.PID, pubKey keypair.PublicKey, _sigCallback func(rawData []byte) ([]byte, error)) *TrackerService {
 	return &TrackerService{
 		AnnounceMessageMap: new(sync.Map),
-		TkAct:              tkAct,
 		DnsAct:             dnsAct,
 		PublicKey:          pubKey,
 		SignFn:             _sigCallback,
 	}
-}
-
-func (this *TrackerService) SetTkActor(tkAct *actor.PID) {
-	this.TkAct = tkAct
 }
 
 func (this *TrackerService) SetDnsActor(dnsAct *actor.PID) {
@@ -78,17 +72,22 @@ func (this *TrackerService) SetDnsActor(dnsAct *actor.PID) {
 }
 
 func (this *TrackerService) Start(targetDnsAddr string) {
-	log.Info("tkSrv started")
-	go tkActClient.P2pConnect(targetDnsAddr)
-	tkActClient.SetTrackerServerPid(this.TkAct)
-	for {
-		t := time.NewTimer(time.Duration(MEMORY_HEARTBEAT_DURATION))
-		select {
-		case <-t.C:
-			log.Debugf("AnnounceMessageMap: %v", this.AnnounceMessageMap)
-			tkActClient.P2pTell()
+	tkActClient.P2pConnect(targetDnsAddr)
+	go func() {
+		for {
+			t := time.NewTimer(time.Duration(MEMORY_HEARTBEAT_DURATION))
+			select {
+			case <-t.C:
+				log.Debugf("AnnounceMessageMap: %v", this.AnnounceMessageMap)
+				go tkActClient.P2pConnect(targetDnsAddr)
+			}
 		}
-	}
+	}()
+	log.Info("tkSrv started")
+}
+
+func (this *TrackerService) ConnectDns(targetDnsAddr string) error {
+	return tkActClient.P2pConnect(targetDnsAddr)
 }
 
 func (this *TrackerService) HandleAnnounceRequestEvent(annReq *tkpm.AnnounceRequest) (*tkpm.AnnounceResponse, error) {
@@ -115,8 +114,6 @@ func (this *TrackerService) HandleAnnounceRequestEvent(annReq *tkpm.AnnounceRequ
 	var interval time.Duration = 15
 	retry_times := 0
 	// Waiting & Retry
-	// done := make(chan bool, 1)
-	// go func() {
 	for retry_times < MAX_ANNOUNCE_REQUEST_TIMES {
 		t := time.NewTimer(interval * time.Second)
 		select {
@@ -125,9 +122,15 @@ func (this *TrackerService) HandleAnnounceRequestEvent(annReq *tkpm.AnnounceRequ
 			go this.SignAndSend(annReq.Target, annReq.MessageIdentifier, annReq)
 			// log.Warnf("Timeout retry for msg = %+v\n", annReq)
 			// t.Reset(interval * time.Second)
+			// Sweeper, remove msg from map
+			go func() {
+				msgItemI, ok := this.AnnounceMessageMap.Load(annReq.MessageIdentifier.MessageId)
+				if ok && msgItemI != nil {
+					this.AnnounceMessageMap.Delete(annReq.MessageIdentifier.MessageId)
+				}
+			}()
 			retry_times++
-			log.Debugf("retry_times %d", retry_times)
-			// done <- false
+			log.Debugf("timeout retry_times %d", retry_times)
 		case status := <-annMsgItem.ChStatus:
 			log.Infof("gotit")
 			retry_times = MAX_ANNOUNCE_REQUEST_TIMES
@@ -135,65 +138,59 @@ func (this *TrackerService) HandleAnnounceRequestEvent(annReq *tkpm.AnnounceRequ
 			msgItem := msgItem_.(*AnnounceMessageItem)
 			if ok && annMsgItem.MsgID == msgItem.MsgID && status == AnnounceMessageProcessed {
 				result = annMsgItem.AnnResponse
-				this.AnnounceMessageMap.Delete(annReq.MessageIdentifier.MessageId)
-				log.Infof("done")
-				break
-				// done <- true
+				go this.AnnounceMessageMap.Delete(annReq.MessageIdentifier.MessageId)
+				return result, nil
 			}
 		}
 	}
-	// }()
-	log.Debugf("break retry_times")
 
-	// select {
-	// case <-done:
-	// 	close(done)
-	// 	// return nil
-	// case <-time.After(time.Duration(15000) * time.Millisecond):
-	// 	return nil, fmt.Errorf("function:[%s] timeout", "done")
-	// }
-
-	// Sweeper, remove msg from map
-	msgItemI, ok := this.AnnounceMessageMap.Load(annReq.MessageIdentifier.MessageId)
-	if ok && msgItemI != nil {
-		this.AnnounceMessageMap.Delete(annReq.MessageIdentifier.MessageId)
-	}
-	return result, nil
+	return &tkpm.AnnounceResponse{
+		MessageIdentifier: annReq.MessageIdentifier,
+		Timeout:           true,
+	}, errors.New("timeout")
 }
 
 func (this *TrackerService) HandleAnnounceResponseEvent(annRes *tkpm.AnnounceResponse, from string) error {
 	go this.SignAndSend(from, annRes.MessageIdentifier, annRes)
 	return nil
-
-	// var interval time.Duration = MAX_ANNOUNCE_RESPONSE_TIMES
-	// ti := time.NewTimer(interval * time.Second)
-	// Waiting & Retry
-
-	// select {
-	// case <-time.After(time.Duration(MAX_ANNOUNCE_WAIT_SECONDS)):
-	// 	log.Debugf("timeout finally, response")
-	// case <-ti.C:
-	// 	log.Debugf("[QueueSend] <-t.C Time: %s from: %s %+v\n", time.Now().String(), from, annRes)
-	// 	annRes.Event = tkpm.AnnounceResponse_COMPLETED_SEND
-	// 	this.SignAndSend(from, annRes.MessageIdentifier, annRes)
-	// 	log.Warnf("Timeout retry for msg = %+v\n", annRes)
-	// }
 }
 
-func (this *TrackerService) SignAndSend(target string, msgId *tkpm.MessageID, message proto.Message) error {
-	rawData, err := json.Marshal(message)
-	if err != nil {
-		return err
-	}
-	signature, err := this.SignFn(rawData)
-	if err != nil {
-		return errors.New("gen message signature failed.")
-	}
-
+func (this *TrackerService) SignAndSend(target string, msgId *tkpm.MessageID, message proto.Message) (err error) {
 	switch msg := message.(type) {
 	case *tkpm.AnnounceRequest:
-		log.Debugf("tkpm.AnnounceRequestMessage Request: %v, Signature: %v", msg, tkpm.SignedMessage{Signature: signature, Publikkey: keypair.SerializePublicKey(this.PublicKey)})
-		// go tkActClient.P2pConnect(target)
+		var rawData []byte
+		switch msg.Event {
+		case tkpm.AnnounceEvent_COMPLETE_TORRENT:
+			rawData, err = proto.Marshal(msg.CompleteTorrentReq)
+			if err != nil {
+				return err
+			}
+		case tkpm.AnnounceEvent_QUERY_TORRENT_PEERS:
+			rawData, err = proto.Marshal(msg.GetTorrentPeersReq)
+			if err != nil {
+				return err
+			}
+		case tkpm.AnnounceEvent_ENDPOINT_REGISTRY:
+			rawData, err = proto.Marshal(msg.EndpointRegistryReq)
+			if err != nil {
+				return err
+			}
+		case tkpm.AnnounceEvent_QUERY_ENDPOINT:
+			rawData, err = proto.Marshal(msg.QueryEndpointReq)
+			if err != nil {
+				return err
+			}
+		}
+		if len(rawData) == 0 {
+			return errors.New("rawData null")
+		}
+
+		signature, err := this.SignFn(rawData)
+		if err != nil {
+			return errors.New("gen message signature failed.")
+		}
+		log.Debugf("tkpm.AnnounceRequestMessage RawData: %v, PublicKey: %v, Signature: %v", rawData, keypair.SerializePublicKey(this.PublicKey), signature)
+
 		go tkActClient.P2pSend(target, &tkpm.AnnounceRequestMessage{
 			Request: msg,
 			Signature: &tkpm.SignedMessage{
@@ -203,7 +200,39 @@ func (this *TrackerService) SignAndSend(target string, msgId *tkpm.MessageID, me
 		})
 		break
 	case *tkpm.AnnounceResponse:
-		// go tkActClient.P2pConnect(target)
+		var rawData []byte
+		switch msg.Event {
+		case tkpm.AnnounceEvent_COMPLETE_TORRENT:
+			rawData, err = proto.Marshal(msg.CompleteTorrentRet)
+			if err != nil {
+				return err
+			}
+		case tkpm.AnnounceEvent_QUERY_TORRENT_PEERS:
+			rawData, err = proto.Marshal(msg.GetTorrentPeersRet)
+			if err != nil {
+				return err
+			}
+		case tkpm.AnnounceEvent_ENDPOINT_REGISTRY:
+			rawData, err = proto.Marshal(msg.EndpointRegistryRet)
+			if err != nil {
+				return err
+			}
+		case tkpm.AnnounceEvent_QUERY_ENDPOINT:
+			rawData, err = proto.Marshal(msg.QueryEndpointRet)
+			if err != nil {
+				return err
+			}
+		}
+		if len(rawData) == 0 {
+			return errors.New("rawData null")
+		}
+
+		signature, err := this.SignFn(rawData)
+		if err != nil {
+			return errors.New("gen message signature failed.")
+		}
+		log.Debugf("tkpm.AnnounceResponseMessage RawData: %v, PublicKey: %v, Signature: %v", rawData, keypair.SerializePublicKey(this.PublicKey), signature)
+
 		go tkActClient.P2pSend(target, &tkpm.AnnounceResponseMessage{
 			Response: msg,
 			Signature: &tkpm.SignedMessage{
@@ -218,32 +247,139 @@ func (this *TrackerService) SignAndSend(target string, msgId *tkpm.MessageID, me
 	return nil
 }
 
-func (this *TrackerService) CheckSign(acc *account.Account, rawData, signData []byte) error {
-	return chainsdk.Verify(acc.PublicKey, rawData, signData)
+func (this *TrackerService) CheckSign(message proto.Message) (err error) {
+	switch msg := message.(type) {
+	case *tkpm.AnnounceRequestMessage:
+		var rawData []byte
+		switch msg.GetRequest().Event {
+		case tkpm.AnnounceEvent_COMPLETE_TORRENT:
+			rawData, err = proto.Marshal(msg.Request.CompleteTorrentReq)
+			if err != nil {
+				return err
+			}
+		case tkpm.AnnounceEvent_QUERY_TORRENT_PEERS:
+			rawData, err = proto.Marshal(msg.Request.GetTorrentPeersReq)
+			if err != nil {
+				return err
+			}
+		case tkpm.AnnounceEvent_ENDPOINT_REGISTRY:
+			rawData, err = proto.Marshal(msg.Request.EndpointRegistryReq)
+			if err != nil {
+				return err
+			}
+		case tkpm.AnnounceEvent_QUERY_ENDPOINT:
+			rawData, err = proto.Marshal(msg.Request.QueryEndpointReq)
+			if err != nil {
+				return err
+			}
+		}
+		if len(rawData) == 0 {
+			return errors.New("rawData null")
+		}
+
+		pubKey, err := keypair.DeserializePublicKey(msg.Signature.Publikkey)
+		if err != nil {
+			return err
+		}
+		log.Debugf("tkpm.AnnounceRequestMessage RawData: %v, PublicKey: %v, Signature: %v", rawData, pubKey, msg.Signature.Signature)
+		return chainsdk.Verify(pubKey, rawData, msg.Signature.Signature)
+	case *tkpm.AnnounceResponseMessage:
+		var rawData []byte
+		switch msg.GetResponse().Event {
+		case tkpm.AnnounceEvent_COMPLETE_TORRENT:
+			rawData, err = proto.Marshal(msg.Response.CompleteTorrentRet)
+			if err != nil {
+				return err
+			}
+		case tkpm.AnnounceEvent_QUERY_TORRENT_PEERS:
+			rawData, err = proto.Marshal(msg.Response.GetTorrentPeersRet)
+			if err != nil {
+				return err
+			}
+		case tkpm.AnnounceEvent_ENDPOINT_REGISTRY:
+			rawData, err = proto.Marshal(msg.Response.EndpointRegistryRet)
+			if err != nil {
+				return err
+			}
+		case tkpm.AnnounceEvent_QUERY_ENDPOINT:
+			rawData, err = proto.Marshal(msg.Response.QueryEndpointRet)
+			if err != nil {
+				return err
+			}
+		}
+		if len(rawData) == 0 {
+			return errors.New("rawData null")
+		}
+		pubKey, err := keypair.DeserializePublicKey(msg.Signature.Publikkey)
+		if err != nil {
+			return err
+		}
+		log.Debugf("tkpm.AnnounceResponseMessage RawData: %v, PublicKey: %v, Signature: %v", rawData, pubKey, msg.Signature.Signature)
+		return chainsdk.Verify(pubKey, rawData, msg.Signature.Signature)
+	}
+	return errors.New("unkonwn message type to CheckSign")
 }
 
 func (this *TrackerService) ReceiveAnnounceMessage(message proto.Message, from string) {
 	log.Debug("[NetComponent] Receive: ", reflect.TypeOf(message).String(), " From: ", from)
+	if err := this.CheckSign(message); err != nil {
+		log.Errorf("CheckSign failed: %v", err)
+		return
+	}
 	switch msg := message.(type) {
 	case *tkpm.AnnounceRequestMessage:
-		switch msg.GetRequest().GetEvent() {
-		case tkpm.AnnounceEvent_COMPLETE_TORRENT:
-			log.Debugf("AnnounceEvent_COMPLETE_TORRENT")
-		case tkpm.AnnounceEvent_QUERY_TORRENT_PEERS:
-			log.Debugf("AnnounceEvent_QUERY_TORRENT_PEERS")
-		case tkpm.AnnounceEvent_ENDPOINT_REGISTRY:
-			log.Debugf("AnnounceEvent_ENDPOINT_REGISTRY")
-		case tkpm.AnnounceEvent_QUERY_ENDPOINT:
-			log.Debugf("AnnounceEvent_QUERY_ENDPOINT")
-		default:
-			log.Debugf("Unknown AnnounceEvent type")
-		}
+		log.Debugf("msg type %s", msg.GetRequest().Event.String())
 		annResp, err := this.onAnnounce(msg.GetRequest())
 		log.Debugf("onAnnounce annResp: %v, Err: %v", annResp, err)
+
 		if err != nil {
-			this.HandleAnnounceResponseEvent(&tkpm.AnnounceResponse{}, from)
+			switch msg.GetRequest().GetEvent() {
+			case tkpm.AnnounceEvent_COMPLETE_TORRENT:
+				log.Debugf("AnnounceEvent_COMPLETE_TORRENT")
+				this.HandleAnnounceResponseEvent(&tkpm.AnnounceResponse{
+					MessageIdentifier: msg.Request.MessageIdentifier,
+					CompleteTorrentRet: &tkpm.CompleteTorrentRet{
+						Status: tkpm.AnnounceRetStatus_FAIL,
+						ErrMsg: err.Error(),
+					},
+					Event: msg.Request.Event,
+				}, from)
+			case tkpm.AnnounceEvent_QUERY_TORRENT_PEERS:
+				log.Debugf("AnnounceEvent_QUERY_TORRENT_PEERS")
+				this.HandleAnnounceResponseEvent(&tkpm.AnnounceResponse{
+					MessageIdentifier: msg.Request.MessageIdentifier,
+					GetTorrentPeersRet: &tkpm.GetTorrentPeersRet{
+						Status: tkpm.AnnounceRetStatus_FAIL,
+						ErrMsg: err.Error(),
+					},
+					Event: msg.Request.Event,
+				}, from)
+			case tkpm.AnnounceEvent_ENDPOINT_REGISTRY:
+				log.Debugf("AnnounceEvent_ENDPOINT_REGISTRY")
+				this.HandleAnnounceResponseEvent(&tkpm.AnnounceResponse{
+					MessageIdentifier: msg.Request.MessageIdentifier,
+					EndpointRegistryRet: &tkpm.EndpointRegistryRet{
+						Status: tkpm.AnnounceRetStatus_FAIL,
+						ErrMsg: err.Error(),
+					},
+					Event: msg.Request.Event,
+				}, from)
+			case tkpm.AnnounceEvent_QUERY_ENDPOINT:
+				log.Debugf("AnnounceEvent_QUERY_ENDPOINT")
+				this.HandleAnnounceResponseEvent(&tkpm.AnnounceResponse{
+					MessageIdentifier: msg.Request.MessageIdentifier,
+					QueryEndpointRet: &tkpm.QueryEndpointRet{
+						Status: tkpm.AnnounceRetStatus_FAIL,
+						ErrMsg: err.Error(),
+					},
+					Event: msg.Request.Event,
+				}, from)
+			default:
+				log.Debugf("Unknown AnnounceEvent type")
+			}
+		} else {
+			this.HandleAnnounceResponseEvent(annResp, from)
 		}
-		this.HandleAnnounceResponseEvent(annResp, from)
 	case *tkpm.AnnounceResponseMessage:
 		this.ReceiveAnnounceResponseMessage(msg, from)
 		switch msg.GetResponse().GetEvent() {
@@ -280,54 +416,137 @@ func (this *TrackerService) onAnnounce(aReq *tkpm.AnnounceRequest) (*tkpm.Announ
 		return this.onAnnounceCompleteTorrent(aReq)
 	case tkpm.AnnounceEvent_QUERY_TORRENT_PEERS:
 		return this.onAnnounceQueryTorrentPeers(aReq)
+	case tkpm.AnnounceEvent_ENDPOINT_REGISTRY:
+		return this.onAnnounceEndpointRegistry(aReq)
+	case tkpm.AnnounceEvent_QUERY_ENDPOINT:
+		return this.onAnnounceQueryEndpoint(aReq)
 	}
 	return nil, errors.New("Unknown announce event type")
 }
 
-func (this *TrackerService) onAnnounceQueryTorrentPeers(arq *tkpm.AnnounceRequest) (*tkpm.AnnounceResponse, error) {
-	t, err := storage.TDB.GetTorrent(arq.InfoHash[:])
+func (this *TrackerService) onAnnounceEndpointRegistry(aReq *tkpm.AnnounceRequest) (*tkpm.AnnounceResponse, error) {
+	req := aReq.EndpointRegistryReq
+	if req == nil {
+		return nil, errors.New("request.EndpointRegistryReq is nil")
+	}
+	if storage.EDB == nil {
+		return nil, errors.New("storage.EDB is nil")
+	}
+	var wallet theComm.Address
+	copy(wallet[:], req.Wallet)
+	peer := krpc.NodeAddr{IP: req.Ip[:], Port: int(req.Port)}
+	err := storage.EDB.PutEndpoint(wallet.ToBase58(), peer.IP, int(req.Port))
+	if err != nil {
+		return nil, err
+	}
+
+	if this.DnsAct != nil {
+		this.DnsAct.Tell(&tkpm.Endpoint{WalletAddr: wallet.ToBase58(), HostPort: peer.String(), Type: 0})
+	}
+
+	return &tkpm.AnnounceResponse{
+		MessageIdentifier: aReq.MessageIdentifier,
+		EndpointRegistryRet: &tkpm.EndpointRegistryRet{
+			Status: tkpm.AnnounceRetStatus_SUCCESS,
+			ErrMsg: "",
+		},
+		Event: aReq.Event,
+	}, nil
+}
+
+func (this *TrackerService) onAnnounceQueryEndpoint(aReq *tkpm.AnnounceRequest) (*tkpm.AnnounceResponse, error) {
+	req := aReq.QueryEndpointReq
+	if req == nil {
+		return nil, errors.New("request.QueryEndpointReq is nil")
+	}
+	if storage.EDB == nil {
+		return nil, errors.New("storage.EDB is nil")
+	}
+	var wallet theComm.Address
+	copy(wallet[:], req.Wallet)
+	if wallet == theComm.ADDRESS_EMPTY {
+		return nil, errors.New("wallet invalid, ADDRESS_EMPTY")
+	}
+	var peer *storage.Endpoint
+	peer, err := storage.EDB.GetEndpoint(wallet.ToBase58())
+	if err != nil {
+		return nil, err
+	}
+	return &tkpm.AnnounceResponse{
+		MessageIdentifier: aReq.MessageIdentifier,
+		QueryEndpointRet: &tkpm.QueryEndpointRet{
+			Status: tkpm.AnnounceRetStatus_SUCCESS,
+			Peer:   peer.NodeAddr.String(),
+			ErrMsg: "",
+		},
+		Event: aReq.Event,
+	}, nil
+
+}
+
+func (this *TrackerService) onAnnounceQueryTorrentPeers(aReq *tkpm.AnnounceRequest) (*tkpm.AnnounceResponse, error) {
+	req := aReq.GetTorrentPeersReq
+	if req == nil {
+		return nil, errors.New("request.GetTorrentPeersReq is nil")
+	}
+	if storage.TDB == nil {
+		return nil, errors.New("storage.TDB is nil")
+	}
+	pis, _, _, err := storage.TDB.GetTorrentPeersByFileHash(req.InfoHash, int32(req.NumWant))
 	if err != nil && err.Error() != "not found" {
 		return nil, err
 	}
 
 	var peers []string
-	for peer, _ := range t.Peers {
-		peers = append(peers, peer)
+	for _, peer := range pis {
+		if len(peers) >= MAX_TORRENT_PEERS_RET_NUM {
+			break
+		}
+		peers = append(peers, peer.NodeAddr.String())
 	}
+	log.Debugf("onAnnounceQueryTorrentPeers %v", peers)
 	return &tkpm.AnnounceResponse{
-		MessageIdentifier: arq.MessageIdentifier,
-		Interval:          800,
-		Leechers:          uint64(t.Leechers),
-		Seeders:           uint64(t.Seeders),
-		Peers:             peers,
+		MessageIdentifier: aReq.MessageIdentifier,
+		GetTorrentPeersRet: &tkpm.GetTorrentPeersRet{
+			Status: tkpm.AnnounceRetStatus_SUCCESS,
+			Peers:  peers,
+			ErrMsg: "",
+		},
+		Event: aReq.Event,
 	}, nil
 }
 
-func (this *TrackerService) onAnnounceCompleteTorrent(arq *tkpm.AnnounceRequest) (*tkpm.AnnounceResponse, error) {
-	peer := krpc.NodeAddr{IP: arq.Ip[:], Port: int(arq.Port)}
-	pi, err := storage.TDB.GetTorrentPeerByFileHashAndNodeAddr(arq.InfoHash[:], peer.String())
+func (this *TrackerService) onAnnounceCompleteTorrent(aReq *tkpm.AnnounceRequest) (*tkpm.AnnounceResponse, error) {
+	req := aReq.CompleteTorrentReq
+	if req == nil {
+		return nil, errors.New("request.CompleteTorrentReq is nil")
+	}
+	if storage.TDB == nil {
+		return nil, errors.New("storage.TDB is nil")
+	}
+	peer := krpc.NodeAddr{IP: req.Ip[:], Port: int(req.Port)}
+	pi, err := storage.TDB.GetTorrentPeerByFileHashAndNodeAddr(req.InfoHash[:], peer.String())
 	if err != nil {
 		log.Errorf("get peerinfo err: %v", err)
 	}
 
 	if pi == nil {
 		var peerID storage.PeerID
-		// copy(peerID[:storage.PEERID_LENGTH], arq.PeerId[:storage.PEERID_LENGTH])
-		peerID = [20]byte{}
+		rand.Read(peerID[:])
 		pi = &storage.PeerInfo{
 			ID:       peerID,
-			Complete: arq.Left == 0,
-			IP:       ipconvert(net.IP(arq.Ip).To4()),
-			Port:     uint16(arq.Port),
+			Complete: true,
+			IP:       ipconvert(net.IP(req.Ip).To4()),
+			Port:     uint16(req.Port),
 			NodeAddr: peer,
 		}
 		pi.Print()
-		err := storage.TDB.AddTorrentPeer(arq.InfoHash[:], arq.Left, peer.String(), pi)
+		err := storage.TDB.AddTorrentPeer(req.InfoHash, 0, peer.String(), pi)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		torrent, err := storage.TDB.GetTorrent(arq.InfoHash[:])
+		torrent, err := storage.TDB.GetTorrent(req.InfoHash[:])
 		if err != nil {
 			return nil, err
 		}
@@ -335,14 +554,16 @@ func (this *TrackerService) onAnnounceCompleteTorrent(arq *tkpm.AnnounceRequest)
 		torrent.Leechers -= 1
 		pi.Complete = true
 		torrent.Peers[pi.NodeAddr.String()] = pi
-		storage.TDB.PutTorrent(arq.InfoHash[:], torrent)
+		storage.TDB.PutTorrent(req.InfoHash, torrent)
 	}
 
 	piBinarys := pi.Serialize()
 	log.Debugf("PeerInfo Binary: %v\n", piBinarys)
-	// this.DnsAct.Tell(&tkpm.Torrent{InfoHash: arq.InfoHash[:], Left: arq.Left, Peerinfo: piBinarys, Type: 0})
+	if this.DnsAct != nil {
+		this.DnsAct.Tell(&tkpm.Torrent{InfoHash: req.InfoHash, Left: 0, Peerinfo: piBinarys, Type: 0})
+	}
 
-	t, err := storage.TDB.GetTorrent(arq.InfoHash)
+	t, err := storage.TDB.GetTorrent(req.InfoHash)
 	if err != nil && err.Error() != "not found" {
 		return nil, err
 	}
@@ -351,12 +572,24 @@ func (this *TrackerService) onAnnounceCompleteTorrent(arq *tkpm.AnnounceRequest)
 		peers = append(peers, peer)
 	}
 
+	log.Debugf("ret %v", tkpm.AnnounceResponse{
+		MessageIdentifier: aReq.MessageIdentifier,
+		CompleteTorrentRet: &tkpm.CompleteTorrentRet{
+			Status: tkpm.AnnounceRetStatus_SUCCESS,
+			Peer:   peer.String(),
+			ErrMsg: "",
+		},
+		Event: aReq.Event,
+	})
+
 	return &tkpm.AnnounceResponse{
-		MessageIdentifier: arq.MessageIdentifier,
-		Interval:          900,
-		Leechers:          uint64(t.Leechers),
-		Seeders:           uint64(t.Seeders),
-		Peers:             peers,
+		MessageIdentifier: aReq.MessageIdentifier,
+		CompleteTorrentRet: &tkpm.CompleteTorrentRet{
+			Status: tkpm.AnnounceRetStatus_SUCCESS,
+			Peer:   peer.String(),
+			ErrMsg: "",
+		},
+		Event: aReq.Event,
 	}, nil
 }
 
@@ -377,52 +610,3 @@ func ipconvert(ip net.IP) (ip_4 [4]byte) {
 	copy(ip_4[:4], ip[:4])
 	return ip_4
 }
-
-// func (this *TrackerService) onAnnounceLeave(arq *tkpm.AnnounceRequest, pi *peerInfo) error {
-// 	if pi == nil {
-// 		return errors.New("peer not exists.")
-// 	}
-// 	err := storage.TDB.DelTorrentPeer(arq.InfoHash[:], pi)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	piBinarys := pi.Serialize()
-// 	pi.Print()
-// 	log.Debugf("PeerInfo Binarys: %v\n", piBinarys)
-// 	this.dnsAct.p2p.Tell(&pm.Torrent{InfoHash: arq.InfoHash[:], Left: arq.Left, PeerInfo: piBinarys, Type: 0})
-// 	return &tkpm.AnnounceResponse{
-// 		MessageIdentifier: arq.MessageIdentifier,
-// 		Interval: 900,
-// 		Leechers: t.Leechers,
-// 		Seeders:  t.Seeders,
-// 	}, nil
-// }
-
-// func (this *TrackerService) MarshalTorrentPeers(t *storage.Torrent) ([]byte, error) {
-// 	bm := func() encoding.BinaryMarshaler {
-// 		ip := missinggo.AddrIP(addr)
-// 		pNodeAddrs := make([]krpc.NodeAddr, 0)
-// 		for _, pi := range t.Peers {
-// 			if !pi.Complete {
-// 				continue
-// 			}
-// 			nodeAddIp := pi.NodeAddr.IP.To4()
-// 			if nodeAddIp == nil {
-// 				nodeAddIp = pi.NodeAddr.IP.To16()
-// 			}
-// 			pNodeAddrs = append(pNodeAddrs, krpc.NodeAddr{
-// 				IP:   nodeAddIp,
-// 				Port: pi.NodeAddr.Port,
-// 			})
-// 			if ar.NumWant != -1 && len(pNodeAddrs) >= int(ar.NumWant) {
-// 				break
-// 			}
-// 		}
-// 		if ip.To4() != nil {
-// 			return krpc.CompactIPv4NodeAddrs(pNodeAddrs)
-// 		}
-// 		return krpc.CompactIPv6NodeAddrs(pNodeAddrs)
-// 	}()
-// 	return bm.MarshalBinary()
-// }

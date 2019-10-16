@@ -14,6 +14,7 @@ import (
 	"github.com/saveio/scan/common/config"
 	ch_actor_server "github.com/saveio/scan/p2p/actor/channel/server"
 	dns_actor_server "github.com/saveio/scan/p2p/actor/dns/server"
+	tk_actor_client "github.com/saveio/scan/p2p/actor/tracker/client"
 	tk_actor_server "github.com/saveio/scan/p2p/actor/tracker/server"
 	channel_net "github.com/saveio/scan/p2p/networks/channel"
 	dns_net "github.com/saveio/scan/p2p/networks/dns"
@@ -182,7 +183,7 @@ func (this *Node) SetupDnsNetwork() error {
 }
 
 func (this *Node) SetupTkNetwork() error {
-	tkSrv := tk.NewTrackerService(nil, nil, this.Account.PublicKey, func(raw []byte) ([]byte, error) {
+	tkSrv := tk.NewTrackerService(this.DnsNet.GetPID(), this.Account.PublicKey, func(raw []byte) ([]byte, error) {
 		return chainsdk.Sign(this.Account, raw)
 	})
 	tkActServer, err := tk_actor_server.NewTrackerActor(tkSrv)
@@ -209,6 +210,7 @@ func (this *Node) SetupTkNetwork() error {
 	log.Infof("goto start tk network %s", tkListenAddr)
 	tk_net.TkP2p = this.TkNet
 	tkActServer.SetNetwork(this.TkNet)
+	tk_actor_client.SetTrackerServerPid(tkActServer.GetLocalPID())
 
 	err = this.TkNet.Start(tkListenAddr)
 	if err != nil {
