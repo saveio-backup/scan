@@ -472,6 +472,9 @@ func (this *TrackerService) onAnnounceQueryEndpoint(aReq *tkpm.AnnounceRequest) 
 	if err != nil {
 		return nil, err
 	}
+	if peer == nil {
+		return nil, errors.New("endpoint not registed")
+	}
 	return &tkpm.AnnounceResponse{
 		MessageIdentifier: aReq.MessageIdentifier,
 		QueryEndpointRet: &tkpm.QueryEndpointRet{

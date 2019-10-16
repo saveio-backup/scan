@@ -23,13 +23,14 @@ import (
 	chainsdk "github.com/saveio/themis-go-sdk/utils"
 	"github.com/saveio/themis-go-sdk/wallet"
 	"github.com/saveio/themis/account"
+	theComm "github.com/saveio/themis/common"
 	"github.com/saveio/themis/common/log"
 	"github.com/saveio/themis/crypto/keypair"
 )
 
 var natProxyServerAddr = "tcp://40.73.100.114:6007"
 var tkListenAddr = "tcp://127.0.0.1:10887"
-var targetDnsAddr = "tcp://40.73.100.114:30668"
+var targetDnsAddr = "tcp://40.73.102.177:10340"
 var walletFile = "./wallet.dat"
 var walletPwd = "pwd"
 
@@ -64,11 +65,13 @@ func TestAnnounceRequestTorrentPeers(t *testing.T) {
 }
 
 func TestAnnounceRequestEndpointRegistry(t *testing.T) {
-	tkActSrv, acc := InitializeService()
+	tkActSrv, _ := InitializeService()
+	addr, err := theComm.AddressFromBase58("AYMfwDq7Ym7qyne4jJnduP4dtofAEtETqS")
+	assert.Nil(err, nil)
 	annResp, err := tkActSrv.AnnounceRequestEndpointRegistry(&pm.EndpointRegistryReq{
-		Wallet: acc.Address[:],
+		Wallet: addr[:],
 		Ip:     net.ParseIP("192.168.1.1"),
-		Port:   uint64(1111),
+		Port:   uint64(1113),
 	}, targetDnsAddr)
 	log.Debugf("announce response: %v, err %v\n", annResp, err)
 	assert.Nil(err, nil)
@@ -77,9 +80,11 @@ func TestAnnounceRequestEndpointRegistry(t *testing.T) {
 }
 
 func TestAnnounceRequestGetEndpointAddr(t *testing.T) {
-	tkActSrv, acc := InitializeService()
+	tkActSrv, _ := InitializeService()
+	addr, err := theComm.AddressFromBase58("AYMfwDq7Ym7qyne4jJnduP4dtofAEtETqS")
+	assert.Nil(err, nil)
 	annResp, err := tkActSrv.AnnounceRequestGetEndpointAddr(&pm.QueryEndpointReq{
-		Wallet: acc.Address[:],
+		Wallet: addr[:],
 	}, targetDnsAddr)
 	log.Debugf("announce response: %v, err %v\n", annResp, err)
 	assert.Nil(err, nil)
