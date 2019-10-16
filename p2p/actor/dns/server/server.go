@@ -41,6 +41,10 @@ func (this *P2PActor) SetNetwork(n *network.Network) {
 	this.net = n
 }
 
+func (this *P2PActor) GetNetwork() *network.Network {
+	return this.net
+}
+
 func (this *P2PActor) Start() (*actor.PID, error) {
 	this.props = actor.FromProducer(func() actor.Actor { return this })
 	localPid, err := actor.SpawnNamed(this.props, "scan_dns_net_server")
@@ -116,7 +120,6 @@ func (this *P2PActor) Receive(ctx actor.Context) {
 	default:
 		log.Debugf("dns actor receive unknown message type.")
 	}
-
 }
 
 func (this *P2PActor) Broadcast(message proto.Message) {

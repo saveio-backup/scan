@@ -90,7 +90,6 @@ func (this *P2PActor) Receive(ctx actor.Context) {
 	default:
 		log.Error("[P2PActor] receive unknown message type!")
 	}
-
 }
 
 func (this *P2PActor) Broadcast(message proto.Message) {

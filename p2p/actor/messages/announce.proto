@@ -1,0 +1,102 @@
+syntax = "proto3";
+
+package messages;
+
+message MessageID {
+    uint64 message_id = 1;
+}
+
+message SignedMessage {
+    bytes signature = 1;
+    bytes publikkey = 2;
+}
+
+enum AnnounceEvent {
+    COMPLETE_TORRENT = 0;
+    QUERY_TORRENT_PEERS = 1;
+    ENDPOINT_REGISTRY = 2;
+    QUERY_ENDPOINT = 3;
+}
+
+enum AnnounceRetStatus {
+    NONE = 0;
+    SUCCESS = 1;
+    FAIL = 2;
+}
+
+message CompleteTorrentRet {
+    AnnounceRetStatus status = 1;
+    string peer = 2;
+    string errMsg = 3;
+}
+
+message CompleteTorrentReq {
+    bytes infoHash = 1;
+    bytes ip = 2;
+    uint64 port = 3;
+}
+
+message GetTorrentPeersRet {
+    AnnounceRetStatus status = 1;
+    repeated string peers = 2;
+    string errMsg = 3;
+}
+
+message GetTorrentPeersReq {
+    bytes infoHash = 1;
+    uint64 numWant = 2;
+}
+
+message EndpointRegistryRet {
+    AnnounceRetStatus status = 1;
+    string errMsg = 2;
+}
+
+message EndpointRegistryReq {
+    bytes wallet = 1;
+    bytes ip = 2;
+    uint64 port = 3;
+}
+
+message QueryEndpointRet {
+    AnnounceRetStatus status = 1;
+    string peer = 2;
+    string errMsg = 3;
+}
+
+message QueryEndpointReq {
+    bytes wallet = 1;
+}
+
+message AnnounceRequest {
+    MessageID messageIdentifier = 1;
+    CompleteTorrentReq completeTorrentReq = 2;
+    GetTorrentPeersReq getTorrentPeersReq = 3;
+    EndpointRegistryReq endpointRegistryReq = 4;
+    QueryEndpointReq queryEndpointReq = 5;
+    AnnounceEvent event = 6;
+    string target = 7;
+    string from = 8;
+}
+
+message AnnounceResponse {
+    MessageID messageIdentifier = 1;
+    CompleteTorrentRet completeTorrentRet = 2;
+    GetTorrentPeersRet getTorrentPeersRet = 3;
+    EndpointRegistryRet endpointRegistryRet = 4;
+    QueryEndpointRet queryEndpointRet = 5;
+    AnnounceEvent event = 6;
+    string target = 7;
+    string from = 8;
+    bool timeout = 9;
+}
+
+message AnnounceRequestMessage {
+    AnnounceRequest request = 1;
+    SignedMessage signature = 2;
+}
+
+message AnnounceResponseMessage {
+    AnnounceResponse response = 1;
+    SignedMessage signature = 2;
+}

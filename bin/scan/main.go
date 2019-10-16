@@ -233,8 +233,8 @@ func startScan(ctx *cli.Context, acc *account.Account) {
 	}
 	storage.EDB = storage.NewEndpointDB(edb)
 
-	startChannelNetwork, startDnsNetwork := true, true
-	err = service.ScanNode.StartScanNode(startChannelNetwork, startDnsNetwork)
+	startChannelNetwork, startDnsNetwork, startTkNetwork := true, true, true
+	err = service.ScanNode.StartScanNode(startChannelNetwork, startDnsNetwork, startTkNetwork)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -247,10 +247,10 @@ func startScan(ctx *cli.Context, acc *account.Account) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = service.ScanNode.StartTrackerService()
-	if err != nil {
-		log.Fatal(err)
-	}
+	// err = service.ScanNode.StartTrackerService()
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 
 	if err := initRpc(ctx); err != nil {
 		log.Fatalf("rpc start err: %v", err.Error())
