@@ -158,12 +158,12 @@ func (this *Network) Start(address string) error {
 		this.P2p.EnableProxyMode(true)
 		this.P2p.SetProxyServer(this.proxyAddr)
 	}
-	this.P2p.SetNetworkID(1567481543)
+	this.P2p.SetNetworkID(config.Parameters.Base.TrackerNetworkId)
 	go this.P2p.Listen()
 	// go this.PeerStateChange(this.syncPeerState)
 
 	this.P2p.BlockUntilListening()
-	log.Debugf("tracker will BlockUntilProxyFinish..., networkid %d", 1567481543)
+	log.Debugf("tracker will BlockUntilProxyFinish..., networkid %d", config.Parameters.Base.TrackerNetworkId)
 	if len(this.proxyAddr) > 0 {
 		switch protocol {
 		case "udp":
