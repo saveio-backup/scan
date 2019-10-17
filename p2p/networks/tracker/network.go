@@ -87,7 +87,7 @@ func (this *Network) Protocol() string {
 	return this.PublicAddr()[:idx]
 }
 
-func (this *Network) Start(address string) error {
+func (this *Network) Start(address string, networkId uint32) error {
 	protocolIndex := strings.Index(address, "://")
 	if protocolIndex == -1 {
 		return errors.New("invalid address")
@@ -158,12 +158,11 @@ func (this *Network) Start(address string) error {
 		this.P2p.EnableProxyMode(true)
 		this.P2p.SetProxyServer(this.proxyAddr)
 	}
-	this.P2p.SetNetworkID(config.Parameters.Base.TrackerNetworkId)
+	this.P2p.SetNetworkID(networkId)
 	go this.P2p.Listen()
-	// go this.PeerStateChange(this.syncPeerState)
 
 	this.P2p.BlockUntilListening()
-	log.Debugf("tracker will BlockUntilProxyFinish..., networkid %d", config.Parameters.Base.TrackerNetworkId)
+	log.Debugf("tracker will BlockUntilProxyFinish..., networkid %d", networkId)
 	if len(this.proxyAddr) > 0 {
 		switch protocol {
 		case "udp":

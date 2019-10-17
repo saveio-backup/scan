@@ -212,7 +212,7 @@ func (this *Node) SetupTkNetwork() error {
 	tkActServer.SetNetwork(this.TkNet)
 	tk_actor_client.SetTrackerServerPid(tkActServer.GetLocalPID())
 
-	err = this.TkNet.Start(tkListenAddr)
+	err = this.TkNet.Start(tkListenAddr, config.Parameters.Base.TrackerNetworkId)
 	if err != nil {
 		return err
 	}
