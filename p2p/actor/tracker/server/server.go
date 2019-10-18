@@ -51,6 +51,12 @@ func (this *TrackerActorServer) SetNetwork(n *network.Network) {
 	this.net = n
 }
 
+func (this *TrackerActorServer) Stop() {
+	TrackerServerPid.Stop()
+	this.net.Stop()
+	log.Debugf("tracker server stop")
+}
+
 func (this *TrackerActorServer) Receive(ctx actor.Context) {
 	switch msg := ctx.Message().(type) {
 	case *actor.Restarting:
