@@ -556,12 +556,13 @@ func (this *TrackerService) onAnnounceCompleteTorrent(aReq *tkpm.AnnounceRequest
 		torrent.Seeders += 1
 		torrent.Leechers -= 1
 		pi.Complete = true
+		pi.Timestamp = time.Now()
+		pi.Print()
 		torrent.Peers[pi.NodeAddr.String()] = pi
 		storage.TDB.PutTorrent(req.InfoHash, torrent)
 	}
 
 	piBinarys := pi.Serialize()
-	log.Debugf("PeerInfo Binary: %v\n", piBinarys)
 	if this.DnsAct != nil {
 		this.DnsAct.Tell(&tkpm.Torrent{InfoHash: req.InfoHash, Left: 0, Peerinfo: piBinarys, Type: 0})
 	}

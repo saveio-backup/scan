@@ -20,7 +20,7 @@ func CheckTorrent(fileHash string) ([]*storage.PeerInfo, error) {
 		return nil, errors.NewErr(fmt.Sprintf("invalid fileHash len is %d, not 46", len(fileHash)))
 	}
 
-	torrentPeers, _, _, err := storage.TDB.GetTorrentPeersByFileHash([]byte(fileHash), -1)
+	torrentPeers, _, _, err := storage.TDB.GetTorrentPeersByFileHash([]byte(fileHash), storage.DEFAULT_NUMWANT_TO_GET_ALL_PEERS)
 	return torrentPeers, err
 }
 

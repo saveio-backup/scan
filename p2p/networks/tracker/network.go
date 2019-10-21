@@ -162,7 +162,7 @@ func (this *Network) Start(address string, networkId uint32) error {
 	go this.P2p.Listen()
 
 	this.P2p.BlockUntilListening()
-	log.Debugf("tracker will BlockUntilProxyFinish..., networkid %d", networkId)
+	log.Debugf("tracker will BlockUntilProxyFinish..., networkId %d", networkId)
 	if len(this.proxyAddr) > 0 {
 		switch protocol {
 		case "udp":
