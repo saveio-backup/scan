@@ -381,7 +381,6 @@ func (this *TrackerService) ReceiveAnnounceMessage(message proto.Message, from s
 			this.HandleAnnounceResponseEvent(annResp, from)
 		}
 	case *tkpm.AnnounceResponseMessage:
-		this.ReceiveAnnounceResponseMessage(msg, from)
 		switch msg.GetResponse().GetEvent() {
 		case tkpm.AnnounceEvent_COMPLETE_TORRENT:
 			log.Debugf("AnnounceEvent_COMPLETE_TORRENT")
