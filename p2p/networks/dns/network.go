@@ -384,12 +384,7 @@ func (this *Network) Receive(message proto.Message, from string) error {
 }
 
 func (this *Network) OnBusinessMessage(message proto.Message, from string) error {
-	future := this.GetPID().RequestFuture(message,
-		REQ_TIMEOUT*time.Second)
-	if _, err := future.Result(); err != nil {
-		log.Error("[OnBusinessMessage] error: ", err)
-		return err
-	}
+	this.GetPID().Tell(message)
 	return nil
 }
 

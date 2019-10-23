@@ -106,7 +106,7 @@ func (this *TrackerActorServer) Receive(ctx actor.Context) {
 	case *pm.AnnounceResponseMessage:
 		log.Infof("tkact AnnounceResponseMessage %v", msg.GetResponse().From)
 		go func() {
-			this.tkSrv.ReceiveAnnounceMessage(msg, "tcp://40.73.100.114:37835")
+			this.tkSrv.ReceiveAnnounceMessage(msg, msg.GetResponse().From)
 		}()
 	default:
 		log.Error("[P2PActor] receive unknown message type!")

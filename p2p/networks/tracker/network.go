@@ -372,18 +372,12 @@ func (this *Network) Receive(message proto.Message, from string) error {
 		msg.GetResponse().From = from
 		this.OnBusinessMessage(msg)
 	default:
-		log.Debugf("[MSB Receive] receive Unknown message from peer:%s.", from)
 	}
 	return nil
 }
 
 func (this *Network) OnBusinessMessage(message proto.Message) error {
-	future := this.GetPID().RequestFuture(message,
-		REQ_TIMEOUT*time.Second)
-	if _, err := future.Result(); err != nil {
-		log.Error("[OnBusinessMessage] error: ", err)
-		return err
-	}
+	this.GetPID().Tell(message)
 	return nil
 }
 

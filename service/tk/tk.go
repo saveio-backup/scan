@@ -393,11 +393,11 @@ func (this *TrackerService) ReceiveAnnounceMessage(message proto.Message, from s
 		default:
 			log.Debugf("Unknown AnnounceEvent type")
 		}
-		this.ReceiveAnnounceResponseMessage(msg, from)
+		this.ReceiveAnnounceResponseMessage(msg)
 	}
 }
 
-func (this *TrackerService) ReceiveAnnounceResponseMessage(annRespMsg *tkpm.AnnounceResponseMessage, from string) {
+func (this *TrackerService) ReceiveAnnounceResponseMessage(annRespMsg *tkpm.AnnounceResponseMessage) {
 	log.Infof("ReceiveAnnounceResponseMessage %v", annRespMsg)
 	msg, ok := this.AnnounceMessageMap.Load(annRespMsg.Response.MessageIdentifier.MessageId)
 	if ok && msg != nil {
