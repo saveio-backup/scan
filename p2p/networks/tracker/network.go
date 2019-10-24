@@ -229,6 +229,7 @@ func (this *Network) Connect(tAddr string) error {
 
 	this.addressForHealthCheck.Store(tAddr, struct{}{})
 	this.P2p.Bootstrap(tAddr)
+	this.addressForHealthCheck.Delete(tAddr)
 	return nil
 }
 

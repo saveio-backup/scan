@@ -44,7 +44,7 @@ const (
 )
 
 type AnnounceMessageItem struct {
-	MsgID       *tkpm.MessageID
+	MsgID       *tkpm.MsgID
 	AnnRequest  *tkpm.AnnounceRequest
 	AnnResponse *tkpm.AnnounceResponse
 	Action      AnnounceAction             // "request" or "response"
@@ -93,7 +93,7 @@ func (this *TrackerService) ConnectDns(targetDnsAddr string) error {
 func (this *TrackerService) HandleAnnounceRequestEvent(annReq *tkpm.AnnounceRequest) (*tkpm.AnnounceResponse, error) {
 	log.Debugf("HandleAnnounceRequestEvent")
 	if annReq.MessageIdentifier == nil {
-		annReq.MessageIdentifier = &tkpm.MessageID{
+		annReq.MessageIdentifier = &tkpm.MsgID{
 			MessageId: uint64(GetMsgID()),
 		}
 	}
@@ -155,7 +155,7 @@ func (this *TrackerService) HandleAnnounceResponseEvent(annRes *tkpm.AnnounceRes
 	return nil
 }
 
-func (this *TrackerService) SignAndSend(target string, msgId *tkpm.MessageID, message proto.Message) (err error) {
+func (this *TrackerService) SignAndSend(target string, msgId *tkpm.MsgID, message proto.Message) (err error) {
 	switch msg := message.(type) {
 	case *tkpm.AnnounceRequest:
 		var rawData []byte
@@ -193,7 +193,7 @@ func (this *TrackerService) SignAndSend(target string, msgId *tkpm.MessageID, me
 
 		go tkActClient.P2pSend(target, &tkpm.AnnounceRequestMessage{
 			Request: msg,
-			Signature: &tkpm.SignedMessage{
+			Signature: &tkpm.SignedMsg{
 				Signature: signature,
 				Publikkey: keypair.SerializePublicKey(this.PublicKey),
 			},
@@ -235,7 +235,7 @@ func (this *TrackerService) SignAndSend(target string, msgId *tkpm.MessageID, me
 
 		go tkActClient.P2pSend(target, &tkpm.AnnounceResponseMessage{
 			Response: msg,
-			Signature: &tkpm.SignedMessage{
+			Signature: &tkpm.SignedMsg{
 				Signature: signature,
 				Publikkey: keypair.SerializePublicKey(this.PublicKey),
 			},

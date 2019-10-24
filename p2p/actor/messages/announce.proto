@@ -2,11 +2,11 @@ syntax = "proto3";
 
 package messages;
 
-message MessageID {
+message MsgID {
     uint64 message_id = 1;
 }
 
-message SignedMessage {
+message SignedMsg {
     bytes signature = 1;
     bytes publikkey = 2;
 }
@@ -69,7 +69,7 @@ message QueryEndpointReq {
 }
 
 message AnnounceRequest {
-    MessageID messageIdentifier = 1;
+    MsgID messageIdentifier = 1;
     CompleteTorrentReq completeTorrentReq = 2;
     GetTorrentPeersReq getTorrentPeersReq = 3;
     EndpointRegistryReq endpointRegistryReq = 4;
@@ -80,7 +80,7 @@ message AnnounceRequest {
 }
 
 message AnnounceResponse {
-    MessageID messageIdentifier = 1;
+    MsgID messageIdentifier = 1;
     CompleteTorrentRet completeTorrentRet = 2;
     GetTorrentPeersRet getTorrentPeersRet = 3;
     EndpointRegistryRet endpointRegistryRet = 4;
@@ -93,10 +93,10 @@ message AnnounceResponse {
 
 message AnnounceRequestMessage {
     AnnounceRequest request = 1;
-    SignedMessage signature = 2;
+    SignedMsg signature = 2;
 }
 
 message AnnounceResponseMessage {
     AnnounceResponse response = 1;
-    SignedMessage signature = 2;
+    SignedMsg signature = 2;
 }
