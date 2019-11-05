@@ -158,6 +158,7 @@ func (this *Network) Start(address string, networkId uint32) error {
 		this.P2p.EnableProxyMode(true)
 		this.P2p.SetProxyServer(this.proxyAddr)
 	}
+	this.P2p.SetDialTimeout(time.Duration(5) * time.Second)
 	this.P2p.SetNetworkID(networkId)
 	go this.P2p.Listen()
 
