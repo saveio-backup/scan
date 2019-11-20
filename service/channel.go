@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/ontio/ontology-eventbus/actor"
-	"github.com/saveio/dsp-go-sdk/channel"
+	"github.com/saveio/dsp-go-sdk/core/channel"
 	"github.com/saveio/dsp-go-sdk/store"
 	chActorClient "github.com/saveio/pylons/actor/client"
 	ch_actor "github.com/saveio/pylons/actor/server"

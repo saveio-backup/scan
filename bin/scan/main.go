@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/saveio/carrier/network"
-	"github.com/saveio/dsp-go-sdk"
+	"github.com/saveio/dsp-go-sdk/dsp"
 	"github.com/saveio/edge/common"
 	"github.com/saveio/pylons"
 	"github.com/saveio/scan/cmd"

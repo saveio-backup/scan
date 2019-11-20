@@ -9,8 +9,8 @@ import (
 	"github.com/saveio/carrier/crypto"
 	"github.com/saveio/carrier/crypto/ed25519"
 
-	"github.com/saveio/dsp-go-sdk/channel"
 	dspCfg "github.com/saveio/dsp-go-sdk/config"
+	"github.com/saveio/dsp-go-sdk/core/channel"
 	"github.com/saveio/scan/common/config"
 	ch_actor_server "github.com/saveio/scan/p2p/actor/channel/server"
 	dns_actor_server "github.com/saveio/scan/p2p/actor/dns/server"
