@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/ontio/ontology/common/serialization"
 	"github.com/saveio/scan/storage"
 	chainCom "github.com/saveio/themis/common"
 	"github.com/saveio/themis/common/log"
+	"github.com/saveio/themis/common/serialization"
 )
 
 const (
