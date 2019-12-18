@@ -961,7 +961,7 @@ func CloseChannel(params []interface{}) map[string]interface{} {
 		log.Errorf("OpenChannel error: %s", err)
 		return responsePack(berr.INTERNAL_ERROR, err.Error())
 	}
-	fmt.Printf("rpc/interface/openchannel partneraddr:%s\n", partnerAddrstr)
+	fmt.Printf("rpc/interface/closechannel partneraddr:%s\n", partnerAddrstr)
 
 	return responseSuccess(&httpComm.SuccessRsp{})
 }

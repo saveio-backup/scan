@@ -13,6 +13,7 @@ import (
 	"github.com/saveio/carrier/crypto"
 	"github.com/saveio/carrier/crypto/ed25519"
 	"github.com/saveio/carrier/network"
+	"github.com/saveio/carrier/network/components/ackreply"
 	"github.com/saveio/carrier/network/components/keepalive"
 	"github.com/saveio/carrier/network/components/proxy"
 	"github.com/saveio/carrier/types/opcode"
@@ -126,6 +127,12 @@ func (this *Network) Start(address string, networkId uint32) error {
 	this.keepalive = keepalive.New(options...)
 
 	builder.AddComponent(this.keepalive)
+
+	ackOption := []ackreply.ComponentOption{
+		ackreply.WithAckCheckedInterval(time.Second * 3),
+		ackreply.WithAckMessageTimeout(time.Second * 10),
+	}
+	builder.AddComponent(ackreply.New(ackOption...))
 
 	if len(this.proxyAddr) > 0 {
 		switch protocol {
