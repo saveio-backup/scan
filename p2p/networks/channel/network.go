@@ -20,6 +20,7 @@ import (
 	"github.com/saveio/dsp-go-sdk/network/common"
 	act "github.com/saveio/pylons/actor/server"
 	"github.com/saveio/pylons/network/transport/messages"
+	scanCom "github.com/saveio/scan/common"
 	"github.com/saveio/scan/common/config"
 	"github.com/saveio/themis/common/log"
 )
@@ -151,9 +152,10 @@ func (this *Network) Start(address string) error {
 
 	builder.AddComponent(this.keepalive)
 
+	// add ack reply
 	ackOption := []ackreply.ComponentOption{
-		ackreply.WithAckCheckedInterval(time.Second * 3),
-		ackreply.WithAckMessageTimeout(time.Second * 10),
+		ackreply.WithAckCheckedInterval(time.Second * scanCom.ACK_MSG_CHECK_INTERVAL),
+		ackreply.WithAckMessageTimeout(time.Second * scanCom.MAX_ACK_MSG_TIMEOUT),
 	}
 	builder.AddComponent(ackreply.New(ackOption...))
 

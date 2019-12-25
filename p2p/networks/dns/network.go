@@ -18,6 +18,7 @@ import (
 	"github.com/saveio/carrier/network/components/proxy"
 	"github.com/saveio/carrier/types/opcode"
 	"github.com/saveio/dsp-go-sdk/network/common"
+	scanCom "github.com/saveio/scan/common"
 	"github.com/saveio/scan/common/config"
 	pm "github.com/saveio/scan/p2p/actor/messages"
 	"github.com/saveio/themis/common/log"
@@ -127,9 +128,10 @@ func (this *Network) Start(address string) error {
 	this.keepalive = keepalive.New(options...)
 	builder.AddComponent(this.keepalive)
 
+	// add ack reply
 	ackOption := []ackreply.ComponentOption{
-		ackreply.WithAckCheckedInterval(time.Second * 3),
-		ackreply.WithAckMessageTimeout(time.Second * 10),
+		ackreply.WithAckCheckedInterval(time.Second * scanCom.ACK_MSG_CHECK_INTERVAL),
+		ackreply.WithAckMessageTimeout(time.Second * scanCom.MAX_ACK_MSG_TIMEOUT),
 	}
 	builder.AddComponent(ackreply.New(ackOption...))
 
