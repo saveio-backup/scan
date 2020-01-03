@@ -112,13 +112,7 @@ func (this *Network) Protocol() string {
 	return this.PublicAddr()[:idx]
 }
 
-func (this *Network) Start(address string) error {
-	protocolIndex := strings.Index(address, "://")
-	if protocolIndex == -1 {
-		return errors.New("invalid address")
-	}
-	protocol := address[:protocolIndex]
-	log.Debugf("channel address: %s", address)
+func (this *Network) Start(protocol, addr, port string) error {
 	builderOpt := []network.BuilderOption{
 		network.WriteFlushLatency(1 * time.Millisecond),
 		network.WriteTimeout(int(time.Duration(30))),
@@ -131,8 +125,13 @@ func (this *Network) Start(address string) error {
 		log.Debugf("channel use RandomKeyPair key")
 		builder.SetKeys(ed25519.RandomKeyPair())
 	}
-
-	builder.SetAddress(address)
+	intranet := "127.0.0.1"
+	if len(config.Parameters.Base.IntranetIP) > 0 {
+		intranet = config.Parameters.Base.IntranetIP
+	}
+	log.Debugf("network start at %s, listen addr %s", fmt.Sprintf("%s://%s:%s", protocol, intranet, port), fmt.Sprintf("%s://%s:%s", protocol, addr, port))
+	builder.SetListenAddr(fmt.Sprintf("%s://%s:%s", protocol, intranet, port))
+	builder.SetAddress(fmt.Sprintf("%s://%s:%s", protocol, addr, port))
 	component := new(NetComponent)
 	component.Net = this
 	builder.AddComponent(component)

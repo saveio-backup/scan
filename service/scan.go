@@ -138,14 +138,10 @@ func (this *Node) SetupChannelNetwork() error {
 	this.ChannelNet.SetNetworkKey(chNetworkKey)
 	this.ChannelNet.SetProxyServer(config.Parameters.Base.NATProxyServerAddr)
 	this.ChannelNet.SetPID(chActServer.GetLocalPID())
-	chListenAddr := fmt.Sprintf("%s://%s:%d",
-		config.Parameters.Base.ChannelProtocol,
-		config.Parameters.Base.PublicIP,
-		int(config.Parameters.Base.PortBase+config.Parameters.Base.ChannelPortOffset))
-	log.Debugf("goto start channel network %s", chListenAddr)
 	chActServer.SetNetwork(this.ChannelNet)
 
-	return this.ChannelNet.Start(chListenAddr)
+	return this.ChannelNet.Start(config.Parameters.Base.ChannelProtocol, config.Parameters.Base.PublicIP,
+		fmt.Sprintf("%d", int(config.Parameters.Base.PortBase+config.Parameters.Base.ChannelPortOffset)))
 }
 
 func (this *Node) SetupDnsNetwork() error {
@@ -166,15 +162,12 @@ func (this *Node) SetupDnsNetwork() error {
 	this.DnsNet.SetNetworkKey(dnsNetworkKey)
 	this.DnsNet.SetProxyServer(config.Parameters.Base.NATProxyServerAddr)
 	this.DnsNet.SetPID(dnsActServer.GetLocalPID())
-	dnsListenAddr := fmt.Sprintf("%s://%s:%d",
-		config.Parameters.Base.DnsProtocol,
-		config.Parameters.Base.PublicIP,
-		int(config.Parameters.Base.PortBase+config.Parameters.Base.DnsPortOffset))
-	log.Debugf("goto start dns network %s", dnsListenAddr)
+
 	dns_net.DnsP2p = this.DnsNet
 	dnsActServer.SetNetwork(this.DnsNet)
 
-	err = this.DnsNet.Start(dnsListenAddr)
+	err = this.DnsNet.Start(config.Parameters.Base.DnsProtocol, config.Parameters.Base.PublicIP,
+		fmt.Sprintf("%d", int(config.Parameters.Base.PortBase+config.Parameters.Base.DnsPortOffset)))
 	if err != nil {
 		return err
 	}
@@ -203,16 +196,13 @@ func (this *Node) SetupTkNetwork() error {
 	this.TkNet.SetNetworkKey(tkNetworkKey)
 	this.TkNet.SetProxyServer(config.Parameters.Base.NATProxyServerAddr)
 	this.TkNet.SetPID(tkActServer.GetLocalPID())
-	tkListenAddr := fmt.Sprintf("%s://%s:%d",
-		config.Parameters.Base.TrackerProtocol,
-		config.Parameters.Base.PublicIP,
-		int(config.Parameters.Base.PortBase+config.Parameters.Base.TrackerPortOffset))
-	log.Infof("goto start tk network %s", tkListenAddr)
 	tk_net.TkP2p = this.TkNet
 	tkActServer.SetNetwork(this.TkNet)
 	tk_actor_client.SetTrackerServerPid(tkActServer.GetLocalPID())
 
-	err = this.TkNet.Start(tkListenAddr, config.Parameters.Base.TrackerNetworkId)
+	err = this.TkNet.Start(config.Parameters.Base.TrackerProtocol, config.Parameters.Base.PublicIP,
+		fmt.Sprintf("%d", int(config.Parameters.Base.PortBase+config.Parameters.Base.TrackerPortOffset)),
+		config.Parameters.Base.TrackerNetworkId)
 	if err != nil {
 		return err
 	}

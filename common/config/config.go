@@ -61,6 +61,7 @@ type BaseConfig struct {
 	LogLevel           uint   `json:"LogLevel"`
 	LogStderr          bool   `json:"LogStderr"`
 	PublicIP           string `json:"PublicIP"`
+	IntranetIP         string `json:"IntranetIP"`
 	PortBase           uint   `json:"PortBase"`
 	LocalRpcPortOffset uint   `json:"LocalRpcPortOffset"`
 	EnableLocalRpc     bool   `json:"EnableLocalRpc"`
