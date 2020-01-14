@@ -145,6 +145,7 @@ func (this *Node) SetupChannelNetwork() error {
 }
 
 func (this *Node) SetupDnsNetwork() error {
+	log.Debugf("setup dns network")
 	dnsActServer, err := dns_actor_server.NewP2PActor()
 	if err != nil {
 		return err
@@ -171,14 +172,16 @@ func (this *Node) SetupDnsNetwork() error {
 	if err != nil {
 		return err
 	}
-
+	log.Debugf("setup dns network success")
 	return this.SendConnectMsgToAllDns()
 }
 
 func (this *Node) SetupTkNetwork() error {
+	log.Debugf("setup tk network")
 	tkSrv := tk.NewTrackerService(this.DnsNet.GetPID(), this.Account.PublicKey, func(raw []byte) ([]byte, error) {
 		return chainsdk.Sign(this.Account, raw)
 	})
+	tkSrv.SetCheckWhiteListFn(this.InWhiteListOrNot)
 	tkActServer, err := tk_actor_server.NewTrackerActor(tkSrv)
 	if err != nil {
 		return err

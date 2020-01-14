@@ -28,13 +28,13 @@ import (
 	"github.com/saveio/themis/crypto/keypair"
 )
 
-var natProxyServerAddr = "tcp://40.73.100.114:6007"
+var natProxyServerAddr = "tcp://106.75.9.56:6007"
 var tkListenAddr = "tcp://127.0.0.1:10887"
-var targetDnsAddr = "tcp://40.73.102.177:10340"
+var targetDnsAddr = "tcp://127.0.0.1:10340"
 var walletFile = "./wallet.dat"
 var walletPwd = "pwd"
 
-var ids = "QmaRDZPe3QdnvCaUPUafk3EUMkWfsc4mtTosTDQQ9m4aaa"
+var ids = "zb2rhftH77jSEeLvZvNjFtBrSFWwXph3JNtw1UMbnKGQ2Pmz4"
 
 // var ids = "zb2rhmiu2V1kTDk5SRRo2F7b5WAivNDzQeDq7Qm3RNVndh5Gz"
 // var ids = "zb2rhmFsUmnSMrZodXs9vjjZePJPdxjVjXzbNRQNXpahe4"
@@ -146,7 +146,7 @@ func StartTkActServer(tkSrc *tk.TrackerService, acc *account.Account) (*tkActSer
 	tk_net.TkP2p = tkNet
 	tkActServer.SetNetwork(tkNet)
 
-	err = tkNet.Start(tkListenAddr)
+	err = tkNet.Start("tcp", "127.0.0.1", "10887", 1567651915)
 	if err != nil {
 		return nil, err
 	}

@@ -20,6 +20,7 @@ import (
 	chainsdk "github.com/saveio/themis-go-sdk/utils"
 	theComm "github.com/saveio/themis/common"
 	"github.com/saveio/themis/common/log"
+	"github.com/saveio/themis/core/types"
 	"github.com/saveio/themis/crypto/keypair"
 )
 
@@ -51,11 +52,18 @@ type AnnounceMessageItem struct {
 	ChStatus    chan AnnounceMessageStatus // "request processed"、"response delivered"
 }
 
+type CryptoIdentity struct {
+	PubKey  keypair.PublicKey
+	RawData []byte
+	Sign    []byte
+}
+
 type TrackerService struct {
 	AnnounceMessageMap *sync.Map
 	DnsAct             *actor.PID
 	PublicKey          keypair.PublicKey
 	SignFn             func(rawData []byte) ([]byte, error)
+	CheckWhiteListFn   func(fileHash string, WallAddr theComm.Address) (bool, error)
 }
 
 func NewTrackerService(dnsAct *actor.PID, pubKey keypair.PublicKey, _sigCallback func(rawData []byte) ([]byte, error)) *TrackerService {
@@ -69,6 +77,10 @@ func NewTrackerService(dnsAct *actor.PID, pubKey keypair.PublicKey, _sigCallback
 
 func (this *TrackerService) SetDnsActor(dnsAct *actor.PID) {
 	this.DnsAct = dnsAct
+}
+
+func (this *TrackerService) SetCheckWhiteListFn(_getWhiteListAddrsCallback func(string, theComm.Address) (bool, error)) {
+	this.CheckWhiteListFn = _getWhiteListAddrsCallback
 }
 
 func (this *TrackerService) Start(targetDnsAddr string) {
@@ -247,89 +259,80 @@ func (this *TrackerService) SignAndSend(target string, msgId *tkpm.MsgID, messag
 	return nil
 }
 
-func (this *TrackerService) CheckSign(message proto.Message) (err error) {
+func (this *TrackerService) GetCryptoInfo(message proto.Message) (CryptoIdentity, error) {
+	var err error
+	var id CryptoIdentity
+	var pubKeyBuf []byte
+
 	switch msg := message.(type) {
 	case *tkpm.AnnounceRequestMessage:
-		var rawData []byte
 		switch msg.GetRequest().Event {
 		case tkpm.AnnounceEvent_COMPLETE_TORRENT:
-			rawData, err = proto.Marshal(msg.Request.CompleteTorrentReq)
-			if err != nil {
-				return err
-			}
+			id.RawData, err = proto.Marshal(msg.Request.CompleteTorrentReq)
 		case tkpm.AnnounceEvent_QUERY_TORRENT_PEERS:
-			rawData, err = proto.Marshal(msg.Request.GetTorrentPeersReq)
-			if err != nil {
-				return err
-			}
+			id.RawData, err = proto.Marshal(msg.Request.GetTorrentPeersReq)
 		case tkpm.AnnounceEvent_ENDPOINT_REGISTRY:
-			rawData, err = proto.Marshal(msg.Request.EndpointRegistryReq)
-			if err != nil {
-				return err
-			}
+			id.RawData, err = proto.Marshal(msg.Request.EndpointRegistryReq)
 		case tkpm.AnnounceEvent_QUERY_ENDPOINT:
-			rawData, err = proto.Marshal(msg.Request.QueryEndpointReq)
-			if err != nil {
-				return err
-			}
+			id.RawData, err = proto.Marshal(msg.Request.QueryEndpointReq)
 		}
-		if len(rawData) == 0 {
-			return errors.New("rawData null")
-		}
-
-		pubKey, err := keypair.DeserializePublicKey(msg.Signature.Publikkey)
-		if err != nil {
-			return err
-		}
-		log.Debugf("tkpm.AnnounceRequestMessage RawData: %v, PublicKey: %v, Signature: %v", rawData, pubKey, msg.Signature.Signature)
-		return chainsdk.Verify(pubKey, rawData, msg.Signature.Signature)
+		id.Sign = msg.Signature.Signature
+		pubKeyBuf = msg.Signature.Publikkey
 	case *tkpm.AnnounceResponseMessage:
-		var rawData []byte
 		switch msg.GetResponse().Event {
 		case tkpm.AnnounceEvent_COMPLETE_TORRENT:
-			rawData, err = proto.Marshal(msg.Response.CompleteTorrentRet)
-			if err != nil {
-				return err
-			}
+			id.RawData, err = proto.Marshal(msg.Response.CompleteTorrentRet)
 		case tkpm.AnnounceEvent_QUERY_TORRENT_PEERS:
-			rawData, err = proto.Marshal(msg.Response.GetTorrentPeersRet)
-			if err != nil {
-				return err
-			}
+			id.RawData, err = proto.Marshal(msg.Response.GetTorrentPeersRet)
 		case tkpm.AnnounceEvent_ENDPOINT_REGISTRY:
-			rawData, err = proto.Marshal(msg.Response.EndpointRegistryRet)
-			if err != nil {
-				return err
-			}
+			id.RawData, err = proto.Marshal(msg.Response.EndpointRegistryRet)
 		case tkpm.AnnounceEvent_QUERY_ENDPOINT:
-			rawData, err = proto.Marshal(msg.Response.QueryEndpointRet)
-			if err != nil {
-				return err
-			}
+			id.RawData, err = proto.Marshal(msg.Response.QueryEndpointRet)
 		}
-		if len(rawData) == 0 {
-			return errors.New("rawData null")
-		}
-		pubKey, err := keypair.DeserializePublicKey(msg.Signature.Publikkey)
-		if err != nil {
-			return err
-		}
-		log.Debugf("tkpm.AnnounceResponseMessage RawData: %v, PublicKey: %v, Signature: %v", rawData, pubKey, msg.Signature.Signature)
-		return chainsdk.Verify(pubKey, rawData, msg.Signature.Signature)
+		id.Sign = msg.Signature.Signature
+		pubKeyBuf = msg.Signature.Publikkey
 	}
-	return errors.New("unkonwn message type to CheckSign")
+	log.Debugf("get crypto info id: %v, err: %v", id, err)
+
+	if err != nil {
+		return id, err
+	}
+	if len(id.RawData) == 0 {
+		return id, errors.New("raw data nil")
+	}
+
+	id.PubKey, err = keypair.DeserializePublicKey(pubKeyBuf)
+	if err != nil {
+		return id, err
+	}
+	return id, nil
+}
+
+func (this *TrackerService) CheckSign(message proto.Message) (err error) {
+	id, err := this.GetCryptoInfo(message)
+	if err != nil {
+		return err
+	}
+	log.Debugf("tk check sign pubKey: %v, rawData: %v, sign: %v", id.PubKey, id.RawData, id.Sign)
+	return chainsdk.Verify(id.PubKey, id.RawData, id.Sign)
 }
 
 func (this *TrackerService) ReceiveAnnounceMessage(message proto.Message, from string) {
-	log.Debug("[NetComponent] Receive: ", reflect.TypeOf(message).String(), " From: ", from)
-	if err := this.CheckSign(message); err != nil {
-		log.Errorf("CheckSign failed: %v", err)
+	log.Debug("receive announce message: ", reflect.TypeOf(message).String(), " from: ", from)
+	id, err := this.GetCryptoInfo(message)
+	log.Debugf("crypto info: %v, err: %v", id, err)
+	if err != nil {
+		return
+	}
+	log.Debugf("tk check sign pubKey: %v, rawData: %v, sign: %v", id.PubKey, id.RawData, id.Sign)
+	if err := chainsdk.Verify(id.PubKey, id.RawData, id.Sign); err != nil {
+		log.Errorf("check sign failed: %v", err)
 		return
 	}
 	switch msg := message.(type) {
 	case *tkpm.AnnounceRequestMessage:
 		log.Debugf("msg type %s", msg.GetRequest().Event.String())
-		annResp, err := this.onAnnounce(msg.GetRequest())
+		annResp, err := this.onAnnounce(msg.GetRequest(), id)
 		log.Debugf("onAnnounce annResp: %v, Err: %v", annResp, err)
 
 		if err != nil {
@@ -409,12 +412,12 @@ func (this *TrackerService) ReceiveAnnounceResponseMessage(annRespMsg *tkpm.Anno
 	}
 }
 
-func (this *TrackerService) onAnnounce(aReq *tkpm.AnnounceRequest) (*tkpm.AnnounceResponse, error) {
+func (this *TrackerService) onAnnounce(aReq *tkpm.AnnounceRequest, id CryptoIdentity) (*tkpm.AnnounceResponse, error) {
 	switch aReq.Event {
 	case tkpm.AnnounceEvent_COMPLETE_TORRENT:
 		return this.onAnnounceCompleteTorrent(aReq)
 	case tkpm.AnnounceEvent_QUERY_TORRENT_PEERS:
-		return this.onAnnounceQueryTorrentPeers(aReq)
+		return this.onAnnounceQueryTorrentPeers(aReq, id)
 	case tkpm.AnnounceEvent_ENDPOINT_REGISTRY:
 		return this.onAnnounceEndpointRegistry(aReq)
 	case tkpm.AnnounceEvent_QUERY_ENDPOINT:
@@ -486,13 +489,17 @@ func (this *TrackerService) onAnnounceQueryEndpoint(aReq *tkpm.AnnounceRequest) 
 
 }
 
-func (this *TrackerService) onAnnounceQueryTorrentPeers(aReq *tkpm.AnnounceRequest) (*tkpm.AnnounceResponse, error) {
+func (this *TrackerService) onAnnounceQueryTorrentPeers(aReq *tkpm.AnnounceRequest, id CryptoIdentity) (*tkpm.AnnounceResponse, error) {
 	req := aReq.GetTorrentPeersReq
 	if req == nil {
 		return nil, errors.New("request.GetTorrentPeersReq is nil")
 	}
 	if storage.TDB == nil {
 		return nil, errors.New("storage.TDB is nil")
+	}
+	pass, _ := this.CheckWhiteListFn(string(req.InfoHash), types.AddressFromPubKey(id.PubKey))
+	if !pass {
+		return nil, fmt.Errorf("ban this query out whitelist")
 	}
 	pis, _, _, err := storage.TDB.GetTorrentPeersByFileHash(req.InfoHash, int32(req.NumWant))
 	if err != nil && err.Error() != "not found" {
