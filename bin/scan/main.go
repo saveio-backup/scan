@@ -232,17 +232,17 @@ func startScan(ctx *cli.Context, acc *account.Account) {
 		log.Fatal(err)
 	}
 	storage.EDB = storage.NewEndpointDB(edb)
+	tdb, err := storage.NewLevelDBStore(config.TrackerDBPath())
+	if err != nil {
+		log.Fatal(err)
+	}
+	storage.TDB = storage.NewTorrentDB(tdb)
 
 	startChannelNetwork, startDnsNetwork, startTkNetwork := true, true, true
 	err = service.ScanNode.StartScanNode(startChannelNetwork, startDnsNetwork, startTkNetwork)
 	if err != nil {
 		log.Fatal(err)
 	}
-	tdb, err := storage.NewLevelDBStore(config.TrackerDBPath())
-	if err != nil {
-		log.Fatal(err)
-	}
-	storage.TDB = storage.NewTorrentDB(tdb)
 
 	if err != nil {
 		log.Fatal(err)
