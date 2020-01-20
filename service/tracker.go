@@ -21,7 +21,7 @@ func (this *Node) StartTrackerService() error {
 	return nil
 }
 
-func (this Node) RegOtherDnsEndpointsToSelf() error {
+func (this *Node) RegOtherDnsEndpointsToSelf() error {
 	publicAddr := this.ChannelNet.PublicAddr()
 	index := strings.Index(publicAddr, "://")
 	hostPort := publicAddr
