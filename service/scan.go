@@ -6,19 +6,15 @@ import (
 	"net"
 	"strings"
 
-	"github.com/saveio/carrier/crypto"
-	"github.com/saveio/carrier/crypto/ed25519"
-
 	dspCfg "github.com/saveio/dsp-go-sdk/config"
 	"github.com/saveio/dsp-go-sdk/core/channel"
+	dspUtils "github.com/saveio/dsp-go-sdk/utils"
 	"github.com/saveio/scan/common/config"
 	ch_actor_server "github.com/saveio/scan/p2p/actor/channel/server"
 	dns_actor_server "github.com/saveio/scan/p2p/actor/dns/server"
 	tk_actor_client "github.com/saveio/scan/p2p/actor/tracker/client"
 	tk_actor_server "github.com/saveio/scan/p2p/actor/tracker/server"
-	channel_net "github.com/saveio/scan/p2p/networks/channel"
-	dns_net "github.com/saveio/scan/p2p/networks/dns"
-	tk_net "github.com/saveio/scan/p2p/networks/tracker"
+	"github.com/saveio/scan/p2p/network"
 	tk "github.com/saveio/scan/service/tk"
 	themisSdk "github.com/saveio/themis-go-sdk"
 	chainsdk "github.com/saveio/themis-go-sdk/utils"
@@ -36,9 +32,9 @@ type Node struct {
 	Config     *dspCfg.DspConfig
 	Account    *account.Account
 	Chain      *themisSdk.Chain
-	DnsNet     *dns_net.Network
-	ChannelNet *channel_net.Network
-	TkNet      *tk_net.Network
+	DnsNet     *network.Network
+	ChannelNet *network.Network
+	TkNet      *network.Network
 	Channel    *channel.Channel
 	// Db         *storage.LevelDBStore
 	PublicIp string
@@ -125,19 +121,15 @@ func (this *Node) SetupChannelNetwork() error {
 	if err != nil {
 		return err
 	}
-
-	cPub := keypair.SerializePublicKey(this.Account.PubKey())
-	chPub, chPri, err := ed25519.GenerateKey(&accountReader{
-		PublicKey: append(cPub, []byte("channel")...),
-	})
-	chNetworkKey := &crypto.KeyPair{
-		PublicKey:  chPub,
-		PrivateKey: chPri,
+	opts := []network.NetworkOption{
+		network.WithKeys(dspUtils.NewNetworkKeyPairWithAccount(this.Account)),
+		network.WithNetworkId(config.Parameters.Base.ChannelNetworkId),
+		network.WithWalletAddrFromPeerId(dspUtils.AddressFromPubkeyHex),
+		network.WithIntranetIP(config.Parameters.Base.IntranetIP),
+		network.WithOpcodes(network.ChannelOpCodes),
+		network.WithPid(chActServer.GetLocalPID()),
 	}
-	this.ChannelNet = channel_net.NewP2P()
-	this.ChannelNet.SetNetworkKey(chNetworkKey)
-	this.ChannelNet.SetProxyServer(config.Parameters.Base.NATProxyServerAddr)
-	this.ChannelNet.SetPID(chActServer.GetLocalPID())
+	this.ChannelNet = network.NewP2P(opts...)
 	chActServer.SetNetwork(this.ChannelNet)
 
 	return this.ChannelNet.Start(config.Parameters.Base.ChannelProtocol, config.Parameters.Base.PublicIP,
@@ -151,20 +143,16 @@ func (this *Node) SetupDnsNetwork() error {
 		return err
 	}
 
-	dPub := keypair.SerializePublicKey(this.Account.PubKey())
-	dnsPub, dnsPri, err := ed25519.GenerateKey(&accountReader{
-		PublicKey: append(dPub, []byte("dns")...),
-	})
-	dnsNetworkKey := &crypto.KeyPair{
-		PublicKey:  dnsPub,
-		PrivateKey: dnsPri,
+	opts := []network.NetworkOption{
+		network.WithKeys(dspUtils.NewNetworkKeyPairWithAccount(this.Account)),
+		network.WithNetworkId(config.Parameters.Base.DnsNetworkId),
+		network.WithWalletAddrFromPeerId(dspUtils.AddressFromPubkeyHex),
+		network.WithIntranetIP(config.Parameters.Base.IntranetIP),
+		network.WithOpcodes(network.TorrentOpCodes),
+		network.WithPid(dnsActServer.GetLocalPID()),
 	}
-	this.DnsNet = dns_net.NewP2P()
-	this.DnsNet.SetNetworkKey(dnsNetworkKey)
-	this.DnsNet.SetProxyServer(config.Parameters.Base.NATProxyServerAddr)
-	this.DnsNet.SetPID(dnsActServer.GetLocalPID())
-
-	dns_net.DnsP2p = this.DnsNet
+	this.DnsNet = network.NewP2P(opts...)
+	network.DnsP2p = this.DnsNet
 	dnsActServer.SetNetwork(this.DnsNet)
 
 	err = this.DnsNet.Start(config.Parameters.Base.DnsProtocol, config.Parameters.Base.PublicIP,
@@ -187,29 +175,23 @@ func (this *Node) SetupTkNetwork() error {
 		return err
 	}
 
-	dPub := keypair.SerializePublicKey(this.Account.PubKey())
-	tkPub, tkPri, err := ed25519.GenerateKey(&accountReader{
-		PublicKey: append(dPub, []byte("tk")...),
-	})
-	tkNetworkKey := &crypto.KeyPair{
-		PublicKey:  tkPub,
-		PrivateKey: tkPri,
+	opts := []network.NetworkOption{
+		network.WithKeys(dspUtils.NewNetworkKeyPairWithAccount(this.Account)),
+		network.WithNetworkId(config.Parameters.Base.TrackerNetworkId),
+		network.WithWalletAddrFromPeerId(dspUtils.AddressFromPubkeyHex),
+		network.WithIntranetIP(config.Parameters.Base.IntranetIP),
+		network.WithOpcodes(network.TrackerOpCodes),
+		network.WithPid(tkActServer.GetLocalPID()),
 	}
-	this.TkNet = tk_net.NewP2P()
-	this.TkNet.SetNetworkKey(tkNetworkKey)
-	this.TkNet.SetProxyServer(config.Parameters.Base.NATProxyServerAddr)
-	this.TkNet.SetPID(tkActServer.GetLocalPID())
-	tk_net.TkP2p = this.TkNet
+	this.TkNet = network.NewP2P(opts...)
+	network.TkP2p = this.TkNet
 	tkActServer.SetNetwork(this.TkNet)
 	tk_actor_client.SetTrackerServerPid(tkActServer.GetLocalPID())
-
 	err = this.TkNet.Start(config.Parameters.Base.TrackerProtocol, config.Parameters.Base.PublicIP,
-		fmt.Sprintf("%d", int(config.Parameters.Base.PortBase+config.Parameters.Base.TrackerPortOffset)),
-		config.Parameters.Base.TrackerNetworkId)
+		fmt.Sprintf("%d", int(config.Parameters.Base.PortBase+config.Parameters.Base.TrackerPortOffset)))
 	if err != nil {
 		return err
 	}
-
 	log.Infof("tk public ip is %s", this.TkNet.PublicAddr())
 	return nil
 }
@@ -222,8 +204,14 @@ func (this *Node) SendConnectMsgToAllDns() error {
 
 	for _, dns := range allDns {
 		dnsPortOffset := config.Parameters.Base.PortBase + config.Parameters.Base.DnsPortOffset
-		log.Debugf("connect dns: %s\n", fmt.Sprintf("%s://%s:%d", config.Parameters.Base.DnsProtocol, dns.IP, dnsPortOffset))
-		err := this.DnsNet.ConnectAndWait(fmt.Sprintf("%s://%s:%d", config.Parameters.Base.DnsProtocol, dns.IP, dnsPortOffset))
+
+		if dns.WalletAddr.ToBase58() == this.Account.Address.ToBase58() {
+			continue
+		}
+		log.Debugf("connect dns: wallet %s, host: %s", dns.WalletAddr.ToBase58(),
+			fmt.Sprintf("%s://%s:%d", config.Parameters.Base.DnsProtocol, dns.IP, dnsPortOffset))
+		_, err := this.DnsNet.Connect(fmt.Sprintf("%s://%s:%d",
+			config.Parameters.Base.DnsProtocol, dns.IP, dnsPortOffset))
 		if err != nil {
 			log.Fatal(err)
 		}

@@ -255,6 +255,7 @@ func startScan(ctx *cli.Context, acc *account.Account) {
 	if err := initRpc(ctx); err != nil {
 		log.Fatalf("rpc start err: %v", err.Error())
 	}
+
 	log.Info("rpc start success.")
 	initRestful(ctx)
 	log.Info("restful start success.")

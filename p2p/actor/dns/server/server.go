@@ -10,7 +10,7 @@ import (
 	"github.com/ontio/ontology-eventbus/actor"
 	p2pNet "github.com/saveio/carrier/network"
 	pm "github.com/saveio/scan/p2p/actor/messages"
-	network "github.com/saveio/scan/p2p/networks/dns"
+	"github.com/saveio/scan/p2p/network"
 	"github.com/saveio/themis/common/log"
 )
 
@@ -123,7 +123,7 @@ func (this *P2PActor) Receive(ctx actor.Context) {
 }
 
 func (this *P2PActor) Broadcast(message proto.Message) {
-	ctx := p2pNet.WithSignMessage(context.Background(), true)
+	ctx := p2pNet.WithSignMessage(context.Background(), false)
 	this.net.P2p.Broadcast(ctx, message)
 }
 

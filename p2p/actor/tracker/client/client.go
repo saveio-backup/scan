@@ -20,8 +20,9 @@ func SetTrackerServerPid(p2pPid *actor.PID) {
 }
 
 type ConnectRet struct {
-	Done chan bool
-	Err  error
+	Done       chan bool
+	WalletAddr string
+	Err        error
 }
 
 type ConnectReq struct {
@@ -61,7 +62,7 @@ type RecvMsg struct {
 	Ret     *RecvMsgRet
 }
 
-func P2pConnect(address string) error {
+func P2pConnect(address string) (string, error) {
 	log.Infof("p2pConnnect address: %s", address)
 	ret := &ConnectRet{
 		Done: make(chan bool, 1),
@@ -71,7 +72,7 @@ func P2pConnect(address string) error {
 	TrackerServerPid.Tell(conRet)
 	<-conRet.Ret.Done
 	close(conRet.Ret.Done)
-	return conRet.Ret.Err
+	return conRet.Ret.WalletAddr, conRet.Ret.Err
 }
 
 func P2pClose(address string) error {

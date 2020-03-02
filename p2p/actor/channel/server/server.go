@@ -9,7 +9,7 @@ import (
 	p2pNet "github.com/saveio/carrier/network"
 	chact "github.com/saveio/pylons/actor/client"
 	"github.com/saveio/scan/p2p/actor/messages"
-	network "github.com/saveio/scan/p2p/networks/channel"
+	"github.com/saveio/scan/p2p/network"
 	"github.com/saveio/themis/common/log"
 )
 
@@ -64,12 +64,7 @@ func (this *P2PActor) Receive(ctx actor.Context) {
 		log.Warn("[P2p]actor restart")
 	case *chact.ConnectReq:
 		go func() {
-			msg.Ret.Err = this.net.Connect(msg.Address)
-			msg.Ret.Done <- true
-		}()
-	case *chact.CloseReq:
-		go func() {
-			msg.Ret.Err = this.net.Close(msg.Address)
+			_, msg.Ret.Err = this.net.Connect(msg.Address)
 			msg.Ret.Done <- true
 		}()
 	case *chact.SendReq:

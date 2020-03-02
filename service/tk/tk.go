@@ -99,7 +99,8 @@ func (this *TrackerService) Start(targetDnsAddr string) {
 }
 
 func (this *TrackerService) ConnectDns(targetDnsAddr string) error {
-	return tkActClient.P2pConnect(targetDnsAddr)
+	_, err := tkActClient.P2pConnect(targetDnsAddr)
+	return err
 }
 
 func (this *TrackerService) HandleAnnounceRequestEvent(annReq *tkpm.AnnounceRequest) (*tkpm.AnnounceResponse, error) {
@@ -163,7 +164,12 @@ func (this *TrackerService) HandleAnnounceRequestEvent(annReq *tkpm.AnnounceRequ
 }
 
 func (this *TrackerService) HandleAnnounceResponseEvent(annRes *tkpm.AnnounceResponse, from string) error {
-	go this.SignAndSend(from, annRes.MessageIdentifier, annRes)
+	go func() {
+		err := this.SignAndSend(from, annRes.MessageIdentifier, annRes)
+		if err != nil {
+			log.Errorf("sign annd send err %s", err)
+		}
+	}()
 	return nil
 }
 
@@ -194,14 +200,17 @@ func (this *TrackerService) SignAndSend(target string, msgId *tkpm.MsgID, messag
 			}
 		}
 		if len(rawData) == 0 {
+			log.Errorf("raw data is nil")
 			return errors.New("rawData null")
 		}
 
 		signature, err := this.SignFn(rawData)
 		if err != nil {
+			log.Errorf("raw data is nil")
 			return errors.New("gen message signature failed.")
 		}
-		log.Debugf("tkpm.AnnounceRequestMessage RawData: %v, PublicKey: %v, Signature: %v", rawData, keypair.SerializePublicKey(this.PublicKey), signature)
+		log.Debugf("tkpm.AnnounceRequestMessage RawData: %v, PublicKey: %v, Signature: %v,  target: %v",
+			rawData, keypair.SerializePublicKey(this.PublicKey), signature, target)
 
 		go tkActClient.P2pSend(target, &tkpm.AnnounceRequestMessage{
 			Request: msg,
@@ -244,6 +253,7 @@ func (this *TrackerService) SignAndSend(target string, msgId *tkpm.MsgID, messag
 			return errors.New("gen message signature failed.")
 		}
 		log.Debugf("tkpm.AnnounceResponseMessage RawData: %v, PublicKey: %v, Signature: %v", rawData, keypair.SerializePublicKey(this.PublicKey), signature)
+		log.Debugf("target %v", target)
 
 		go tkActClient.P2pSend(target, &tkpm.AnnounceResponseMessage{
 			Response: msg,
@@ -381,6 +391,7 @@ func (this *TrackerService) ReceiveAnnounceMessage(message proto.Message, from s
 				log.Debugf("Unknown AnnounceEvent type")
 			}
 		} else {
+			log.Debugf("HandleAnnounceResponseEvent %v %s", annResp, from)
 			this.HandleAnnounceResponseEvent(annResp, from)
 		}
 	case *tkpm.AnnounceResponseMessage:
@@ -437,6 +448,7 @@ func (this *TrackerService) onAnnounceEndpointRegistry(aReq *tkpm.AnnounceReques
 	var wallet theComm.Address
 	copy(wallet[:], req.Wallet)
 	peer := krpc.NodeAddr{IP: req.Ip[:], Port: int(req.Port)}
+	log.Debugf("put endpoint %v %v %v", wallet.ToBase58(), peer.IP, int(req.Port))
 	err := storage.EDB.PutEndpoint(wallet.ToBase58(), peer.IP, int(req.Port))
 	if err != nil {
 		return nil, err
@@ -470,6 +482,7 @@ func (this *TrackerService) onAnnounceQueryEndpoint(aReq *tkpm.AnnounceRequest) 
 		return nil, errors.New("wallet invalid, ADDRESS_EMPTY")
 	}
 	var peer *storage.Endpoint
+	log.Debugf("wallet %v %s", wallet, wallet.ToBase58())
 	peer, err := storage.EDB.GetEndpoint(wallet.ToBase58())
 	if err != nil {
 		return nil, err

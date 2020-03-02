@@ -17,7 +17,6 @@ import (
 	chanCom "github.com/saveio/pylons/common"
 	"github.com/saveio/scan/common/config"
 	"github.com/saveio/scan/storage"
-	chainCom "github.com/saveio/themis/common"
 	"github.com/saveio/themis/common/log"
 )
 
@@ -34,11 +33,7 @@ func NewScanChannel(scan *Node, p2pActor *actor.PID) (*channel.Channel, error) {
 
 	if len(scan.Config.ChannelListenAddr) > 0 && scan.Account != nil {
 		var err error
-		getHostCallBack := func(addr chainCom.Address) (string, error) {
-			return GetExternalIP(addr.ToBase58())
-		}
-
-		ch, err := channel.NewChannelService(scan.Config, scan.Chain, getHostCallBack)
+		ch, err := channel.NewChannelService(scan.Config, scan.Chain)
 		if err != nil {
 			log.Errorf("init channel err %s", err)
 			return nil, err
@@ -150,7 +145,15 @@ func (this *Node) ChannelWithdraw(partnerAddr string, amount uint64) error {
 }
 
 func (this *Node) QueryHostInfo(partnerAddr string) (string, error) {
-	return this.Channel.GetHostAddr(partnerAddr)
+	var peer *storage.Endpoint
+	peer, err := storage.EDB.GetEndpoint(partnerAddr)
+	if err != nil {
+		return "", err
+	}
+	if peer == nil {
+		return "", errors.New("endpoint not registed")
+	}
+	return peer.NodeAddr.String(), nil
 }
 
 func (this *Node) channelExists(ci []*ch_actor.ChannelInfo, w string) bool {

@@ -8,7 +8,7 @@ import (
 	"github.com/ontio/ontology-eventbus/actor"
 	pm "github.com/saveio/scan/p2p/actor/messages"
 	tkAct "github.com/saveio/scan/p2p/actor/tracker/client"
-	network "github.com/saveio/scan/p2p/networks/tracker"
+	"github.com/saveio/scan/p2p/network"
 	"github.com/saveio/scan/service/tk"
 	"github.com/saveio/themis/common/log"
 )
@@ -71,18 +71,20 @@ func (this *TrackerActorServer) Receive(ctx actor.Context) {
 		log.Warn("[P2p]actor restart")
 	case *tkAct.ConnectReq:
 		go func() {
-			msg.Ret.Err = this.net.Connect(msg.Address)
+			msg.Ret.WalletAddr, msg.Ret.Err = this.net.Connect(msg.Address)
 			msg.Ret.Done <- true
 		}()
 	case *tkAct.CloseReq:
 		go func() {
-			msg.Ret.Err = this.net.Close(msg.Address)
-			msg.Ret.Done <- true
+			log.Fatalf("can't close peer %s manually", msg.Address)
+			// msg.Ret.Err = this.net.Close(msg.Address)
+			// msg.Ret.Done <- true
 		}()
 	case *tkAct.SendReq:
 		log.Infof("tkact SendReq %v, %s", msg.Data, msg.Address)
 		go func() {
 			msg.Ret.Err = this.net.Send(msg.Data, msg.Address)
+			log.Debugf("send msg to %s, err %s", msg.Address, msg.Ret.Err)
 			msg.Ret.Done <- true
 		}()
 	case *AnnounceReq:
@@ -99,7 +101,7 @@ func (this *TrackerActorServer) Receive(ctx actor.Context) {
 			msg.Ret.Done <- true
 		}()
 	case *pm.AnnounceRequestMessage:
-		log.Infof("tkact AnnounceRequestMessage %v", msg)
+		log.Infof("tkact AnnounceRequestMessage %v from %s", msg, msg.GetRequest().From)
 		go func() {
 			this.tkSrv.ReceiveAnnounceMessage(msg, msg.GetRequest().From)
 		}()
@@ -188,6 +190,7 @@ func (this *TrackerActorServer) AnnounceRequest(req *pm.AnnounceRequest) (*pm.An
 		Announce: req,
 		Ret:      ret,
 	}
+	log.Debugf("AnnounceReq %v", this.GetLocalPID())
 	this.GetLocalPID().Tell(announceReq)
 
 	if err := waitForCallDone(announceReq.Ret.Done, "AnnounceRequest", defaultMaxTimeOut); err != nil {
