@@ -240,9 +240,19 @@ func (this *Network) Connect(hostAddr string) (string, error) {
 	}
 	log.Debugf("connect to %s", hostAddr)
 	walletAddr := this.GetWalletFromHostAddr(hostAddr)
-	if len(walletAddr) > 0 && this.IsConnReachable(walletAddr) {
-		log.Debugf("get wallet %s from host %s", hostAddr, walletAddr)
-		return walletAddr, nil
+	peer := New(hostAddr)
+	if len(walletAddr) > 0 {
+		if this.IsConnReachable(walletAddr) {
+			log.Debugf("get wallet %s from host %s", hostAddr, walletAddr)
+			return walletAddr, nil
+		}
+		p, ok := this.peers.Load(walletAddr)
+		if ok {
+			peer, ok = p.(*Peer)
+			if !ok {
+				peer = New(hostAddr)
+			}
+		}
 	}
 	_, ok := this.addressForHealthCheck.LoadOrStore(hostAddr, struct{}{})
 	if ok {
@@ -256,7 +266,6 @@ func (this *Network) Connect(hostAddr string) (string, error) {
 	peerId := peerIds[0]
 	walletAddr = this.walletAddrFromPeerId(peerId)
 	log.Debugf("host %s, peer id %s, wallet %s", hostAddr, peerId, walletAddr)
-	peer := New(hostAddr)
 	peer.SetPeerId(peerId)
 	log.Debugf("Store wallet %s for peer %s %s", walletAddr, hostAddr, peerId)
 	this.peers.Store(walletAddr, peer)

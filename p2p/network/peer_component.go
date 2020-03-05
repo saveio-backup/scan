@@ -30,7 +30,18 @@ func (this *PeerComponent) PeerConnect(client *network.PeerClient) {
 		log.Warnf("receive invalid wallet addr %s", walletAddr)
 		return
 	}
-	pr := New(client.Address)
+	hostAddr := client.Address
+	p, ok := this.Net.peers.LoadOrStore(walletAddr, New(hostAddr))
+	var pr *Peer
+	if ok {
+		pr, ok = p.(*Peer)
+		if !ok {
+			log.Errorf("convert peer to peer.Peer failed")
+			return
+		}
+	} else {
+		pr = New(hostAddr)
+	}
 	pr.SetPeerId(peerId)
 	log.Debugf("Store wallet %s for peer %s %s", walletAddr, client.Address, peerId)
 	this.Net.peers.Store(walletAddr, pr)
