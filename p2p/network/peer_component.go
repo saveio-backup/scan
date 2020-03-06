@@ -39,8 +39,6 @@ func (this *PeerComponent) PeerConnect(client *network.PeerClient) {
 			log.Errorf("convert peer to peer.Peer failed")
 			return
 		}
-	} else {
-		pr = New(hostAddr)
 	}
 	pr.SetPeerId(peerId)
 	log.Debugf("Store wallet %s for peer %s %s", walletAddr, client.Address, peerId)
