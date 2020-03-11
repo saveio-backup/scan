@@ -183,6 +183,7 @@ func (this *Network) Start(protocol, addr, port string) error {
 		}
 	})
 	this.P2p.SetNetworkID(this.networkId)
+	this.P2p.SetBootstrapWaitSecond(time.Duration(15) * time.Second)
 	go this.P2p.Listen()
 
 	this.P2p.BlockUntilListening()
