@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	"time"
 
 	dspCfg "github.com/saveio/dsp-go-sdk/config"
 	"github.com/saveio/dsp-go-sdk/core/channel"
@@ -96,6 +97,7 @@ func (this *Node) StartScanNode(startChannelNetwork, startDnsNetwork, startTkNet
 				return err
 			}
 		}
+		go this.connectAllDNSChannel()
 	}
 
 	if startDnsNetwork {
@@ -323,6 +325,50 @@ func (this *Node) AutoSetupDNSChannelsWorking() error {
 		numDnsChannels++
 	}
 	return nil
+}
+
+func (this *Node) connectAllDNSChannel() {
+	max := 0
+	for {
+		<-time.After(time.Duration(10) * time.Second)
+		max++
+		if max > 12 {
+			break
+		}
+		progress, err := this.GetFilterBlockProgress()
+		if progress.Progress != 1.0 || err != nil {
+			log.Debugf("channel is syncing")
+			continue
+		}
+		allChannels, err := this.GetAllChannels()
+		if err != nil {
+			continue
+		}
+		if allChannels == nil {
+			log.Debugf("no channel to connect when startup")
+			continue
+		}
+		for _, ch := range allChannels.Channels {
+			hostAddr := ch.HostAddr
+			if len(ch.HostAddr) == 0 {
+				log.Warnf("channel %s host addr is empty", ch.Address)
+				publicIP, err := GetExternalIP(ch.Address)
+				if err != nil || len(publicIP) == 0 {
+					log.Errorf("get external ip for %s failed %s", ch.Address, err)
+					continue
+				}
+				hostAddr = publicIP
+			}
+			log.Debugf("connect to dns %s, wallet %s", hostAddr, ch.Address)
+			_, err := this.ChannelNet.Connect(hostAddr)
+			if err != nil {
+				log.Errorf("connect to %s err", hostAddr)
+				continue
+			}
+			log.Debugf("connect to dns %s success, wallet %s", hostAddr, ch.Address)
+		}
+		break
+	}
 }
 
 var startChannelHeight uint32
