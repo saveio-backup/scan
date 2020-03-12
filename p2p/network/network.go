@@ -262,6 +262,7 @@ func (this *Network) Connect(hostAddr string) (string, error) {
 	log.Debugf("bootstrap to %v ...", hostAddr)
 	peerIds := this.P2p.Bootstrap([]string{hostAddr})
 	if len(peerIds) == 0 {
+		log.Errorf("bootstrap to %s, no peer ids", hostAddr)
 		return "", fmt.Errorf("no peer id for addr %s", hostAddr)
 	}
 	peerId := peerIds[0]

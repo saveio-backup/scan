@@ -18,10 +18,11 @@ var P2pPid *actor.PID
 type MessageHandler func(msgData interface{}, pid *actor.PID)
 
 type P2PActor struct {
-	net         *network.Network
-	props       *actor.Props
-	msgHandlers map[string]MessageHandler
-	localPID    *actor.PID
+	net                   *network.Network
+	props                 *actor.Props
+	msgHandlers           map[string]MessageHandler
+	localPID              *actor.PID
+	dnsHostAddrFromWallet func(string) string
 }
 
 func NewP2PActor() (*P2PActor, error) {
@@ -38,6 +39,10 @@ func NewP2PActor() (*P2PActor, error) {
 
 func (this *P2PActor) SetNetwork(n *network.Network) {
 	this.net = n
+}
+
+func (this *P2PActor) SetDNSHostAddrFromWallet(f func(string) string) {
+	this.dnsHostAddrFromWallet = f
 }
 
 func (this *P2PActor) Start() (*actor.PID, error) {
@@ -64,7 +69,13 @@ func (this *P2PActor) Receive(ctx actor.Context) {
 		log.Warn("[P2p]actor restart")
 	case *chact.ConnectReq:
 		go func() {
-			_, msg.Ret.Err = this.net.Connect(msg.Address)
+			if this.dnsHostAddrFromWallet == nil {
+				msg.Ret.Done <- false
+				return
+			}
+			hostAddr := this.dnsHostAddrFromWallet(msg.Address)
+			log.Debugf("connect %s", hostAddr)
+			_, msg.Ret.Err = this.net.Connect(hostAddr)
 			msg.Ret.Done <- true
 		}()
 	case *chact.SendReq:

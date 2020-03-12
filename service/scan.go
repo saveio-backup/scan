@@ -21,6 +21,7 @@ import (
 	chainsdk "github.com/saveio/themis-go-sdk/utils"
 	"github.com/saveio/themis/account"
 	cutils "github.com/saveio/themis/cmd/utils"
+	"github.com/saveio/themis/common"
 	"github.com/saveio/themis/common/log"
 	"github.com/saveio/themis/crypto/keypair"
 	"github.com/saveio/themis/errors"
@@ -133,6 +134,7 @@ func (this *Node) SetupChannelNetwork() error {
 	}
 	this.ChannelNet = network.NewP2P(opts...)
 	chActServer.SetNetwork(this.ChannelNet)
+	chActServer.SetDNSHostAddrFromWallet(this.GetDNSHostAddrFromWallet)
 
 	return this.ChannelNet.Start(config.Parameters.Base.ChannelProtocol, config.Parameters.Base.PublicIP,
 		fmt.Sprintf("%d", int(config.Parameters.Base.PortBase+config.Parameters.Base.ChannelPortOffset)))
@@ -411,4 +413,21 @@ func (this *Node) GetFilterBlockProgress() (*FilterBlockProgress, error) {
 	progress.Progress = p
 	log.Debugf("GetFilterBlockProgress start %d, now %d, end %d, progress %v", startChannelHeight, now, endChannelHeight, progress)
 	return progress, nil
+}
+
+func (this *Node) GetDNSHostAddrFromWallet(wallet string) string {
+	hostAddr, _ := GetExternalIP(wallet)
+	if len(hostAddr) > 0 {
+		return hostAddr
+	}
+
+	walletAddress, err := common.AddressFromBase58(wallet)
+	if err != nil {
+		return ""
+	}
+	info, _ := this.GetDnsNodeByAddr(walletAddress)
+	if info == nil {
+		return ""
+	}
+	return fmt.Sprintf("%s://%s:%s", config.Parameters.Base.ChannelProtocol, info.IP, info.Port)
 }
