@@ -261,6 +261,7 @@ func (this *Network) Connect(hostAddr string) (string, error) {
 	}
 	log.Debugf("bootstrap to %v ...", hostAddr)
 	peerIds := this.P2p.Bootstrap([]string{hostAddr})
+	this.addressForHealthCheck.Delete(hostAddr)
 	if len(peerIds) == 0 {
 		log.Errorf("bootstrap to %s, no peer ids", hostAddr)
 		return "", fmt.Errorf("no peer id for addr %s", hostAddr)
@@ -271,7 +272,6 @@ func (this *Network) Connect(hostAddr string) (string, error) {
 	peer.SetPeerId(peerId)
 	log.Debugf("Store wallet %s for peer %s %s", walletAddr, hostAddr, peerId)
 	this.peers.Store(walletAddr, peer)
-	this.addressForHealthCheck.Delete(hostAddr)
 	this.addressForHealthCheck.Store(walletAddr, hostAddr)
 	return walletAddr, nil
 }
@@ -296,11 +296,16 @@ func (this *Network) waitForConnectedByHostAddr(hostAddr string, timeout time.Du
 			walletAddr = wallet
 			return false
 		})
+		if len(walletAddr) > 0 {
+			break
+		}
 		<-time.After(interval)
 	}
 	if len(walletAddr) == 0 {
+		log.Errorf("wait for connect %s timeout", hostAddr)
 		return "", errors.New("wait for connected timeout")
 	}
+	log.Debugf("wait for connect %s success", hostAddr)
 	return walletAddr, nil
 }
 
