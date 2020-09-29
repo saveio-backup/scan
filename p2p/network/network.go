@@ -261,6 +261,7 @@ func (this *Network) Connect(hostAddr string) (string, error) {
 	}
 	log.Debugf("bootstrap to %v ...", hostAddr)
 	peerIds := this.P2p.Bootstrap([]string{hostAddr})
+	log.Debugf("bootstrap to %v ...done ", hostAddr)
 	this.addressForHealthCheck.Delete(hostAddr)
 	if len(peerIds) == 0 {
 		log.Errorf("bootstrap to %s, no peer ids", hostAddr)

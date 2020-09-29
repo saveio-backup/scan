@@ -165,7 +165,12 @@ func (this *Node) SetupDnsNetwork() error {
 		return err
 	}
 	log.Debugf("setup dns network success")
-	return this.SendConnectMsgToAllDns()
+	go func() {
+		if err := this.SendConnectMsgToAllDns(); err != nil {
+			log.Errorf("send connect msg to all dns err %s", err)
+		}
+	}()
+	return nil
 }
 
 func (this *Node) SetupTkNetwork() error {
