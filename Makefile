@@ -1,5 +1,5 @@
 GOFMT=gofmt
-GC=go build --tags json1
+GC=GO111MODULE=off go build --tags json1
 VERSION := $(shell git tag -l --sort=-v:refname | grep v1.0. | head -1)
 PYLONS_GITCOMMIT=$(shell cd .. && cd pylons && git log -1 --pretty=format:"%H")
 CARRIER_GITCOMMIT=$(shell cd .. && cd carrier && git log -1 --pretty=format:"%H")
