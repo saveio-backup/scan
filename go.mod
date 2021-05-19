@@ -10,6 +10,7 @@ replace (
 	github.com/saveio/pylons => ../pylons
 	github.com/saveio/themis => ../themis
 	github.com/saveio/themis-go-sdk => ../themis-go-sdk
+	github.com/saveio/scan => ../scan
 )
 
 require (
