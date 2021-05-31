@@ -9,7 +9,7 @@ import (
 
 	dspCfg "github.com/saveio/dsp-go-sdk/config"
 	"github.com/saveio/dsp-go-sdk/core/channel"
-	dspUtils "github.com/saveio/dsp-go-sdk/utils"
+	"github.com/saveio/dsp-go-sdk/utils/crypto"
 	"github.com/saveio/scan/common/config"
 	ch_actor_server "github.com/saveio/scan/p2p/actor/channel/server"
 	dns_actor_server "github.com/saveio/scan/p2p/actor/dns/server"
@@ -125,9 +125,9 @@ func (this *Node) SetupChannelNetwork() error {
 		return err
 	}
 	opts := []network.NetworkOption{
-		network.WithKeys(dspUtils.NewNetworkKeyPairWithAccount(this.Account)),
+		network.WithKeys(crypto.NewNetworkKeyPairWithAccount(this.Account)),
 		network.WithNetworkId(config.Parameters.Base.ChannelNetworkId),
-		network.WithWalletAddrFromPeerId(dspUtils.AddressFromPubkeyHex),
+		network.WithWalletAddrFromPeerId(crypto.AddressFromPubkeyHex),
 		network.WithIntranetIP(config.Parameters.Base.IntranetIP),
 		network.WithOpcodes(network.ChannelOpCodes),
 		network.WithPid(chActServer.GetLocalPID()),
@@ -148,9 +148,9 @@ func (this *Node) SetupDnsNetwork() error {
 	}
 
 	opts := []network.NetworkOption{
-		network.WithKeys(dspUtils.NewNetworkKeyPairWithAccount(this.Account)),
+		network.WithKeys(crypto.NewNetworkKeyPairWithAccount(this.Account)),
 		network.WithNetworkId(config.Parameters.Base.DnsNetworkId),
-		network.WithWalletAddrFromPeerId(dspUtils.AddressFromPubkeyHex),
+		network.WithWalletAddrFromPeerId(crypto.AddressFromPubkeyHex),
 		network.WithIntranetIP(config.Parameters.Base.IntranetIP),
 		network.WithOpcodes(network.TorrentOpCodes),
 		network.WithPid(dnsActServer.GetLocalPID()),
@@ -185,9 +185,9 @@ func (this *Node) SetupTkNetwork() error {
 	}
 
 	opts := []network.NetworkOption{
-		network.WithKeys(dspUtils.NewNetworkKeyPairWithAccount(this.Account)),
+		network.WithKeys(crypto.NewNetworkKeyPairWithAccount(this.Account)),
 		network.WithNetworkId(config.Parameters.Base.TrackerNetworkId),
-		network.WithWalletAddrFromPeerId(dspUtils.AddressFromPubkeyHex),
+		network.WithWalletAddrFromPeerId(crypto.AddressFromPubkeyHex),
 		network.WithIntranetIP(config.Parameters.Base.IntranetIP),
 		network.WithOpcodes(network.TrackerOpCodes),
 		network.WithPid(tkActServer.GetLocalPID()),

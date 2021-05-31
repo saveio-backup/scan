@@ -33,7 +33,15 @@ func NewScanChannel(scan *Node, p2pActor *actor.PID) (*channel.Channel, error) {
 
 	if len(scan.Config.ChannelListenAddr) > 0 && scan.Account != nil {
 		var err error
-		ch, err := channel.NewChannelService(scan.Config, scan.Chain)
+		ch, err := channel.NewChannelService(
+			scan.Chain,
+			channel.ClientType(scan.Config.ChannelClientType),
+			channel.RevealTimeout(scan.Config.ChannelRevealTimeout),
+			channel.DBPath(scan.Config.ChannelDBPath),
+			channel.SettleTimeout(scan.Config.ChannelSettleTimeout),
+			channel.BlockDelay(scan.Config.BlockDelay),
+			channel.IsClient(false),
+		)
 		if err != nil {
 			log.Errorf("init channel err %s", err)
 			return nil, err
@@ -58,7 +66,7 @@ func (this *Node) StartChannelService() error {
 		return err
 	}
 	time.Sleep(time.Second)
-	this.Channel.OverridePartners()
+	// this.Channel.OverridePartners()
 	return nil
 }
 
@@ -107,7 +115,7 @@ func (this *Node) OpenChannel(partnerAddr string, amount uint64) (chanCom.Channe
 }
 
 func (this *Node) CloseChannel(partnerAddr string) error {
-	return this.Channel.ChannelClose(partnerAddr)
+	return this.Channel.CloseChannel(partnerAddr)
 }
 
 func (this *Node) QuerySpecialChannelDeposit(partnerAddr string) (uint64, error) {
