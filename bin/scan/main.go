@@ -184,7 +184,7 @@ func startChain(ctx *cli.Context) {
 		log.Errorf("startChain InitAccount error:%s", err)
 		return
 	}
-	_, err = thms.InitLedger(ctx)
+	_, err = thms.InitLedger(ctx, 0)
 	if err != nil {
 		log.Errorf("startChain initLedger error:%s", err)
 		return
@@ -195,7 +195,7 @@ func startChain(ctx *cli.Context) {
 		log.Errorf("startChain initTxPool error:%s", err)
 		return
 	}
-	p2pSvr, p2pPid, err := thms.InitP2PNode(ctx, txpool)
+	p2pSvr, p2pPid, err := thms.InitP2PNode(ctx, txpool, acc)
 	if err != nil {
 		log.Errorf("startChain initP2PNode error:%s", err)
 		return

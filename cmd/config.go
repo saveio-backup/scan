@@ -20,8 +20,6 @@ func InitLog(ctx *cli.Context) {
 		logLevel := ctx.GlobalInt(flags.GetFlagName(flags.LogLevelFlag))
 		alog.InitLog(log.PATH)
 		log.InitLog(logLevel, log.PATH, log.Stdout)
-		log.AddIgnore("pylons")
-		log.AddIgnore("transfer")
 	}
 	//log.SetLevel(ctx.GlobalUint(cmd.GetFlagName(cmd.LogLevelFlag))) //TODO
 	//log.SetMaxSize(config.DEFAULT_MAX_LOG_SIZE) //TODO

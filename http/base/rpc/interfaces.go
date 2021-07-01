@@ -91,9 +91,7 @@ func GetBlock(params []interface{}) map[string]interface{} {
 			return responsePack(berr.INVALID_PARAMS, "")
 		}
 	}
-	w := bytes.NewBuffer(nil)
-	block.Serialize(w)
-	return responseSuccess(common.ToHexString(w.Bytes()))
+	return responseSuccess(common.ToHexString(block.ToArray()))
 }
 
 //get block height
@@ -124,11 +122,7 @@ func GetBlockHash(params []interface{}) map[string]interface{} {
 
 //get node connection count
 func GetConnectionCount(params []interface{}) map[string]interface{} {
-	count, err := bactor.GetConnectionCnt()
-	if err != nil {
-		log.Errorf("GetConnectionCount error:%s", err)
-		return responsePack(berr.INTERNAL_ERROR, false)
-	}
+	count := bactor.GetConnectionCnt()
 	return responseSuccess(count)
 }
 
@@ -219,9 +213,8 @@ func GetRawTransaction(params []interface{}) map[string]interface{} {
 			return responsePack(berr.INVALID_PARAMS, "")
 		}
 	}
-	w := bytes.NewBuffer(nil)
-	tx.Serialize(w)
-	return responseSuccess(common.ToHexString(w.Bytes()))
+
+	return responseSuccess(common.ToHexString(common.SerializeToBytes(tx)))
 }
 
 //get storage from contract
@@ -287,7 +280,7 @@ func SendRawTransaction(params []interface{}) map[string]interface{} {
 		}
 		hash = txn.Hash()
 		log.Debugf("SendRawTransaction recv %s", hash.ToHexString())
-		if txn.TxType == types.Invoke || txn.TxType == types.Deploy {
+		if txn.TxType == types.InvokeNeo || txn.TxType == types.Deploy || txn.TxType == types.InvokeWasm {
 			if len(params) > 1 {
 				preExec, ok := params[1].(float64)
 				if ok && preExec == 1 {

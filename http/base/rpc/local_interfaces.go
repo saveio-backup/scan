@@ -22,9 +22,9 @@ import (
 	"os"
 	"path/filepath"
 
+	berr "github.com/saveio/scan/http/base/error"
 	"github.com/saveio/themis/account"
 	"github.com/saveio/themis/common/log"
-	berr "github.com/saveio/scan/http/base/error"
 )
 
 const (
@@ -52,7 +52,7 @@ func SetDebugInfo(params []interface{}) map[string]interface{} {
 	switch params[0].(type) {
 	case float64:
 		level := params[0].(float64)
-		if err := log.Log.SetDebugLevel(int(level)); err != nil {
+		if err := log.Log().SetDebugLevel(int(level)); err != nil {
 			return responsePack(berr.INVALID_PARAMS, "")
 		}
 	default:
