@@ -439,6 +439,8 @@ github.com/saveio/dsp-go-sdk v0.0.0-20210802060606-524511a24d9a h1:wcwc5lIjIxKFy
 github.com/saveio/dsp-go-sdk v0.0.0-20210802060606-524511a24d9a/go.mod h1:6B7T/3h/K687yBEQmGlrfBuhu6RSC3poz6j5fh+fkI4=
 github.com/saveio/dsp-go-sdk v0.0.0-20210802062742-0189bde3f279 h1:qZ7bUrU1ZMluncQurfORvdBBOSOtYOle3kavle7hkdA=
 github.com/saveio/dsp-go-sdk v0.0.0-20210802062742-0189bde3f279/go.mod h1:+Vww+LhuuAFHNPbvtwhkqD8ElI0rLi0Mt05wIp5mojY=
+github.com/saveio/dsp-go-sdk v0.0.0-20210802063915-79e3ead59bd7 h1:lOYzcLwJLOjl0CuEKIgZflWCamZk1L+z8+5WpY9IAfA=
+github.com/saveio/dsp-go-sdk v0.0.0-20210802063915-79e3ead59bd7/go.mod h1:+Vww+LhuuAFHNPbvtwhkqD8ElI0rLi0Mt05wIp5mojY=
 github.com/saveio/max v0.0.0-20210802052855-c3324df99ee9 h1:mzFiC2t4opMBzHh9tKCstaTEwgMlaBOQLbDT9M8C+Nk=
 github.com/saveio/max v0.0.0-20210802052855-c3324df99ee9/go.mod h1:1HEI4jFeGTYIF2+od+7ohxvDTrl7Q23HExqsMCmYW1w=
 github.com/saveio/pylons v0.0.0-20210802060048-364cc6d8079d h1:AKpGaUJHPaUAb4Cz7RZGPlmB450DywXV8Tq2f3hF8HM=
