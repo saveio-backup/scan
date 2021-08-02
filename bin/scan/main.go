@@ -11,10 +11,10 @@ import (
 
 	"github.com/saveio/carrier/network"
 	"github.com/saveio/dsp-go-sdk/dsp"
-	"github.com/saveio/edge/common"
 	"github.com/saveio/pylons"
 	"github.com/saveio/scan/cmd"
 	"github.com/saveio/scan/cmd/flags"
+	"github.com/saveio/scan/common"
 	"github.com/saveio/scan/common/config"
 	"github.com/saveio/scan/http/jsonrpc"
 	"github.com/saveio/scan/http/localrpc"

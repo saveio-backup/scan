@@ -8,8 +8,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/saveio/edge/common"
 	"github.com/saveio/scan/cmd/flags"
+	"github.com/saveio/scan/common"
 	chainFlags "github.com/saveio/themis/cmd/utils"
 	"github.com/saveio/themis/common/log"
 	"github.com/urfave/cli"
