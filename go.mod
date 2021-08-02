@@ -1,6 +1,6 @@
 module github.com/saveio/scan
 
-go 1.14
+go 1.16
 
 replace (
 	github.com/saveio/dsp-go-sdk => ../dsp-go-sdk
@@ -18,16 +18,15 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/protobuf v1.3.2
 	github.com/huandu/xstrings v1.3.2 // indirect
-	github.com/lucas-clemente/quic-go v0.15.7 // indirect
 	github.com/marten-seemann/qtls v0.10.0 // indirect
 	github.com/ontio/ontology-eventbus v0.9.1
 	github.com/saveio/carrier v0.0.0-20210519082359-9fc4d908c385
 	github.com/saveio/dsp-go-sdk v0.0.0-20210527074313-4b3d6afed755
 	github.com/saveio/edge v1.0.250
-	github.com/saveio/max v0.0.0-20210624072549-139def04befb
+	github.com/saveio/max v0.0.0-20210728025229-47aa8d4cc8f9
 	github.com/saveio/pylons v0.0.0-20210519083005-78a1ef20d8a0
-	github.com/saveio/themis v1.0.115-0.20210519082201-29f8330c44d9
-	github.com/saveio/themis-go-sdk v0.0.0-20210519082257-3f5361282350
+	github.com/saveio/themis v1.0.121
+	github.com/saveio/themis-go-sdk v0.0.0-20210702081903-52a40e927ed8
 	github.com/stretchr/testify v1.7.0
 	github.com/syndtr/goleveldb v1.0.1-0.20190923125748-758128399b1d
 	github.com/urfave/cli v1.22.5
