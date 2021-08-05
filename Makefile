@@ -1,6 +1,12 @@
 GOFMT=gofmt
 GC=go build --tags json1
-VERSION := $(shell git tag -l --sort=-v:refname | grep v1.0. | head -1)
+LAST_VERSION := $(shell git describe --match "v*" --always --tags)
+VERSION_PARTS      := $(subst ., ,$(LAST_VERSION))
+MAJOR              := $(word 1,$(VERSION_PARTS))
+MINOR              := $(word 2,$(VERSION_PARTS))
+MICRO              := $(word 3,$(VERSION_PARTS))
+NEXT_MICRO         := $(shell echo $$(($(MICRO)+1)))
+VERSION := $(MAJOR).$(MINOR).$(NEXT_MICRO)
 PYLONS_GITCOMMIT=$(shell cd .. && cd pylons && git log -1 --pretty=format:"%H")
 CARRIER_GITCOMMIT=$(shell cd .. && cd carrier && git log -1 --pretty=format:"%H")
 DSP_GITCOMMIT=$(shell cd .. && cd dsp-go-sdk && git log -1 --pretty=format:"%H")
