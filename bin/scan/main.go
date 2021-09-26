@@ -169,6 +169,10 @@ func start(ctx *cli.Context) {
 	if config.Parameters.Base.DumpMemory == true {
 		go dumpMemory()
 	}
+	log.Debugf("version %s", config.VERSION)
+	log.Debugf("dsp version %s", dsp.Version)
+	log.Debugf("pylons version %s", pylons.Version)
+	log.Debugf("carrier version %s", network.Version)
 	WaitToExit()
 }
 
