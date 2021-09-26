@@ -217,6 +217,24 @@ func GetRawTransaction(params []interface{}) map[string]interface{} {
 	return responseSuccess(common.ToHexString(common.SerializeToBytes(tx)))
 }
 
+func GetStateMerkleRoot(params []interface{}) map[string]interface{} {
+	if len(params) < 1 {
+		return responsePack(berr.INVALID_PARAMS, nil)
+	}
+	switch params[0].(type) {
+	case float64:
+		height := uint32(params[0].(float64))
+
+		hash, err := bactor.GetStateMerkleRoot(height)
+		if err != nil {
+			return responsePack(berr.UNKNOWN_BLOCK, "")
+		}
+		return responseSuccess(hash.ToHexString())
+	default:
+		return responsePack(berr.INVALID_PARAMS, "")
+	}
+}
+
 //get storage from contract
 //   {"jsonrpc": "2.0", "method": "getstorage", "params": ["code hash", "key"], "id": 0}
 func GetStorage(params []interface{}) map[string]interface{} {

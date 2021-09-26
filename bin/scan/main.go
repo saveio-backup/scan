@@ -25,6 +25,7 @@ import (
 	thmsCmd "github.com/saveio/themis/cmd"
 	thmsComm "github.com/saveio/themis/cmd/common"
 	thmsUtils "github.com/saveio/themis/cmd/utils"
+	themisCfg "github.com/saveio/themis/common/config"
 	"github.com/saveio/themis/common/log"
 	thms "github.com/saveio/themis/start"
 
@@ -270,6 +271,7 @@ func startScan(ctx *cli.Context, acc *account.Account) {
 	}
 	log.Info("channel service started.")
 	log.Infof("scan version: %s", config.VERSION)
+	log.Infof("themis version: %s", themisCfg.Version)
 	log.Infof("dsp-go-sdk version: %s", dsp.Version)
 	log.Infof("pylons version: %s", pylons.Version)
 	log.Infof("carrier version: %s", network.Version)

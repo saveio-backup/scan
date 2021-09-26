@@ -50,6 +50,7 @@ func StartRPCServer() error {
 	rpc.HandleFunc("getstorage", rpc.GetStorage)
 	rpc.HandleFunc("getversion", rpc.GetNodeVersion)
 	rpc.HandleFunc("getnetworkid", rpc.GetNetworkId)
+	rpc.HandleFunc("getstatemerkleroot", rpc.GetStateMerkleRoot)
 
 	rpc.HandleFunc("getcontractstate", rpc.GetContractState)
 	rpc.HandleFunc("getmempooltxcount", rpc.GetMemPoolTxCount)

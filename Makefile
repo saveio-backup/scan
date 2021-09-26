@@ -10,8 +10,9 @@ VERSION := $(MAJOR).$(MINOR).$(NEXT_MICRO)
 PYLONS_GITCOMMIT=$(shell cd .. && cd pylons && git log -1 --pretty=format:"%H")
 CARRIER_GITCOMMIT=$(shell cd .. && cd carrier && git log -1 --pretty=format:"%H")
 DSP_GITCOMMIT=$(shell cd .. && cd dsp-go-sdk && git log -1 --pretty=format:"%H")
+THEMIS_GITCOMMIT=$(shell cd .. && cd themis && git log -1 --pretty=format:"%H")
 
-BUILD_SCAN_PAR = -ldflags "-X github.com/saveio/scan/common/config.VERSION=$(VERSION)  -X github.com/saveio/pylons.Version=${PYLONS_GITCOMMIT} -X github.com/saveio/carrier/network.Version=${CARRIER_GITCOMMIT}  -X github.com/saveio/dsp-go-sdk.Version=${DSP_GITCOMMIT}"
+BUILD_SCAN_PAR = -ldflags "-X github.com/saveio/scan/common/config.VERSION=$(VERSION) -X github.com/saveio/themis/common/config.VERSION=$(THEMIS_GITCOMMIT) -X github.com/saveio/pylons.Version=${PYLONS_GITCOMMIT} -X github.com/saveio/carrier/network.Version=${CARRIER_GITCOMMIT}  -X github.com/saveio/dsp-go-sdk.Version=${DSP_GITCOMMIT}"
 
 client: clean 
 	$(GC) $(BUILD_SCAN_PAR)  -o scan ./bin/scan/main.go
