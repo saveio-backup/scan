@@ -23,6 +23,7 @@ import (
 	"encoding/hex"
 	"errors"
 
+	"github.com/saveio/dsp-go-sdk/consts"
 	"github.com/saveio/scan/service"
 
 	"github.com/saveio/scan/tracker"
@@ -215,24 +216,6 @@ func GetRawTransaction(params []interface{}) map[string]interface{} {
 	}
 
 	return responseSuccess(common.ToHexString(common.SerializeToBytes(tx)))
-}
-
-func GetStateMerkleRoot(params []interface{}) map[string]interface{} {
-	if len(params) < 1 {
-		return responsePack(berr.INVALID_PARAMS, nil)
-	}
-	switch params[0].(type) {
-	case float64:
-		height := uint32(params[0].(float64))
-
-		hash, err := bactor.GetStateMerkleRoot(height)
-		if err != nil {
-			return responsePack(berr.UNKNOWN_BLOCK, "")
-		}
-		return responseSuccess(hash.ToHexString())
-	default:
-		return responsePack(berr.INVALID_PARAMS, "")
-	}
 }
 
 //get storage from contract
@@ -595,7 +578,7 @@ func CheckTorrent(params []interface{}) map[string]interface{} {
 		return responsePack(berr.INVALID_PARAMS, "")
 	}
 
-	if len(filehash) != 46 {
+	if len(filehash) != consts.PROTO_NODE_FILE_HASH_LEN {
 		return responsePack(berr.INVALID_PARAMS, fmt.Sprintf("invalid fileHash len is %d, not 46", len(filehash)))
 	}
 

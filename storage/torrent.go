@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/anacrolix/dht/krpc"
+	"github.com/saveio/dsp-go-sdk/consts"
 	"github.com/saveio/scan/common/config"
 	"github.com/saveio/themis/common/log"
 )
@@ -18,7 +19,7 @@ const (
 	MAX_PEERS_LENGTH                 = 100
 	DEFAULT_NUMWANT_TO_GET_ALL_PEERS = 0
 	PEERID_LENGTH                    = 20
-	METAINFOHASH_LENGTH              = 46
+	METAINFOHASH_LENGTH              = consts.PROTO_NODE_FILE_HASH_LEN
 	IP_LENGTH                        = 4
 	PORT_LENGTH                      = 2
 	TIMESTAMP_BINARY_LENGTH          = 8

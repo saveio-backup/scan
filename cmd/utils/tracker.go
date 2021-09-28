@@ -4,14 +4,15 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/saveio/dsp-go-sdk/consts"
 	httpComm "github.com/saveio/scan/http/base/common"
 	berr "github.com/saveio/scan/http/base/error"
 	"github.com/saveio/themis/common/log"
 )
 
 func CheckTorrent(filehash string) (*httpComm.TorrentPeersRsp, *httpComm.FailedRsp) {
-	if len(filehash) == 49 {
-		filehash = filehash[:46]
+	if len(filehash) == consts.RAW_NODE_FILE_HASH_LEN {
+		filehash = filehash[:consts.PROTO_NODE_FILE_HASH_LEN]
 	}
 	result, ontErr := sendRpcRequest("checktorrent", []interface{}{filehash})
 	peers := &httpComm.TorrentPeersRsp{}

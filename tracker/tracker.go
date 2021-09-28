@@ -6,6 +6,7 @@ import (
 	"net/url"
 
 	"github.com/anacrolix/dht/krpc"
+	"github.com/saveio/dsp-go-sdk/consts"
 	tkComm "github.com/saveio/scan/tracker/common"
 	theComm "github.com/saveio/themis/common"
 	"github.com/saveio/themis/common/log"
@@ -13,7 +14,7 @@ import (
 
 // Marshalled as binary by the UDP client, so be careful making changes.
 type AnnounceRequest struct {
-	InfoHash   [46]byte
+	InfoHash   [consts.PROTO_NODE_FILE_HASH_LEN]byte
 	PeerId     [20]byte
 	Downloaded int64
 	Left       uint64

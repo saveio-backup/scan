@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/saveio/dsp-go-sdk/consts"
 	pm "github.com/saveio/scan/p2p/actor/messages"
 	"github.com/saveio/scan/p2p/network"
 	"github.com/saveio/scan/storage"
@@ -16,7 +17,7 @@ import (
 
 // ---------Local DDNS client relative action------------
 func CheckTorrent(fileHash string) ([]*storage.PeerInfo, error) {
-	if len(fileHash) != 46 {
+	if len(fileHash) != consts.PROTO_NODE_FILE_HASH_LEN {
 		return nil, errors.NewErr(fmt.Sprintf("invalid fileHash len is %d, not 46", len(fileHash)))
 	}
 
