@@ -86,7 +86,6 @@ func StartRPCServer() error {
 	rpc.HandleFunc("transferchannel", rpc.TransferToSomebody)
 	rpc.HandleFunc("withdrawchannel", rpc.WithdrawChannel)
 	rpc.HandleFunc("getallchannels", rpc.GetAllChannels)
-	// rpc.HandleFunc("getcurrentbalance", rpc.GetCurrentBalance)
 	rpc.HandleFunc("querychanneldeposit", rpc.QueryChannelDeposit)
 	rpc.HandleFunc("queryhostinfo", rpc.QueryHostInfo)
 	err := http.ListenAndServe(":"+strconv.Itoa(int(cfg.Parameters.Base.PortBase+cfg.Parameters.Base.JsonRpcPortOffset)), nil)

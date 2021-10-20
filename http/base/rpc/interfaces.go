@@ -1080,27 +1080,6 @@ func GetAllChannels(params []interface{}) map[string]interface{} {
 	return responseSuccess(channelInfos)
 }
 
-// func GetCurrentBalance(params []interface{}) map[string]interface{} {
-// 	var partnerAddrstr string
-// 	switch (params[0]).(type) {
-// 	case string:
-// 		partnerAddrstr = params[0].(string)
-// 	default:
-// 		return responsePack(berr.INVALID_PARAMS, "")
-// 	}
-
-// 	balance, err := service.ScanNode.GetCurrentBalance(partnerAddrstr)
-// 	if err != nil {
-// 		log.Errorf("GetCurrentBalance error: %s", err)
-// 		return responsePack(berr.INTERNAL_ERROR, err.Error())
-// 	}
-// 	fmt.Printf("rpc/interface/getcurrentbalance partneraddr:%s\n", partnerAddrstr)
-// 	channelRsp := httpComm.ChannelTotalDepositBalanceRsp{
-// 		TotalDepositBalance: balance,
-// 	}
-// 	return responseSuccess(&channelRsp)
-// }
-
 func QueryChannelDeposit(params []interface{}) map[string]interface{} {
 	var partnerAddrstr string
 	switch (params[0]).(type) {

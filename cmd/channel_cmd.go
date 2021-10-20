@@ -305,25 +305,6 @@ func getAllChannels(ctx *cli.Context) error {
 	return nil
 }
 
-// func getCurrentBalance(ctx *cli.Context) error {
-// 	if ctx.NumFlags() < 1 {
-// 		PrintErrorMsg("Missing argument.")
-// 		cli.ShowSubcommandHelp(ctx)
-// 		return nil
-// 	}
-
-// 	partnerAddr := ctx.String(flags.GetFlagName(flags.PartnerAddressFlag))
-// 	currBalanceRsp, failed := utils.GetCurrentBalance(partnerAddr)
-// 	if failed != nil {
-// 		PrintErrorMsg("\nGet channel current balance failed. Failed message:")
-// 		PrintJsonObject(failed)
-// 		return nil
-// 	}
-// 	PrintInfoMsg("\nGet channel current balance success. TotalDepositBalance msg:")
-// 	PrintJsonObject(currBalanceRsp)
-// 	return nil
-// }
-
 func queryChannelDeposit(ctx *cli.Context) error {
 	SetRpcPort(ctx)
 
