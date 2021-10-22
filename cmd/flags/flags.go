@@ -125,6 +125,10 @@ var (
 		Name:  "page",
 		Usage: "channel list page",
 	}
+	ChannelIdFlag = cli.Uint64Flag{
+		Name:  "channelId",
+		Usage: "",
+	}
 
 	//ddns govern command setting
 	PeerPubkeyFlag = cli.StringFlag{

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/saveio/pylons/common"
 	"github.com/saveio/scan/cmd/flags"
 	"github.com/saveio/scan/cmd/utils"
 
@@ -134,6 +135,26 @@ var ChannelCommand = cli.Command{
 				flags.PartnerAddressFlag,
 			},
 			Description: "settle cooperatively of channel which belong to owner and partner",
+		},
+		{
+			Action:    getFee,
+			Name:      "getfee",
+			Usage:     "Get fee schedule in mediation",
+			ArgsUsage: " ",
+			Flags: []cli.Flag{
+				flags.ChannelIdFlag,
+			},
+			Description: "Query fee schedule in mediation",
+		},
+		{
+			Action:    setFee,
+			Name:      "setfee",
+			Usage:     "Setup fee schedule in mediation",
+			ArgsUsage: " ",
+			Flags: []cli.Flag{
+				flags.ChannelIdFlag,
+			},
+			Description: "Setup fee schedule in mediation",
 		},
 	},
 }
@@ -344,5 +365,28 @@ func queryHostInfo(ctx *cli.Context) error {
 		return nil
 	}
 	PrintJsonObject(chanHostRsp)
+	return nil
+}
+
+func getFee(ctx *cli.Context) error {
+	SetRpcPort(ctx)
+
+	if ctx.NumFlags() < 1 {
+		PrintErrorMsg("Missing argument.")
+		cli.ShowSubcommandHelp(ctx)
+		return nil
+	}
+
+	channelId := ctx.Uint64(flags.GetFlagName(flags.ChannelIdFlag))
+	fee, failedRsp := utils.GetFee(common.ChannelID(channelId))
+	if failedRsp != nil {
+		PrintErrorMsg("%v\n", failedRsp.FailedMsg)
+		return nil
+	}
+	PrintJsonObject(fee)
+	return nil
+}
+
+func setFee(ctx *cli.Context) error {
 	return nil
 }

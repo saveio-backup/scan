@@ -172,3 +172,12 @@ func (this *Node) channelExists(ci []*ch_actor.ChannelInfo, w string) bool {
 	}
 	return false
 }
+
+func (n *Node) GetFee(cid chanCom.ChannelID) (uint64, error) {
+	fee, err := n.Channel.GetFee(cid)
+	if err != nil {
+		log.Errorf("GetFee err %v", err)
+		return 0, err
+	}
+	return fee, nil
+}

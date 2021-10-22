@@ -82,6 +82,10 @@ type ChannelCurrentBalanceRsp struct {
 	CurrentBalance uint64
 }
 
+type ChannelFeeRsp struct {
+	Fee uint64
+}
+
 type DnsRsp struct {
 	Tx string
 }

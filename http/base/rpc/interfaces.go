@@ -22,8 +22,8 @@ import (
 	"bytes"
 	"encoding/hex"
 	"errors"
-
 	"github.com/saveio/dsp-go-sdk/consts"
+	chanCom "github.com/saveio/pylons/common"
 	"github.com/saveio/scan/service"
 
 	"github.com/saveio/scan/tracker"
@@ -1152,4 +1152,25 @@ func JoinDnsNodesChannels(params []interface{}) map[string]interface{} {
 	}
 
 	return responseSuccess(nil)
+}
+
+func GetFee(params []interface{}) map[string]interface{} {
+	var channelId uint64
+	switch (params[0]).(type) {
+	case float64:
+		channelId = uint64(params[0].(float64))
+	default:
+		return responsePack(berr.INVALID_PARAMS, "")
+	}
+
+	fee, err := service.ScanNode.GetFee(chanCom.ChannelID(channelId))
+	if err != nil {
+		log.Errorf("QueryChannelDeposit error: %s", err)
+		return responsePack(berr.INTERNAL_ERROR, err.Error())
+	}
+	fmt.Printf("rpc/interface/getfee channelId:%s\n", channelId)
+	curBalanceRsp := httpComm.ChannelFeeRsp{
+		Fee: fee,
+	}
+	return responseSuccess(&curBalanceRsp)
 }

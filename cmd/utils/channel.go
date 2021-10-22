@@ -3,6 +3,7 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/saveio/pylons/common"
 
 	ch_actor "github.com/saveio/pylons/actor/server"
 	httpComm "github.com/saveio/scan/http/base/common"
@@ -318,5 +319,43 @@ func QueryHostInfo(partnerAddr string) (*httpComm.EndPointRsp, *httpComm.FailedR
 	}
 	log.Debugf("QueryChannelHostInfo success")
 	log.Debugf("QueryChannelHostInfo result :%s", result)
+	return chanHostRsp, nil
+}
+
+
+func GetFee(channelId common.ChannelID) (*httpComm.ChannelFeeRsp, *httpComm.FailedRsp) {
+	result, ontErr := sendRpcRequest("getfee", []interface{}{channelId})
+	if ontErr != nil {
+		switch ontErr.ErrorCode {
+		case ERROR_INVALID_PARAMS:
+			return nil, &httpComm.FailedRsp{
+				ErrCode:   berr.INVALID_PARAMS,
+				ErrMsg:    berr.ErrMap[berr.INVALID_PARAMS],
+				FailedMsg: fmt.Sprintf("Invalid channelId: %d", channelId),
+			}
+		case berr.INTERNAL_ERROR:
+			return nil, &httpComm.FailedRsp{
+				ErrCode:   berr.INTERNAL_ERROR,
+				ErrMsg:    berr.ErrMap[berr.INTERNAL_ERROR],
+				FailedMsg: ontErr.Error.Error(),
+			}
+		}
+		return nil, &httpComm.FailedRsp{
+			ErrCode:   ontErr.ErrorCode,
+			ErrMsg:    "",
+			FailedMsg: ontErr.Error.Error(),
+		}
+	}
+	chanHostRsp := &httpComm.ChannelFeeRsp{}
+	err := json.Unmarshal(result, chanHostRsp)
+	if err != nil {
+		return nil, &httpComm.FailedRsp{
+			ErrCode:   berr.JSON_UNMARSHAL_ERROR,
+			ErrMsg:    berr.ErrMap[berr.JSON_UNMARSHAL_ERROR],
+			FailedMsg: err.Error(),
+		}
+	}
+	log.Debugf("Get fee success")
+	log.Debugf("Get fee result :%s", result)
 	return chanHostRsp, nil
 }
