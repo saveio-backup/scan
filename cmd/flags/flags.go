@@ -126,7 +126,11 @@ var (
 		Usage: "channel list page",
 	}
 	ChannelIdFlag = cli.Uint64Flag{
-		Name:  "channelId",
+		Name:  "channelId,cid",
+		Usage: "",
+	}
+	FlatFlag = cli.Uint64Flag{
+		Name:  "flat",
 		Usage: "",
 	}
 

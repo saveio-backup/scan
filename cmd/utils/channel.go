@@ -359,3 +359,31 @@ func GetFee(channelId common.ChannelID) (*httpComm.ChannelFeeRsp, *httpComm.Fail
 	log.Debugf("Get fee result :%s", result)
 	return chanHostRsp, nil
 }
+
+func SetFee(channelId common.ChannelID, flat uint64) (*httpComm.FailedRsp) {
+	result, err := sendRpcRequest("setfee", []interface{}{channelId, flat})
+	if err != nil {
+		switch err.ErrorCode {
+		case ERROR_INVALID_PARAMS:
+			return &httpComm.FailedRsp{
+				ErrCode:   berr.INVALID_PARAMS,
+				ErrMsg:    berr.ErrMap[berr.INVALID_PARAMS],
+				FailedMsg: fmt.Sprintf("Invalid params: %d, %d", channelId, flat),
+			}
+		case berr.INTERNAL_ERROR:
+			return &httpComm.FailedRsp{
+				ErrCode:   berr.INTERNAL_ERROR,
+				ErrMsg:    berr.ErrMap[berr.INTERNAL_ERROR],
+				FailedMsg: err.Error.Error(),
+			}
+		}
+		return &httpComm.FailedRsp{
+			ErrCode:   err.ErrorCode,
+			ErrMsg:    "",
+			FailedMsg: err.Error.Error(),
+		}
+	}
+	log.Debugf("Set fee success")
+	log.Debugf("Set fee result :%s", result)
+	return nil
+}

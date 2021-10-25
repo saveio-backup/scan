@@ -22,13 +22,11 @@ import (
 	"bytes"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"github.com/saveio/dsp-go-sdk/consts"
 	chanCom "github.com/saveio/pylons/common"
 	"github.com/saveio/scan/service"
-
 	"github.com/saveio/scan/tracker"
-
-	"fmt"
 
 	httpComm "github.com/saveio/scan/http/base/common"
 	berr "github.com/saveio/scan/http/base/error"
@@ -1173,4 +1171,30 @@ func GetFee(params []interface{}) map[string]interface{} {
 		Fee: fee,
 	}
 	return responseSuccess(&curBalanceRsp)
+}
+
+func SetFee(params []interface{}) map[string]interface{} {
+	var channelId uint64
+	var flat uint64
+
+	switch (params[0]).(type) {
+	case float64:
+		channelId = uint64(params[0].(float64))
+	default:
+		return responsePack(berr.INVALID_PARAMS, "")
+	}
+
+	switch (params[1]).(type) {
+	case float64:
+		flat = uint64(params[1].(float64))
+	default:
+		return responsePack(berr.INVALID_PARAMS, "")
+	}
+
+	err := service.ScanNode.SetFee(chanCom.ChannelID(channelId), flat)
+	if err != nil {
+		return responsePack(berr.INTERNAL_ERROR, "")
+	}
+
+	return nil
 }

@@ -181,3 +181,12 @@ func (n *Node) GetFee(cid chanCom.ChannelID) (uint64, error) {
 	}
 	return fee, nil
 }
+
+func (n *Node) SetFee(cid chanCom.ChannelID, flat uint64) error {
+	err := n.Channel.SetFee(cid, chanCom.FeeAmount(flat))
+	if err != nil {
+		log.Errorf("SetFee err %v", err)
+		return err
+	}
+	return nil
+}

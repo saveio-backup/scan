@@ -96,16 +96,6 @@ var ChannelCommand = cli.Command{
 			},
 			Description: "Show channels by paging, or target by address",
 		},
-		// {
-		// 	Action:    getCurrentBalance,
-		// 	Name:      "balance",
-		// 	Usage:     "Get current balance",
-		// 	ArgsUsage: " ",
-		// 	Flags: []cli.Flag{
-		// 		flags.PartnerAddressFlag,
-		// 	},
-		// 	Description: "Get current channel balance which belong to current owner",
-		// },
 		{
 			Action:    queryChannelDeposit,
 			Name:      "querydeposit",
@@ -153,6 +143,7 @@ var ChannelCommand = cli.Command{
 			ArgsUsage: " ",
 			Flags: []cli.Flag{
 				flags.ChannelIdFlag,
+				flags.FlatFlag,
 			},
 			Description: "Setup fee schedule in mediation",
 		},
@@ -388,5 +379,21 @@ func getFee(ctx *cli.Context) error {
 }
 
 func setFee(ctx *cli.Context) error {
+	SetRpcPort(ctx)
+
+	if ctx.NumFlags() < 3 {
+		PrintErrorMsg("Missing argument.")
+		cli.ShowSubcommandHelp(ctx)
+		return nil
+	}
+
+	channelId := ctx.Uint64(flags.GetFlagName(flags.ChannelIdFlag))
+	flat := ctx.Uint64(flags.GetFlagName(flags.FlatFlag))
+	failMsg := utils.SetFee(common.ChannelID(channelId), flat)
+	if failMsg != nil {
+		PrintErrorMsg("%v\n", failMsg.FailedMsg)
+		return nil
+	}
+	PrintInfoMsg("\nSetup fee schedule success.")
 	return nil
 }
