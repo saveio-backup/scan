@@ -134,6 +134,10 @@ func (this *Node) Transfer(paymentId int32, amount uint64, to string) error {
 	return this.Channel.DirectTransfer(paymentId, amount, to)
 }
 
+func (this *Node) MediaTransfer(paymentId int32, amount uint64, media string, to string) error {
+	return this.Channel.MediaTransfer(paymentId, amount, media, to)
+}
+
 func (this *Node) GetChannelListByOwnerAddress(addr string, tokenAddr string) *list.List {
 	//[TODO] call dsp-go-sdk function to return channel list
 	//[NOTE] addr and token Addr should NOT be needed. addr mean PaymentNetworkID

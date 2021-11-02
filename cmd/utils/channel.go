@@ -180,6 +180,40 @@ func TransferToSomebody(partnerAddr string, amount uint64, paymentid uint) (*htt
 	return nil, nil
 }
 
+func MediaTransferToSomebody(paymentId uint, amount uint64, mediaAddr string, partnerAddr string) (*httpComm.SuccessRsp, *httpComm.FailedRsp) {
+	result, ontErr := sendRpcRequest("mediatransferchannel", []interface{}{paymentId, amount, mediaAddr, partnerAddr})
+	if ontErr != nil {
+	switch ontErr.ErrorCode {
+		case ERROR_INVALID_PARAMS:
+			return nil, &httpComm.FailedRsp{
+					ErrCode:   berr.INVALID_PARAMS,
+					ErrMsg:    berr.ErrMap[berr.INVALID_PARAMS],
+					FailedMsg: fmt.Sprintf("Invalid partnerAddr: %s, amount: %d, paymentid: %d", partnerAddr, amount, paymentId),
+				}
+		case berr.CHANNEL_TARGET_HOST_INFO_NOT_FOUND:
+			return nil, &httpComm.FailedRsp{
+					ErrCode:   berr.CHANNEL_TARGET_HOST_INFO_NOT_FOUND,
+					ErrMsg:    berr.ErrMap[berr.CHANNEL_TARGET_HOST_INFO_NOT_FOUND],
+					FailedMsg: fmt.Sprintf("Address: %s hostinfo not found", partnerAddr),
+				}
+		case berr.INTERNAL_ERROR:
+			return nil, &httpComm.FailedRsp{
+					ErrCode:   berr.INTERNAL_ERROR,
+					ErrMsg:    berr.ErrMap[berr.INTERNAL_ERROR],
+					FailedMsg: ontErr.Error.Error(),
+				}
+		}
+	return nil, &httpComm.FailedRsp{
+			ErrCode:   ontErr.ErrorCode,
+			ErrMsg:    "",
+			FailedMsg: ontErr.Error.Error(),
+		}
+	}
+	log.Debugf("mediatransferchannel success")
+	log.Debugf("MediaTransferToSomebody result :%s", result)
+	return nil, nil
+}
+
 func QueryChannelDeposit(partnerAddr string) (*httpComm.ChannelTotalDepositBalanceRsp, *httpComm.FailedRsp) {
 	result, ontErr := sendRpcRequest("querychanneldeposit", []interface{}{partnerAddr})
 	if ontErr != nil {

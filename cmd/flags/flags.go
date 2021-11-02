@@ -109,6 +109,11 @@ var (
 		Name:  "targetAddr,ta",
 		Usage: "Channel transfer target `<address>`",
 	}
+	MediaAddressFlag = cli.StringFlag{
+		Name:  "mediaAddr,ma",
+		Usage: "Channel transfer media `<address>`",
+		Value: "AFmseVrdL9f9oyCzZefL9tG6UbvhPbdYzM",
+	}
 	TotalDepositFlag = cli.Uint64Flag{
 		Name:  "totalDeposit",
 		Usage: "Channel total `<deposit>`",
@@ -120,6 +125,7 @@ var (
 	PaymentIDFlag = cli.UintFlag{
 		Name:  "paymentId",
 		Usage: "",
+		Value: 0,
 	}
 	PageFlag = cli.IntFlag{
 		Name:  "page",

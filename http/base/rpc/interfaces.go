@@ -1034,6 +1034,55 @@ func TransferToSomebody(params []interface{}) map[string]interface{} {
 	return responseSuccess(&httpComm.SuccessRsp{})
 }
 
+func MediaTransferToSomebody(params []interface{}) map[string]interface{} {
+	var paymentIduint int32
+	var amountuint64 uint64
+	var mediaAddrStr string
+	var partnerAddrstr string
+	switch (params[0]).(type) {
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+		paymentIduint = int32(params[0].(uint64))
+	case float32, float64:
+		// may be bugs
+		paymentIduint = int32(params[0].(float64))
+	default:
+		return responsePack(berr.INVALID_PARAMS, "")
+	}
+	switch (params[1]).(type) {
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+		amountuint64 = params[1].(uint64)
+	case float32, float64:
+		// may be bugs
+		amountuint64 = uint64(params[1].(float64))
+	default:
+		return responsePack(berr.INVALID_PARAMS, "")
+	}
+	switch (params[2]).(type) {
+	case string:
+		mediaAddrStr = params[2].(string)
+	default:
+		return responsePack(berr.INVALID_PARAMS, "")
+	}
+	switch (params[3]).(type) {
+	case string:
+		partnerAddrstr = params[3].(string)
+	default:
+		return responsePack(berr.INVALID_PARAMS, "")
+	}
+	host, err := service.ScanNode.QueryHostInfo(partnerAddrstr)
+	if host == "" {
+		log.Errorf("MediaTransferToSomebody hostinfo is null, error: %s", err)
+		return responsePack(berr.CHANNEL_TARGET_HOST_INFO_NOT_FOUND, "")
+	}
+	err = service.ScanNode.MediaTransfer(paymentIduint, amountuint64, mediaAddrStr, partnerAddrstr)
+	if err != nil {
+		log.Errorf("MediaTransferToSomebody error: %s", err)
+		return responsePack(berr.INTERNAL_ERROR, err.Error())
+	}
+	fmt.Printf("rpc/interface/mediatransferchannel mediaaddr:%s partneraddr:%s amount:%d paymentid:%d\n", mediaAddrStr, partnerAddrstr, amountuint64, paymentIduint)
+	return responseSuccess(&httpComm.SuccessRsp{})
+}
+
 func WithdrawChannel(params []interface{}) map[string]interface{} {
 	var partnerAddrstr string
 	var amountuint64 uint64
