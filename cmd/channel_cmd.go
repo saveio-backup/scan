@@ -4,6 +4,7 @@ import (
 	"github.com/saveio/pylons/common"
 	"github.com/saveio/scan/cmd/flags"
 	"github.com/saveio/scan/cmd/utils"
+
 	//"github.com/saveio/scan/config"
 	"github.com/urfave/cli"
 )
@@ -90,14 +91,14 @@ var ChannelCommand = cli.Command{
 			Usage:     "Make payment through the channel with a media node",
 			ArgsUsage: " ",
 			Flags: []cli.Flag{
-					flags.PaymentIDFlag,
-					flags.AmountFlag,
-					flags.MediaAddressFlag,
-					flags.TargetAddressFlag,
-				},
+				flags.PaymentIDFlag,
+				flags.AmountFlag,
+				flags.MediaAddressFlag,
+				flags.TargetAddressFlag,
+			},
 			Description: "Transfer some token from owner to target with specified payment ID through media node",
 		},
-			{
+		{
 			Action:    getAllChannels,
 			Name:      "show",
 			Usage:     "Show channels by paging, or target by address",
@@ -227,7 +228,7 @@ func closeChannel(ctx *cli.Context) error {
 func depositToChannel(ctx *cli.Context) error {
 	SetRpcPort(ctx)
 
-	if ctx.NumFlags() < 2 {
+	if ctx.NumFlags() < 3 {
 		PrintErrorMsg("Missing argument.")
 		cli.ShowSubcommandHelp(ctx)
 		return nil
@@ -301,9 +302,9 @@ func mediaTransferToSomebody(ctx *cli.Context) error {
 	paymentId := ctx.Uint(flags.GetFlagName(flags.PaymentIDFlag))
 	_, failed := utils.MediaTransferToSomebody(paymentId, amount, mediaAddr, partnerAddr)
 	if failed != nil {
-			PrintErrorMsg("%v\n", failed.FailedMsg)
-			return nil
-		}
+		PrintErrorMsg("%v\n", failed.FailedMsg)
+		return nil
+	}
 	PrintInfoMsg("\nMediaTransferToSomebody by channel success.")
 	return nil
 }
