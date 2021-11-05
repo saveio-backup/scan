@@ -177,8 +177,8 @@ func (this *Node) channelExists(ci []*ch_actor.ChannelInfo, w string) bool {
 	return false
 }
 
-func (n *Node) GetFee(cid chanCom.ChannelID) (uint64, error) {
-	fee, err := n.Channel.GetFee(cid)
+func (n *Node) GetFee() (uint64, error) {
+	fee, err := n.Channel.GetFee()
 	if err != nil {
 		log.Errorf("GetFee err %v", err)
 		return 0, err
@@ -186,8 +186,8 @@ func (n *Node) GetFee(cid chanCom.ChannelID) (uint64, error) {
 	return fee, nil
 }
 
-func (n *Node) SetFee(cid chanCom.ChannelID, flat uint64) error {
-	err := n.Channel.SetFee(cid, chanCom.FeeAmount(flat))
+func (n *Node) SetFee(flat uint64) error {
+	err := n.Channel.SetFee(chanCom.FeeAmount(flat))
 	if err != nil {
 		log.Errorf("SetFee err %v", err)
 		return err

@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"github.com/saveio/pylons/common"
 	"github.com/saveio/scan/cmd/flags"
 	"github.com/saveio/scan/cmd/utils"
 
@@ -145,7 +144,6 @@ var ChannelCommand = cli.Command{
 			Usage:     "Get fee schedule in mediation",
 			ArgsUsage: " ",
 			Flags: []cli.Flag{
-				flags.ChannelIdFlag,
 			},
 			Description: "Query fee schedule in mediation",
 		},
@@ -155,7 +153,6 @@ var ChannelCommand = cli.Command{
 			Usage:     "Setup fee schedule in mediation",
 			ArgsUsage: " ",
 			Flags: []cli.Flag{
-				flags.ChannelIdFlag,
 				flags.FlatFlag,
 			},
 			Description: "Setup fee schedule in mediation",
@@ -395,14 +392,13 @@ func queryHostInfo(ctx *cli.Context) error {
 func getFee(ctx *cli.Context) error {
 	SetRpcPort(ctx)
 
-	if ctx.NumFlags() < 1 {
+	if ctx.NumFlags() < 0 {
 		PrintErrorMsg("Missing argument.")
 		cli.ShowSubcommandHelp(ctx)
 		return nil
 	}
 
-	channelId := ctx.Uint64(flags.GetFlagName(flags.ChannelIdFlag))
-	fee, failedRsp := utils.GetFee(common.ChannelID(channelId))
+	fee, failedRsp := utils.GetFee()
 	if failedRsp != nil {
 		PrintErrorMsg("%v\n", failedRsp.FailedMsg)
 		return nil
@@ -414,15 +410,14 @@ func getFee(ctx *cli.Context) error {
 func setFee(ctx *cli.Context) error {
 	SetRpcPort(ctx)
 
-	if ctx.NumFlags() < 3 {
+	if ctx.NumFlags() < 1 {
 		PrintErrorMsg("Missing argument.")
 		cli.ShowSubcommandHelp(ctx)
 		return nil
 	}
 
-	channelId := ctx.Uint64(flags.GetFlagName(flags.ChannelIdFlag))
 	flat := ctx.Uint64(flags.GetFlagName(flags.FlatFlag))
-	failMsg := utils.SetFee(common.ChannelID(channelId), flat)
+	failMsg := utils.SetFee(flat)
 	if failMsg != nil {
 		PrintErrorMsg("%v\n", failMsg.FailedMsg)
 		return nil

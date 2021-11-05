@@ -3,8 +3,6 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/saveio/pylons/common"
-
 	ch_actor "github.com/saveio/pylons/actor/server"
 	httpComm "github.com/saveio/scan/http/base/common"
 	berr "github.com/saveio/scan/http/base/error"
@@ -357,15 +355,15 @@ func QueryHostInfo(partnerAddr string) (*httpComm.EndPointRsp, *httpComm.FailedR
 }
 
 
-func GetFee(channelId common.ChannelID) (*httpComm.ChannelFeeRsp, *httpComm.FailedRsp) {
-	result, ontErr := sendRpcRequest("getfee", []interface{}{channelId})
+func GetFee() (*httpComm.ChannelFeeRsp, *httpComm.FailedRsp) {
+	result, ontErr := sendRpcRequest("getfee", []interface{}{})
 	if ontErr != nil {
 		switch ontErr.ErrorCode {
 		case ERROR_INVALID_PARAMS:
 			return nil, &httpComm.FailedRsp{
 				ErrCode:   berr.INVALID_PARAMS,
 				ErrMsg:    berr.ErrMap[berr.INVALID_PARAMS],
-				FailedMsg: fmt.Sprintf("Invalid channelId: %d", channelId),
+				FailedMsg: fmt.Sprintf("Invalid channelId"),
 			}
 		case berr.INTERNAL_ERROR:
 			return nil, &httpComm.FailedRsp{
@@ -394,15 +392,15 @@ func GetFee(channelId common.ChannelID) (*httpComm.ChannelFeeRsp, *httpComm.Fail
 	return chanHostRsp, nil
 }
 
-func SetFee(channelId common.ChannelID, flat uint64) (*httpComm.FailedRsp) {
-	result, err := sendRpcRequest("setfee", []interface{}{channelId, flat})
+func SetFee(flat uint64) (*httpComm.FailedRsp) {
+	result, err := sendRpcRequest("setfee", []interface{}{flat})
 	if err != nil {
 		switch err.ErrorCode {
 		case ERROR_INVALID_PARAMS:
 			return &httpComm.FailedRsp{
 				ErrCode:   berr.INVALID_PARAMS,
 				ErrMsg:    berr.ErrMap[berr.INVALID_PARAMS],
-				FailedMsg: fmt.Sprintf("Invalid params: %d, %d", channelId, flat),
+				FailedMsg: fmt.Sprintf("Invalid params: %d", flat),
 			}
 		case berr.INTERNAL_ERROR:
 			return &httpComm.FailedRsp{
