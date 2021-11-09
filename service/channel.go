@@ -4,6 +4,7 @@ import (
 	"container/list"
 	"errors"
 	"fmt"
+	"github.com/saveio/themis/common"
 	"net"
 	"strconv"
 	"strings"
@@ -65,6 +66,21 @@ func (this *Node) StartChannelService() error {
 	if err != nil {
 		return err
 	}
+	go func() {
+		pubkeyHex := common.PubKeyToHex(this.Account.PublicKey)
+		pubkeyBytes, err := common.HexToBytes(pubkeyHex)
+		if err != nil {
+			log.Error("[SetNodePubKey] Get public key from account error: ", err.Error())
+			return
+		}
+		_, err = this.Chain.Native.Channel.SetNodePubKey(this.Account.Address, pubkeyBytes)
+		if err != nil {
+			log.Error("[SetNodePubKey] Set public to node error: ", err.Error())
+			return
+		}
+		log.Info("[SetNodePubKey] Set public key to node success.")
+	}()
+
 	time.Sleep(time.Second)
 	// this.Channel.OverridePartners()
 	return nil

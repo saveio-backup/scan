@@ -68,6 +68,7 @@ func (this *Node) RegSelfEndpointToOtherDns() error {
 		if len(trackerUrls) >= MAX_DNS_CHANNELS_NUM_AUTO_OPEN_WITH {
 			break
 		}
+		// TODO why only log ns info?
 		log.Debugf("DNS WalletAddr %s, IP: %v, port %v\n", v.WalletAddr.ToBase58(), string(v.IP), string(v.Port))
 		trackerUrl := fmt.Sprintf("%s://%s:%d/announce", config.Parameters.Base.TrackerProtocol, v.IP,
 			(config.Parameters.Base.PortBase + config.Parameters.Base.TrackerPortOffset))
