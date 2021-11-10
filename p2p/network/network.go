@@ -269,7 +269,7 @@ func (this *Network) Connect(hostAddr string) (string, error) {
 	}
 	peerId := peerIds[0]
 	walletAddr = this.walletAddrFromPeerId(peerId)
-	log.Debugf("host %s, peer id %s, wallet %s", hostAddr, peerId, walletAddr)
+	log.Debugf("bootstrap success host %s, peer id %s, wallet %s", hostAddr, peerId, walletAddr)
 	peer.SetPeerId(peerId)
 	log.Debugf("Store wallet %s for peer %s %s", walletAddr, hostAddr, peerId)
 	this.peers.Store(walletAddr, peer)
@@ -340,8 +340,11 @@ func (this *Network) Send(msg proto.Message, walletAddr string) error {
 		panic("wallet addr is wrong ")
 		os.Exit(1)
 	}
-	state, _ := this.GetPeerStateByAddress(walletAddr)
-	log.Debugf("get peer state %d", state)
+	state, err := this.GetPeerStateByAddress(walletAddr)
+	if err != nil {
+		log.Warnf("peer unreachable err: %s", err)
+	}
+	log.Debugf("get peer %s state %d", walletAddr, state)
 	if state != network.PEER_REACHABLE {
 		return fmt.Errorf("can not send to inactive peer %s", walletAddr)
 	}

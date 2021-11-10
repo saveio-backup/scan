@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net"
+	"strconv"
 	"strings"
 	"time"
 
@@ -159,12 +160,12 @@ func (this *Node) SetupDnsNetwork() error {
 	network.DnsP2p = this.DnsNet
 	dnsActServer.SetNetwork(this.DnsNet)
 
-	err = this.DnsNet.Start(config.Parameters.Base.DnsProtocol, config.Parameters.Base.PublicIP,
-		fmt.Sprintf("%d", int(config.Parameters.Base.PortBase+config.Parameters.Base.DnsPortOffset)))
+	port := fmt.Sprintf("%d", int(config.Parameters.Base.PortBase+config.Parameters.Base.DnsPortOffset))
+	err = this.DnsNet.Start(config.Parameters.Base.DnsProtocol, config.Parameters.Base.PublicIP, port)
 	if err != nil {
 		return err
 	}
-	log.Debugf("setup dns network success")
+	log.Debugf("setup dns network success with port %s", port)
 	go func() {
 		if err := this.SendConnectMsgToAllDns(); err != nil {
 			log.Errorf("send connect msg to all dns err %s", err)
@@ -212,17 +213,15 @@ func (this *Node) SendConnectMsgToAllDns() error {
 	}
 
 	for _, dns := range allDns {
-		dnsPortOffset := config.Parameters.Base.PortBase + config.Parameters.Base.DnsPortOffset
-
 		if dns.WalletAddr.ToBase58() == this.Account.Address.ToBase58() {
 			continue
 		}
-		log.Debugf("connect dns: wallet %s, host: %s", dns.WalletAddr.ToBase58(),
-			fmt.Sprintf("%s://%s:%d", config.Parameters.Base.DnsProtocol, dns.IP, dnsPortOffset))
-		_, err := this.DnsNet.Connect(fmt.Sprintf("%s://%s:%d",
-			config.Parameters.Base.DnsProtocol, dns.IP, dnsPortOffset))
+		port, _ := strconv.Atoi(string(dns.Port))
+		host := fmt.Sprintf("%s://%s:%d", config.Parameters.Base.DnsProtocol, dns.IP, port)
+		log.Debugf("connect dns: wallet %s, host: %s", dns.WalletAddr.ToBase58(), host)
+		_, err := this.ChannelNet.Connect(host)
 		if err != nil {
-			log.Fatal(err)
+			log.Warnf("connect dns error: %s", err)
 		}
 	}
 	return nil
@@ -366,13 +365,13 @@ func (this *Node) connectAllDNSChannel() {
 				}
 				hostAddr = publicIP
 			}
-			log.Debugf("connect to dns %s, wallet %s", hostAddr, ch.Address)
+			log.Debugf("connect to dns start, hostAddr:%s, walletAddr %s", hostAddr, ch.Address)
 			_, err := this.ChannelNet.Connect(hostAddr)
 			if err != nil {
-				log.Errorf("connect to %s err", hostAddr)
+				log.Errorf("connect to dns failed, hostAddr: %s, err: %s", hostAddr, err)
 				continue
 			}
-			log.Debugf("connect to dns %s success, wallet %s", hostAddr, ch.Address)
+			log.Debugf("connect to dns success, hostAddr: %s, walletAddr: %s", hostAddr, ch.Address)
 		}
 		break
 	}
