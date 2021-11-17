@@ -4,6 +4,7 @@ import (
 	"container/list"
 	"errors"
 	"fmt"
+	"github.com/saveio/pylons/transfer"
 	"github.com/saveio/themis/common"
 	"net"
 	"strconv"
@@ -193,17 +194,17 @@ func (this *Node) channelExists(ci []*ch_actor.ChannelInfo, w string) bool {
 	return false
 }
 
-func (n *Node) GetFee() (uint64, error) {
+func (n *Node) GetFee() (*transfer.FeeScheduleState, error) {
 	fee, err := n.Channel.GetFee()
 	if err != nil {
 		log.Errorf("GetFee err %v", err)
-		return 0, err
+		return nil, err
 	}
 	return fee, nil
 }
 
-func (n *Node) SetFee(flat uint64) error {
-	err := n.Channel.SetFee(chanCom.FeeAmount(flat))
+func (n *Node) SetFee(fee *transfer.FeeScheduleState) error {
+	err := n.Channel.SetFee(fee)
 	if err != nil {
 		log.Errorf("SetFee err %v", err)
 		return err

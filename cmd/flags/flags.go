@@ -139,6 +139,10 @@ var (
 		Name:  "flat",
 		Usage: "",
 	}
+	ProportionalFlag = cli.Uint64Flag{
+		Name:  "proportional",
+		Usage: "",
+	}
 
 	//ddns govern command setting
 	PeerPubkeyFlag = cli.StringFlag{

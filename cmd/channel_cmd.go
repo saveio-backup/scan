@@ -154,6 +154,7 @@ var ChannelCommand = cli.Command{
 			ArgsUsage: " ",
 			Flags: []cli.Flag{
 				flags.FlatFlag,
+				flags.ProportionalFlag,
 			},
 			Description: "Setup fee schedule in mediation",
 		},
@@ -410,14 +411,15 @@ func getFee(ctx *cli.Context) error {
 func setFee(ctx *cli.Context) error {
 	SetRpcPort(ctx)
 
-	if ctx.NumFlags() < 1 {
+	if ctx.NumFlags() < 2 {
 		PrintErrorMsg("Missing argument.")
 		cli.ShowSubcommandHelp(ctx)
 		return nil
 	}
 
 	flat := ctx.Uint64(flags.GetFlagName(flags.FlatFlag))
-	failMsg := utils.SetFee(flat)
+	pro := ctx.Uint64(flags.GetFlagName(flags.ProportionalFlag))
+	failMsg := utils.SetFee(flat, pro)
 	if failMsg != nil {
 		PrintErrorMsg("%v\n", failMsg.FailedMsg)
 		return nil

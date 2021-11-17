@@ -24,6 +24,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/saveio/dsp-go-sdk/consts"
+	chanCom "github.com/saveio/pylons/common"
+	"github.com/saveio/pylons/transfer"
 	"github.com/saveio/scan/service"
 	"github.com/saveio/scan/tracker"
 
@@ -1208,13 +1210,15 @@ func GetFee(params []interface{}) map[string]interface{} {
 	}
 	fmt.Printf("rpc/interface/getfee\n")
 	curBalanceRsp := httpComm.ChannelFeeRsp{
-		Fee: fee,
+		Flat:         uint64(fee.Flat),
+		Proportional: uint64(fee.Proportional),
 	}
 	return responseSuccess(&curBalanceRsp)
 }
 
 func SetFee(params []interface{}) map[string]interface{} {
 	var flat uint64
+	var pro uint64
 
 	switch (params[0]).(type) {
 	case float64:
@@ -1223,7 +1227,18 @@ func SetFee(params []interface{}) map[string]interface{} {
 		return responsePack(berr.INVALID_PARAMS, "")
 	}
 
-	err := service.ScanNode.SetFee(flat)
+	switch (params[1]).(type) {
+	case float64:
+		pro = uint64(params[1].(float64))
+	default:
+		return responsePack(berr.INVALID_PARAMS, "")
+	}
+
+	fee := &transfer.FeeScheduleState{
+		Flat: chanCom.FeeAmount(flat),
+		Proportional: chanCom.ProportionalFeeAmount(pro),
+	}
+	err := service.ScanNode.SetFee(fee)
 	if err != nil {
 		return responsePack(berr.INTERNAL_ERROR, "")
 	}

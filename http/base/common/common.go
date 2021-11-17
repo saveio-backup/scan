@@ -83,7 +83,8 @@ type ChannelCurrentBalanceRsp struct {
 }
 
 type ChannelFeeRsp struct {
-	Fee uint64
+	Flat uint64
+	Proportional uint64
 }
 
 type DnsRsp struct {

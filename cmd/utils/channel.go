@@ -392,8 +392,8 @@ func GetFee() (*httpComm.ChannelFeeRsp, *httpComm.FailedRsp) {
 	return chanHostRsp, nil
 }
 
-func SetFee(flat uint64) (*httpComm.FailedRsp) {
-	result, err := sendRpcRequest("setfee", []interface{}{flat})
+func SetFee(flat uint64, pro uint64) (*httpComm.FailedRsp) {
+	result, err := sendRpcRequest("setfee", []interface{}{flat, pro})
 	if err != nil {
 		switch err.ErrorCode {
 		case ERROR_INVALID_PARAMS:
