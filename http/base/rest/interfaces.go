@@ -57,10 +57,7 @@ func GetNetworkId(cmd map[string]interface{}) map[string]interface{} {
 //get connection node count
 func GetConnectionCount(cmd map[string]interface{}) map[string]interface{} {
 	resp := ResponsePack(berr.SUCCESS)
-	count, err := bactor.GetConnectionCnt()
-	if err != nil {
-		return ResponsePack(berr.INTERNAL_ERROR)
-	}
+	count := bactor.GetConnectionCnt()
 	resp["Result"] = count
 	return resp
 }
@@ -104,9 +101,9 @@ func getBlock(hash common.Uint256, getTxBytes bool) (interface{}, int64) {
 		return nil, berr.UNKNOWN_BLOCK
 	}
 	if getTxBytes {
-		w := bytes.NewBuffer(nil)
-		block.Serialize(w)
-		return common.ToHexString(w.Bytes()), berr.SUCCESS
+		sink := common.NewZeroCopySink(nil)
+		block.Serialization(sink)
+		return common.ToHexString(sink.Bytes()), berr.SUCCESS
 	}
 	return bcomn.GetBlockInfo(block), berr.SUCCESS
 }
@@ -203,9 +200,9 @@ func GetBlockByHeight(cmd map[string]interface{}) map[string]interface{} {
 		return ResponsePack(berr.UNKNOWN_BLOCK)
 	}
 	if getTxBytes {
-		w := bytes.NewBuffer(nil)
-		block.Serialize(w)
-		resp["Result"] = common.ToHexString(w.Bytes())
+		sink := common.NewZeroCopySink(nil)
+		block.Serialization(sink)
+		resp["Result"] = common.ToHexString(sink.Bytes())
 	} else {
 		resp["Result"] = bcomn.GetBlockInfo(block)
 	}
@@ -231,13 +228,10 @@ func GetTransactionByHash(cmd map[string]interface{}) map[string]interface{} {
 	if err != nil {
 		return ResponsePack(berr.UNKNOWN_TRANSACTION)
 	}
-	if tx == nil {
-		return ResponsePack(berr.UNKNOWN_TRANSACTION)
-	}
 	if raw, ok := cmd["Raw"].(string); ok && raw == "1" {
-		w := bytes.NewBuffer(nil)
-		tx.Serialize(w)
-		resp["Result"] = common.ToHexString(w.Bytes())
+		sink := common.NewZeroCopySink(nil)
+		tx.Serialization(sink)
+		resp["Result"] = common.ToHexString(sink.Bytes())
 		return resp
 	}
 	tran := bcomn.TransArryByteToHexString(tx)
@@ -266,7 +260,7 @@ func SendRawTransaction(cmd map[string]interface{}) map[string]interface{} {
 	var hash common.Uint256
 	hash = txn.Hash()
 	log.Debugf("SendRawTransaction recv %s", hash.ToHexString())
-	if txn.TxType == types.Invoke || txn.TxType == types.Deploy {
+	if txn.TxType == types.InvokeNeo || txn.TxType == types.Deploy {
 		if preExec, ok := cmd["PreExec"].(string); ok && preExec == "1" {
 			rst, err := bactor.PreExecuteContract(txn)
 			if err != nil {

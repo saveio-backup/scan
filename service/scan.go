@@ -41,11 +41,13 @@ type Node struct {
 	Channel    *channel.Channel
 	// Db         *storage.LevelDBStore
 	PublicIp string
+	AccountPassword string
 }
 
-func Init(acc *account.Account) (*Node, error) {
+func Init(acc *account.Account, accPwd string) (*Node, error) {
 	this := &Node{}
 	this.Account = acc
+	this.AccountPassword = accPwd
 	config.SetCurrentUserWalletAddress(this.Account.Address.ToBase58())
 	ScanNode = this
 	return this, nil

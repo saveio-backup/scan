@@ -230,7 +230,9 @@ func startChain(ctx *cli.Context) {
 
 func startScan(ctx *cli.Context, acc *account.Account) {
 	config.Init(ctx)
-	service.Init(acc)
+
+	accPwd := ctx.String(flags.GetFlagName(thmsUtils.AccountPassFlag))
+	service.Init(acc, accPwd)
 
 	edb, err := storage.NewLevelDBStore(config.EndpointDBPath())
 	if err != nil {

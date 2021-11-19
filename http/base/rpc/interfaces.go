@@ -1143,8 +1143,8 @@ func QueryChannelDeposit(params []interface{}) map[string]interface{} {
 		return responsePack(berr.INTERNAL_ERROR, err.Error())
 	}
 	fmt.Printf("rpc/interface/openchanneldeposit partneraddr:%s\n", partnerAddrstr)
-	curBalanceRsp := httpComm.ChannelCurrentBalanceRsp{
-		CurrentBalance: balance,
+	curBalanceRsp := httpComm.ChannelTotalDepositBalanceRsp{
+		TotalDepositBalance: balance,
 	}
 	return responseSuccess(&curBalanceRsp)
 }

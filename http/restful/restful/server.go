@@ -74,8 +74,16 @@ const (
 	GET_MEMPOOL_TXSTATE   = "/api/v1/mempool/txstate/:hash"
 	GET_VERSION           = "/api/v1/version"
 	GET_NETWORKID         = "/api/v1/networkid"
+	GET_FEE               = "/api/v1/channel/fee"
+	GET_CHANNEL_LIST      = "/api/v1/channel/list"
+	GET_DEPOSIT           = "/api/v1/channel/deposit/:addr"
 
-	POST_RAW_TX = "/api/v1/transaction"
+	POST_RAW_TX        = "/api/v1/transaction"
+	POST_FEE           = "/api/v1/channel/fee"
+	POST_CHANNEL_OPEN  = "/api/v1/channel/open"
+	POST_CHANNEL_CLOSE = "/api/v1/channel/close"
+	POST_DEPOSIT       = "/api/v1/channel/deposit"
+	POST_WITHDRAW      = "/api/v1/channel/withdraw"
 )
 
 //init restful server
@@ -89,7 +97,7 @@ func InitRestServer() rest.ApiServer {
 	return rt
 }
 
-//start server
+// Start start the server
 func (this *restServer) Start() error {
 	retPort := int(config.Parameters.Base.PortBase + config.Parameters.Base.HttpRestPortOffset)
 	if retPort == 0 {
@@ -125,9 +133,8 @@ func (this *restServer) Start() error {
 	return nil
 }
 
-//resigtry handler method
+//registry handler method
 func (this *restServer) registryMethod() {
-
 	getMethodMap := map[string]Action{
 		GET_CONN_COUNT:        {name: "getconnectioncount", handler: rest.GetConnectionCount},
 		GET_BLK_TXS_BY_HEIGHT: {name: "getblocktxsbyheight", handler: rest.GetBlockTxsByHeight},
@@ -150,16 +157,22 @@ func (this *restServer) registryMethod() {
 		GET_MEMPOOL_TXSTATE:   {name: "getmempooltxstate", handler: rest.GetMemPoolTxState},
 		GET_VERSION:           {name: "getversion", handler: rest.GetNodeVersion},
 		GET_NETWORKID:         {name: "getnetworkid", handler: rest.GetNetworkId},
+		GET_FEE:               {name: "getfee", handler: GetFee},
+		GET_CHANNEL_LIST:      {name: "getchannellist", handler: GetChannelList},
+		GET_DEPOSIT:           {name: "getdeposit", handler: GetDeposit},
 	}
-
 	postMethodMap := map[string]Action{
-		POST_RAW_TX: {name: "sendrawtransaction", handler: rest.SendRawTransaction},
+		POST_RAW_TX:        {name: "sendrawtransaction", handler: rest.SendRawTransaction},
+		POST_FEE:           {name: "postfee", handler: PostFee},
+		POST_CHANNEL_OPEN:  {name: "postchannelopen", handler: PostChannelOpen},
+		POST_CHANNEL_CLOSE: {name: "postchannelclose", handler: Postchannelclose},
+		POST_DEPOSIT:       {name: "postdeposit", handler: PostDeposit},
+		POST_WITHDRAW:      {name: "postwithdraw", handler: PostWithdraw},
 	}
 	this.postMap = postMethodMap
 	this.getMap = getMethodMap
 }
 func (this *restServer) getPath(url string) string {
-
 	if strings.Contains(url, strings.TrimRight(GET_BLK_TXS_BY_HEIGHT, ":height")) {
 		return GET_BLK_TXS_BY_HEIGHT
 	} else if strings.Contains(url, strings.TrimRight(GET_BLK_BY_HEIGHT, ":height")) {
@@ -190,6 +203,8 @@ func (this *restServer) getPath(url string) string {
 		return GET_ALLOWANCE
 	} else if strings.Contains(url, strings.TrimRight(GET_MEMPOOL_TXSTATE, ":hash")) {
 		return GET_MEMPOOL_TXSTATE
+	} else if strings.Contains(url, strings.TrimRight(GET_DEPOSIT, ":addr")) {
+		return GET_DEPOSIT
 	}
 	return url
 }
@@ -232,6 +247,8 @@ func (this *restServer) getParams(r *http.Request, url string, req map[string]in
 		req["From"], req["To"] = getParam(r, "from"), getParam(r, "to")
 	case GET_MEMPOOL_TXSTATE:
 		req["Hash"] = getParam(r, "hash")
+	case GET_DEPOSIT:
+		req["partnerAddr"] = getParam(r, "addr")
 	default:
 	}
 	return req
@@ -239,7 +256,6 @@ func (this *restServer) getParams(r *http.Request, url string, req map[string]in
 
 //init get handler
 func (this *restServer) initGetHandler() {
-
 	for k, _ := range this.getMap {
 		this.router.Get(k, func(w http.ResponseWriter, r *http.Request) {
 
