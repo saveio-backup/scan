@@ -39,9 +39,9 @@ func GetChannelList(params map[string]interface{}) map[string]interface{} {
 func GetDeposit(params map[string]interface{}) map[string]interface{} {
 	res := rest.ResponsePack(error.SUCCESS)
 	var partnerAddrstr string
-	switch (params["partnerAddr"]).(type) {
+	switch (params["PartnerAddr"]).(type) {
 	case string:
-		partnerAddrstr = params["partnerAddr"].(string)
+		partnerAddrstr = params["PartnerAddr"].(string)
 	default:
 		res["Error"] = error.INVALID_PARAMS
 		return res
@@ -63,11 +63,11 @@ func PostFee(params map[string]interface{}) map[string]interface{} {
 	res := rest.ResponsePack(error.SUCCESS)
 
 	var pwd string
-	switch (params["password"]).(type) {
+	switch (params["Password"]).(type) {
 	case string:
-		pwd = params["password"].(string)
+		pwd = params["Password"].(string)
 	default:
-		res["Error"] = error.INVALID_PARAMS
+		res["Error"] = error.PASSWORD_WRONG
 		return res
 	}
 	b := verifyPassword(pwd)
@@ -79,17 +79,17 @@ func PostFee(params map[string]interface{}) map[string]interface{} {
 	var flat uint64
 	var pro uint64
 
-	switch (params["flat"]).(type) {
+	switch (params["Flat"]).(type) {
 	case float64:
-		flat = uint64(params["flat"].(float64))
+		flat = uint64(params["Flat"].(float64))
 	default:
 		res["Error"] = error.INVALID_PARAMS
 		return res
 	}
 
-	switch (params["proportional"]).(type) {
+	switch (params["Proportional"]).(type) {
 	case float64:
-		pro = uint64(params["proportional"].(float64))
+		pro = uint64(params["Proportional"].(float64))
 	default:
 		res["Error"] = error.INVALID_PARAMS
 		return res
@@ -111,11 +111,11 @@ func PostChannelOpen(params map[string]interface{}) map[string]interface{} {
 	res := rest.ResponsePack(error.SUCCESS)
 
 	var pwd string
-	switch (params["password"]).(type) {
+	switch (params["Password"]).(type) {
 	case string:
-		pwd = params["password"].(string)
+		pwd = params["Password"].(string)
 	default:
-		res["Error"] = error.INVALID_PARAMS
+		res["Error"] = error.PASSWORD_WRONG
 		return res
 	}
 	b := verifyPassword(pwd)
@@ -125,9 +125,9 @@ func PostChannelOpen(params map[string]interface{}) map[string]interface{} {
 	}
 
 	var partnerAddrstr string
-	switch (params["partnerAddr"]).(type) {
+	switch (params["PartnerAddr"]).(type) {
 	case string:
-		partnerAddrstr = params["partnerAddr"].(string)
+		partnerAddrstr = params["PartnerAddr"].(string)
 	default:
 		res["Error"] = error.INVALID_PARAMS
 		return res
@@ -149,11 +149,11 @@ func Postchannelclose(params map[string]interface{}) map[string]interface{} {
 	res := rest.ResponsePack(error.SUCCESS)
 
 	var pwd string
-	switch (params["password"]).(type) {
+	switch (params["Password"]).(type) {
 	case string:
-		pwd = params["password"].(string)
+		pwd = params["Password"].(string)
 	default:
-		res["Error"] = error.INVALID_PARAMS
+		res["Error"] = error.PASSWORD_WRONG
 		return res
 	}
 	b := verifyPassword(pwd)
@@ -163,9 +163,9 @@ func Postchannelclose(params map[string]interface{}) map[string]interface{} {
 	}
 
 	var partnerAddrstr string
-	switch (params["partnerAddr"]).(type) {
+	switch (params["PartnerAddr"]).(type) {
 	case string:
-		partnerAddrstr = params["partnerAddr"].(string)
+		partnerAddrstr = params["PartnerAddr"].(string)
 	default:
 		res["Error"] = error.INVALID_PARAMS
 		return res
@@ -182,11 +182,11 @@ func PostDeposit(params map[string]interface{}) map[string]interface{} {
 	res := rest.ResponsePack(error.SUCCESS)
 
 	var pwd string
-	switch (params["password"]).(type) {
+	switch (params["Password"]).(type) {
 	case string:
-		pwd = params["password"].(string)
+		pwd = params["Password"].(string)
 	default:
-		res["Error"] = error.INVALID_PARAMS
+		res["Error"] = error.PASSWORD_WRONG
 		return res
 	}
 	b := verifyPassword(pwd)
@@ -197,20 +197,20 @@ func PostDeposit(params map[string]interface{}) map[string]interface{} {
 
 	var partnerAddrstr string
 	var totalDeposituint64 uint64
-	switch (params["partnerAddr"]).(type) {
+	switch (params["PartnerAddr"]).(type) {
 	case string:
-		partnerAddrstr = params["partnerAddr"].(string)
+		partnerAddrstr = params["PartnerAddr"].(string)
 	default:
 		res["Error"] = error.INVALID_PARAMS
 		return res
 	}
 
-	switch (params["totalDeposit"]).(type) {
+	switch (params["TotalDeposit"]).(type) {
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
-		totalDeposituint64 = params["totalDeposit"].(uint64)
+		totalDeposituint64 = params["TotalDeposit"].(uint64)
 	case float32, float64:
 		// may be bugs
-		totalDeposituint64 = uint64(params["totalDeposit"].(float64))
+		totalDeposituint64 = uint64(params["TotalDeposit"].(float64))
 		fmt.Println(totalDeposituint64)
 	default:
 		res["Error"] = error.INVALID_PARAMS
@@ -229,9 +229,9 @@ func PostWithdraw(params map[string]interface{}) map[string]interface{} {
 	res := rest.ResponsePack(error.SUCCESS)
 
 	var pwd string
-	switch (params["password"]).(type) {
+	switch (params["Password"]).(type) {
 	case string:
-		pwd = params["password"].(string)
+		pwd = params["Password"].(string)
 	default:
 		res["Error"] = error.INVALID_PARAMS
 		return res
@@ -244,20 +244,20 @@ func PostWithdraw(params map[string]interface{}) map[string]interface{} {
 
 	var partnerAddrstr string
 	var amountuint64 uint64
-	switch (params["partnerAddr"]).(type) {
+	switch (params["PartnerAddr"]).(type) {
 	case string:
-		partnerAddrstr = params["partnerAddr"].(string)
+		partnerAddrstr = params["PartnerAddr"].(string)
 	default:
 		res["Error"] = error.INVALID_PARAMS
 		return res
 	}
 
-	switch (params["amount"]).(type) {
+	switch (params["Amount"]).(type) {
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
-		amountuint64 = params["amount"].(uint64)
+		amountuint64 = params["Amount"].(uint64)
 	case float32, float64:
 		// may be bugs
-		amountuint64 = uint64(params["amount"].(float64))
+		amountuint64 = uint64(params["Amount"].(float64))
 	default:
 		res["Error"] = error.INVALID_PARAMS
 		return res

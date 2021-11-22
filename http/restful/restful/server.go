@@ -23,6 +23,8 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	Err "github.com/saveio/scan/http/base/error"
+	berr "github.com/saveio/themis/http/base/error"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -34,7 +36,6 @@ import (
 	"github.com/saveio/scan/common/config"
 	cfg "github.com/saveio/themis/common/config"
 	"github.com/saveio/themis/common/log"
-	berr "github.com/saveio/themis/http/base/error"
 	"github.com/saveio/themis/http/base/rest"
 )
 
@@ -248,7 +249,7 @@ func (this *restServer) getParams(r *http.Request, url string, req map[string]in
 	case GET_MEMPOOL_TXSTATE:
 		req["Hash"] = getParam(r, "hash")
 	case GET_DEPOSIT:
-		req["partnerAddr"] = getParam(r, "addr")
+		req["PartnerAddr"] = getParam(r, "addr")
 	default:
 	}
 	return req
@@ -319,7 +320,7 @@ func (this *restServer) write(w http.ResponseWriter, data []byte) {
 
 //response
 func (this *restServer) response(w http.ResponseWriter, resp map[string]interface{}) {
-	resp["Desc"] = berr.ErrMap[resp["Error"].(int64)]
+	resp["Desc"] = Err.ErrMap[resp["Error"].(int64)]
 	data, err := json.Marshal(resp)
 	if err != nil {
 		log.Fatal("HTTP Handle - json.Marshal: %v", err)
