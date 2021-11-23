@@ -1,6 +1,8 @@
 package restful
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	chanCom "github.com/saveio/pylons/common"
 	"github.com/saveio/pylons/transfer"
 	httpComm "github.com/saveio/scan/http/base/common"
@@ -303,8 +305,15 @@ func PostWithdraw(params map[string]interface{}) map[string]interface{} {
 }
 
 func verifyPassword(pwd string) bool {
-	if pwd != service.ScanNode.AccountPassword {
+	pwdHash := Sha256HexStr(service.ScanNode.AccountPassword)
+	if pwd != pwdHash {
 		return false
 	}
 	return true
+}
+
+func Sha256HexStr(str string) string {
+	pwdBuf := sha256.Sum256([]byte(str))
+	pwdHash := hex.EncodeToString(pwdBuf[:])
+	return pwdHash
 }
