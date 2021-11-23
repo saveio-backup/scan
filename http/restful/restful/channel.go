@@ -1,13 +1,16 @@
 package restful
 
 import (
-	"fmt"
 	chanCom "github.com/saveio/pylons/common"
 	"github.com/saveio/pylons/transfer"
 	httpComm "github.com/saveio/scan/http/base/common"
 	"github.com/saveio/scan/http/base/error"
 	"github.com/saveio/scan/http/base/rest"
 	"github.com/saveio/scan/service"
+	"github.com/saveio/themis/cmd/utils"
+	"github.com/saveio/themis/common/constants"
+	"math"
+	"strconv"
 )
 
 func GetFee(params map[string]interface{}) map[string]interface{} {
@@ -18,8 +21,10 @@ func GetFee(params map[string]interface{}) map[string]interface{} {
 		return res
 	}
 	rsp := httpComm.ChannelFeeRsp{
-		Flat:         uint64(fee.Flat),
-		Proportional: uint64(fee.Proportional),
+		Flat:               uint64(fee.Flat),
+		Proportional:       uint64(fee.Proportional),
+		FlatFormat:         utils.FormatUsdt(uint64(fee.Flat)),
+		ProportionalFormat: utils.FormatUsdt(uint64(fee.Proportional)),
 	}
 	res["Result"] = rsp
 	return res
@@ -76,30 +81,42 @@ func PostFee(params map[string]interface{}) map[string]interface{} {
 		return res
 	}
 
-	var flat uint64
-	var pro uint64
+	var flatStr string
+	var proStr string
 
 	switch (params["Flat"]).(type) {
-	case float64:
-		flat = uint64(params["Flat"].(float64))
+	case string:
+		flatStr = params["Flat"].(string)
 	default:
 		res["Error"] = error.INVALID_PARAMS
 		return res
 	}
 
 	switch (params["Proportional"]).(type) {
-	case float64:
-		pro = uint64(params["Proportional"].(float64))
+	case string:
+		proStr = params["Proportional"].(string)
 	default:
 		res["Error"] = error.INVALID_PARAMS
 		return res
 	}
 
-	fee := &transfer.FeeScheduleState{
-		Flat: chanCom.FeeAmount(flat),
-		Proportional: chanCom.ProportionalFeeAmount(pro),
+	flat, err := strconv.ParseFloat(flatStr, 10)
+	if err != nil || flat <= 0 {
+		return nil
 	}
-	err := service.ScanNode.SetFee(fee)
+	realFlat := uint64(flat * math.Pow10(constants.USDT_DECIMALS))
+
+	pro, err := strconv.ParseFloat(proStr, 10)
+	if err != nil || pro <= 0 {
+		return nil
+	}
+	realPro := uint64(pro * math.Pow10(constants.USDT_DECIMALS))
+
+	fee := &transfer.FeeScheduleState{
+		Flat:         chanCom.FeeAmount(realFlat),
+		Proportional: chanCom.ProportionalFeeAmount(realPro),
+	}
+	err = service.ScanNode.SetFee(fee)
 	if err != nil {
 		res["Error"] = error.CHANNEL_ERROR
 		return res
@@ -196,7 +213,8 @@ func PostDeposit(params map[string]interface{}) map[string]interface{} {
 	}
 
 	var partnerAddrstr string
-	var totalDeposituint64 uint64
+	var taStr string
+
 	switch (params["PartnerAddr"]).(type) {
 	case string:
 		partnerAddrstr = params["PartnerAddr"].(string)
@@ -206,18 +224,20 @@ func PostDeposit(params map[string]interface{}) map[string]interface{} {
 	}
 
 	switch (params["TotalDeposit"]).(type) {
-	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
-		totalDeposituint64 = params["TotalDeposit"].(uint64)
-	case float32, float64:
-		// may be bugs
-		totalDeposituint64 = uint64(params["TotalDeposit"].(float64))
-		fmt.Println(totalDeposituint64)
+	case string:
+		taStr = params["TotalDeposit"].(string)
 	default:
 		res["Error"] = error.INVALID_PARAMS
 		return res
 	}
 
-	err := service.ScanNode.DepositToChannel(partnerAddrstr, totalDeposituint64)
+	ta, err := strconv.ParseFloat(taStr, 10)
+	if err != nil || ta <= 0 {
+		return nil
+	}
+	totalDeposit := uint64(ta * math.Pow10(constants.USDT_DECIMALS))
+
+	err = service.ScanNode.DepositToChannel(partnerAddrstr, totalDeposit)
 	if err != nil {
 		res["Error"] = error.CHANNEL_ERROR
 		return res
@@ -243,7 +263,8 @@ func PostWithdraw(params map[string]interface{}) map[string]interface{} {
 	}
 
 	var partnerAddrstr string
-	var amountuint64 uint64
+	var amountStr string
+
 	switch (params["PartnerAddr"]).(type) {
 	case string:
 		partnerAddrstr = params["PartnerAddr"].(string)
@@ -253,11 +274,9 @@ func PostWithdraw(params map[string]interface{}) map[string]interface{} {
 	}
 
 	switch (params["Amount"]).(type) {
-	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
-		amountuint64 = params["Amount"].(uint64)
-	case float32, float64:
+	case string:
 		// may be bugs
-		amountuint64 = uint64(params["Amount"].(float64))
+		amountStr = params["Amount"].(string)
 	default:
 		res["Error"] = error.INVALID_PARAMS
 		return res
@@ -269,7 +288,13 @@ func PostWithdraw(params map[string]interface{}) map[string]interface{} {
 		return res
 	}
 
-	err = service.ScanNode.ChannelWithdraw(partnerAddrstr, amountuint64)
+	amount, err := strconv.ParseFloat(amountStr, 10)
+	if err != nil || amount <= 0 {
+		return nil
+	}
+	realAmount := uint64(amount * math.Pow10(constants.USDT_DECIMALS))
+
+	err = service.ScanNode.ChannelWithdraw(partnerAddrstr, realAmount)
 	if err != nil {
 		res["Error"] = error.CHANNEL_ERROR
 		return res

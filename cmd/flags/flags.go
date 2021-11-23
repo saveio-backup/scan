@@ -114,11 +114,11 @@ var (
 		Usage: "Channel transfer media `<address>`",
 		Value: "AFmseVrdL9f9oyCzZefL9tG6UbvhPbdYzM",
 	}
-	TotalDepositFlag = cli.Uint64Flag{
+	TotalDepositFlag = cli.StringFlag{
 		Name:  "totalDeposit",
 		Usage: "Channel total `<deposit>`",
 	}
-	AmountFlag = cli.Uint64Flag{
+	AmountFlag = cli.StringFlag{
 		Name:  "amount",
 		Usage: "Channel payment amount `<amount>`",
 	}
@@ -135,13 +135,13 @@ var (
 		Name:  "channelId,cid",
 		Usage: "",
 	}
-	FlatFlag = cli.Uint64Flag{
+	FlatFlag = cli.StringFlag{
 		Name:  "flat",
-		Usage: "",
+		Usage: "String after format",
 	}
-	ProportionalFlag = cli.Uint64Flag{
+	ProportionalFlag = cli.StringFlag{
 		Name:  "proportional",
-		Usage: "",
+		Usage: "String after format",
 	}
 
 	//ddns govern command setting

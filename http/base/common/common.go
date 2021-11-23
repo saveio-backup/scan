@@ -85,6 +85,8 @@ type ChannelCurrentBalanceRsp struct {
 type ChannelFeeRsp struct {
 	Flat uint64
 	Proportional uint64
+	FlatFormat string
+	ProportionalFormat string
 }
 
 type DnsRsp struct {

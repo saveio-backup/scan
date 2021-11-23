@@ -6,6 +6,7 @@ import (
 	ch_actor "github.com/saveio/pylons/actor/server"
 	httpComm "github.com/saveio/scan/http/base/common"
 	berr "github.com/saveio/scan/http/base/error"
+	"github.com/saveio/themis/cmd/utils"
 	"github.com/saveio/themis/common/log"
 )
 
@@ -387,6 +388,8 @@ func GetFee() (*httpComm.ChannelFeeRsp, *httpComm.FailedRsp) {
 			FailedMsg: err.Error(),
 		}
 	}
+	chanHostRsp.FlatFormat = utils.FormatUsdt(chanHostRsp.Flat)
+	chanHostRsp.ProportionalFormat = utils.FormatUsdt(chanHostRsp.Proportional)
 	log.Debugf("Get fee success")
 	log.Debugf("Get fee result :%s", result)
 	return chanHostRsp, nil

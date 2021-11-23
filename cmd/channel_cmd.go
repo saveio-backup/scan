@@ -3,6 +3,9 @@ package cmd
 import (
 	"github.com/saveio/scan/cmd/flags"
 	"github.com/saveio/scan/cmd/utils"
+	"github.com/saveio/themis/common/constants"
+	"math"
+	"strconv"
 
 	//"github.com/saveio/scan/config"
 	"github.com/urfave/cli"
@@ -233,7 +236,13 @@ func depositToChannel(ctx *cli.Context) error {
 	}
 
 	partnerAddr := ctx.String(flags.GetFlagName(flags.PartnerAddressFlag))
-	totalDeposit := ctx.Uint64(flags.GetFlagName(flags.TotalDepositFlag))
+	taStr := ctx.String(flags.GetFlagName(flags.TotalDepositFlag))
+
+	ta, err := strconv.ParseFloat(taStr, 10)
+	if err != nil || ta <= 0 {
+		return nil
+	}
+	totalDeposit := uint64(ta * math.Pow10(constants.USDT_DECIMALS))
 
 	_, failed := utils.DepositToChannel(partnerAddr, totalDeposit)
 	if failed != nil {
@@ -254,9 +263,15 @@ func withdrawChannel(ctx *cli.Context) error {
 	}
 
 	partnerAddr := ctx.String(flags.GetFlagName(flags.PartnerAddressFlag))
-	amount := ctx.Uint64(flags.GetFlagName(flags.AmountFlag))
+	amountStr := ctx.String(flags.GetFlagName(flags.AmountFlag))
 
-	_, failed := utils.WithdrawChannel(partnerAddr, amount)
+	amount, err := strconv.ParseFloat(amountStr, 10)
+	if err != nil || amount <= 0 {
+		return nil
+	}
+	realAmount := uint64(amount * math.Pow10(constants.USDT_DECIMALS))
+
+	_, failed := utils.WithdrawChannel(partnerAddr, realAmount)
 	if failed != nil {
 		PrintErrorMsg("%v\n", failed.FailedMsg)
 		return nil
@@ -275,10 +290,16 @@ func transferToSomebody(ctx *cli.Context) error {
 	}
 
 	partnerAddr := ctx.String(flags.GetFlagName(flags.TargetAddressFlag))
-	amount := ctx.Uint64(flags.GetFlagName(flags.AmountFlag))
+	amountStr := ctx.String(flags.GetFlagName(flags.AmountFlag))
 	paymentId := ctx.Uint(flags.GetFlagName(flags.PaymentIDFlag))
 
-	_, failed := utils.TransferToSomebody(partnerAddr, amount, paymentId)
+	amount, err := strconv.ParseFloat(amountStr, 10)
+	if err != nil || amount <= 0 {
+		return nil
+	}
+	realAmount := uint64(amount * math.Pow10(constants.USDT_DECIMALS))
+
+	_, failed := utils.TransferToSomebody(partnerAddr, realAmount, paymentId)
 	if failed != nil {
 		PrintErrorMsg("%v\n", failed.FailedMsg)
 		return nil
@@ -296,9 +317,16 @@ func mediaTransferToSomebody(ctx *cli.Context) error {
 	}
 	mediaAddr := ctx.String(flags.GetFlagName(flags.MediaAddressFlag))
 	partnerAddr := ctx.String(flags.GetFlagName(flags.TargetAddressFlag))
-	amount := ctx.Uint64(flags.GetFlagName(flags.AmountFlag))
+	amountStr := ctx.String(flags.GetFlagName(flags.AmountFlag))
 	paymentId := ctx.Uint(flags.GetFlagName(flags.PaymentIDFlag))
-	_, failed := utils.MediaTransferToSomebody(paymentId, amount, mediaAddr, partnerAddr)
+
+	amount, err := strconv.ParseFloat(amountStr, 10)
+	if err != nil || amount <= 0 {
+		return nil
+	}
+	realAmount := uint64(amount * math.Pow10(constants.USDT_DECIMALS))
+
+	_, failed := utils.MediaTransferToSomebody(paymentId, realAmount, mediaAddr, partnerAddr)
 	if failed != nil {
 		PrintErrorMsg("%v\n", failed.FailedMsg)
 		return nil
@@ -417,9 +445,22 @@ func setFee(ctx *cli.Context) error {
 		return nil
 	}
 
-	flat := ctx.Uint64(flags.GetFlagName(flags.FlatFlag))
-	pro := ctx.Uint64(flags.GetFlagName(flags.ProportionalFlag))
-	failMsg := utils.SetFee(flat, pro)
+	flatStr := ctx.String(flags.GetFlagName(flags.FlatFlag))
+	proStr := ctx.String(flags.GetFlagName(flags.ProportionalFlag))
+
+	flat, err := strconv.ParseFloat(flatStr, 10)
+	if err != nil || flat <= 0 {
+		return nil
+	}
+	realFlat := uint64(flat * math.Pow10(constants.USDT_DECIMALS))
+
+	pro, err := strconv.ParseFloat(proStr, 10)
+	if err != nil || pro <= 0 {
+		return nil
+	}
+	realPro := uint64(pro * math.Pow10(constants.USDT_DECIMALS))
+
+	failMsg := utils.SetFee(realFlat, realPro)
 	if failMsg != nil {
 		PrintErrorMsg("%v\n", failMsg.FailedMsg)
 		return nil
