@@ -239,7 +239,7 @@ func depositToChannel(ctx *cli.Context) error {
 	taStr := ctx.String(flags.GetFlagName(flags.TotalDepositFlag))
 
 	ta, err := strconv.ParseFloat(taStr, 10)
-	if err != nil || ta <= 0 {
+	if err != nil || ta < 0 {
 		return nil
 	}
 	totalDeposit := uint64(ta * math.Pow10(constants.USDT_DECIMALS))
@@ -266,7 +266,7 @@ func withdrawChannel(ctx *cli.Context) error {
 	amountStr := ctx.String(flags.GetFlagName(flags.AmountFlag))
 
 	amount, err := strconv.ParseFloat(amountStr, 10)
-	if err != nil || amount <= 0 {
+	if err != nil || amount < 0 {
 		return nil
 	}
 	realAmount := uint64(amount * math.Pow10(constants.USDT_DECIMALS))
@@ -294,7 +294,7 @@ func transferToSomebody(ctx *cli.Context) error {
 	paymentId := ctx.Uint(flags.GetFlagName(flags.PaymentIDFlag))
 
 	amount, err := strconv.ParseFloat(amountStr, 10)
-	if err != nil || amount <= 0 {
+	if err != nil || amount < 0 {
 		return nil
 	}
 	realAmount := uint64(amount * math.Pow10(constants.USDT_DECIMALS))
@@ -321,7 +321,7 @@ func mediaTransferToSomebody(ctx *cli.Context) error {
 	paymentId := ctx.Uint(flags.GetFlagName(flags.PaymentIDFlag))
 
 	amount, err := strconv.ParseFloat(amountStr, 10)
-	if err != nil || amount <= 0 {
+	if err != nil || amount < 0 {
 		return nil
 	}
 	realAmount := uint64(amount * math.Pow10(constants.USDT_DECIMALS))
@@ -449,13 +449,13 @@ func setFee(ctx *cli.Context) error {
 	proStr := ctx.String(flags.GetFlagName(flags.ProportionalFlag))
 
 	flat, err := strconv.ParseFloat(flatStr, 10)
-	if err != nil || flat <= 0 {
+	if err != nil || flat < 0 {
 		return nil
 	}
 	realFlat := uint64(flat * math.Pow10(constants.USDT_DECIMALS))
 
 	pro, err := strconv.ParseFloat(proStr, 10)
-	if err != nil || pro <= 0 {
+	if err != nil || pro < 0 {
 		return nil
 	}
 	realPro := uint64(pro * math.Pow10(constants.USDT_DECIMALS))

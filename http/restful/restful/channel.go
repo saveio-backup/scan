@@ -3,6 +3,9 @@ package restful
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"math"
+	"strconv"
+
 	chanCom "github.com/saveio/pylons/common"
 	"github.com/saveio/pylons/transfer"
 	httpComm "github.com/saveio/scan/http/base/common"
@@ -11,8 +14,6 @@ import (
 	"github.com/saveio/scan/service"
 	"github.com/saveio/themis/cmd/utils"
 	"github.com/saveio/themis/common/constants"
-	"math"
-	"strconv"
 )
 
 func GetFee(params map[string]interface{}) map[string]interface{} {
@@ -86,31 +87,33 @@ func PostFee(params map[string]interface{}) map[string]interface{} {
 	var flatStr string
 	var proStr string
 
-	switch (params["Flat"]).(type) {
+	switch (params["FlatFormat"]).(type) {
 	case string:
-		flatStr = params["Flat"].(string)
+		flatStr = params["FlatFormat"].(string)
 	default:
 		res["Error"] = error.INVALID_PARAMS
 		return res
 	}
 
-	switch (params["Proportional"]).(type) {
+	switch (params["ProportionalFormat"]).(type) {
 	case string:
-		proStr = params["Proportional"].(string)
+		proStr = params["ProportionalFormat"].(string)
 	default:
 		res["Error"] = error.INVALID_PARAMS
 		return res
 	}
 
 	flat, err := strconv.ParseFloat(flatStr, 10)
-	if err != nil || flat <= 0 {
-		return nil
+	if err != nil || flat < 0 || flat > 100000 {
+		res["Error"] = error.INVALID_PARAMS
+		return res
 	}
 	realFlat := uint64(flat * math.Pow10(constants.USDT_DECIMALS))
 
 	pro, err := strconv.ParseFloat(proStr, 10)
-	if err != nil || pro <= 0 {
-		return nil
+	if err != nil || pro < 0 || pro > 1 {
+		res["Error"] = error.INVALID_PARAMS
+		return res
 	}
 	realPro := uint64(pro * math.Pow10(constants.USDT_DECIMALS))
 
@@ -234,8 +237,9 @@ func PostDeposit(params map[string]interface{}) map[string]interface{} {
 	}
 
 	ta, err := strconv.ParseFloat(taStr, 10)
-	if err != nil || ta <= 0 {
-		return nil
+	if err != nil || ta < 0 {
+		res["Error"] = error.INVALID_PARAMS
+		return res
 	}
 	totalDeposit := uint64(ta * math.Pow10(constants.USDT_DECIMALS))
 
@@ -291,8 +295,9 @@ func PostWithdraw(params map[string]interface{}) map[string]interface{} {
 	}
 
 	amount, err := strconv.ParseFloat(amountStr, 10)
-	if err != nil || amount <= 0 {
-		return nil
+	if err != nil || amount < 0 {
+		res["Error"] = error.INVALID_PARAMS
+		return res
 	}
 	realAmount := uint64(amount * math.Pow10(constants.USDT_DECIMALS))
 

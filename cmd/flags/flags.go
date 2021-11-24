@@ -136,11 +136,11 @@ var (
 		Usage: "",
 	}
 	FlatFlag = cli.StringFlag{
-		Name:  "flat",
+		Name:  "flatFormat",
 		Usage: "String after format",
 	}
 	ProportionalFlag = cli.StringFlag{
-		Name:  "proportional",
+		Name:  "proportionalFormat",
 		Usage: "String after format",
 	}
 
