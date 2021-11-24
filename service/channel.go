@@ -165,6 +165,7 @@ func (this *Node) GetChannelListByOwnerAddress(addr string, tokenAddr string) *l
 func (this *Node) ChannelWithdraw(partnerAddr string, amount uint64) error {
 	success, err := this.Channel.Withdraw(partnerAddr, amount)
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 	if !success {

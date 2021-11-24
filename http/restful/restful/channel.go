@@ -288,8 +288,8 @@ func PostWithdraw(params map[string]interface{}) map[string]interface{} {
 		return res
 	}
 
-	host, err := service.ScanNode.QueryHostInfo(partnerAddrstr)
-	if host == "" {
+	_, err := service.ScanNode.QueryHostInfo(partnerAddrstr)
+	if err != nil {
 		res["Error"] = error.CHANNEL_ERROR
 		return res
 	}
