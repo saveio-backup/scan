@@ -82,7 +82,7 @@ func initAPP() *cli.App {
 		//channel command setting
 		flags.PartnerAddressFlag,
 		flags.TargetAddressFlag,
-		flags.TotalDepositFlag,
+		flags.DepositFlag,
 		flags.AmountFlag,
 		flags.PaymentIDFlag,
 		// RPC settings

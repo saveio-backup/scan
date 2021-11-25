@@ -37,6 +37,7 @@ func GetChannelList(params map[string]interface{}) map[string]interface{} {
 	res := rest.ResponsePack(error.SUCCESS)
 	channelInfos, err := service.ScanNode.GetAllChannels()
 	if err != nil {
+		res["Desc"] = err
 		res["Error"] = error.CHANNEL_ERROR
 		return res
 	}
@@ -55,13 +56,15 @@ func GetDeposit(params map[string]interface{}) map[string]interface{} {
 		return res
 	}
 
-	balance, err := service.ScanNode.QuerySpecialChannelDeposit(partnerAddrstr)
+	balance, err := service.ScanNode.QueryChannelDeposit(partnerAddrstr)
 	if err != nil {
+		res["Desc"] = err
 		res["Error"] = error.CHANNEL_ERROR
 		return res
 	}
-	rsp := httpComm.ChannelCurrentBalanceRsp{
-		CurrentBalance: balance,
+	rsp := httpComm.ChannelTotalDepositBalanceRsp{
+		TotalDepositBalance: balance,
+		TotalDepositBalanceFormat: utils.FormatUsdt(balance),
 	}
 	res["Result"] = rsp
 	return res
@@ -125,6 +128,7 @@ func PostFee(params map[string]interface{}) map[string]interface{} {
 	}
 	err = service.ScanNode.SetFee(fee)
 	if err != nil {
+		res["Desc"] = err
 		res["Error"] = error.CHANNEL_ERROR
 		return res
 	}
@@ -159,6 +163,7 @@ func PostChannelOpen(params map[string]interface{}) map[string]interface{} {
 
 	id, err := service.ScanNode.OpenChannel(partnerAddrstr, 0)
 	if err != nil {
+		res["Desc"] = err
 		res["Error"] = error.CHANNEL_ERROR
 		return res
 	}
@@ -196,6 +201,7 @@ func Postchannelclose(params map[string]interface{}) map[string]interface{} {
 	}
 	err := service.ScanNode.CloseChannel(partnerAddrstr)
 	if err != nil {
+		res["Desc"] = err
 		res["Error"] = error.CHANNEL_ERROR
 		return res
 	}
@@ -220,7 +226,7 @@ func PostDeposit(params map[string]interface{}) map[string]interface{} {
 	}
 
 	var partnerAddrstr string
-	var taStr string
+	var depositStr string
 
 	switch (params["PartnerAddr"]).(type) {
 	case string:
@@ -230,23 +236,32 @@ func PostDeposit(params map[string]interface{}) map[string]interface{} {
 		return res
 	}
 
-	switch (params["TotalDeposit"]).(type) {
+	switch (params["Deposit"]).(type) {
 	case string:
-		taStr = params["TotalDeposit"].(string)
+		depositStr = params["Deposit"].(string)
 	default:
 		res["Error"] = error.INVALID_PARAMS
 		return res
 	}
 
-	ta, err := strconv.ParseFloat(taStr, 10)
-	if err != nil || ta < 0 {
+	deposit, err := strconv.ParseFloat(depositStr, 10)
+	if err != nil || deposit < 0 {
 		res["Error"] = error.INVALID_PARAMS
 		return res
 	}
-	totalDeposit := uint64(ta * math.Pow10(constants.USDT_DECIMALS))
+	realDeposit := uint64(deposit * math.Pow10(constants.USDT_DECIMALS))
 
-	err = service.ScanNode.DepositToChannel(partnerAddrstr, totalDeposit)
+	balance, err := service.ScanNode.QueryChannelDeposit(partnerAddrstr)
 	if err != nil {
+		res["Desc"] = err
+		res["Error"] = error.CHANNEL_ERROR
+		return res
+	}
+
+	realDeposit += balance
+	err = service.ScanNode.DepositToChannel(partnerAddrstr, realDeposit)
+	if err != nil {
+		res["Desc"] = err
 		res["Error"] = error.CHANNEL_ERROR
 		return res
 	}
@@ -283,7 +298,6 @@ func PostWithdraw(params map[string]interface{}) map[string]interface{} {
 
 	switch (params["Amount"]).(type) {
 	case string:
-		// may be bugs
 		amountStr = params["Amount"].(string)
 	default:
 		res["Error"] = error.INVALID_PARAMS
@@ -305,7 +319,15 @@ func PostWithdraw(params map[string]interface{}) map[string]interface{} {
 	}
 	realAmount := uint64(amount * math.Pow10(constants.USDT_DECIMALS))
 
-	err = service.ScanNode.ChannelWithdraw(partnerAddrstr, realAmount)
+	balance, err := service.ScanNode.QueryChannelWithdraw(partnerAddrstr)
+	if err != nil {
+		res["Desc"] = err
+		res["Error"] = error.CHANNEL_ERROR
+		return res
+	}
+
+	realAmount += balance
+	err = service.ScanNode.WithdrawFromChannel(partnerAddrstr, realAmount)
 	if err != nil {
 		res["Desc"] = err
 		res["Error"] = error.CHANNEL_ERROR

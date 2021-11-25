@@ -135,12 +135,27 @@ func (this *Node) CloseChannel(partnerAddr string) error {
 	return this.Channel.CloseChannel(partnerAddr)
 }
 
-func (this *Node) QuerySpecialChannelDeposit(partnerAddr string) (uint64, error) {
+func (this *Node) QueryChannelDeposit(partnerAddr string) (uint64, error) {
 	return this.Channel.GetTotalDepositBalance(partnerAddr)
 }
 
 func (this *Node) DepositToChannel(partnerAddr string, totalDeposit uint64) error {
 	return this.Channel.SetDeposit(partnerAddr, totalDeposit)
+}
+
+func (this *Node) QueryChannelWithdraw(partnerAddr string) (uint64, error) {
+	return this.Channel.GetTotalWithdraw(partnerAddr)
+}
+
+func (this *Node) WithdrawFromChannel(partnerAddr string, amount uint64) error {
+	success, err := this.Channel.Withdraw(partnerAddr, amount)
+	if err != nil {
+		return err
+	}
+	if !success {
+		return errors.New("withdraw failed but no error")
+	}
+	return nil
 }
 
 func (this *Node) GetAllChannels() (*ch_actor.ChannelsInfoResp, error) {
@@ -160,17 +175,6 @@ func (this *Node) GetChannelListByOwnerAddress(addr string, tokenAddr string) *l
 	//[NOTE] addr and token Addr should NOT be needed. addr mean PaymentNetworkID
 	//tokenAddr mean TokenAddress. Need comfirm the behavior when integrate dsp-go-sdk with pylons
 	return list.New()
-}
-
-func (this *Node) ChannelWithdraw(partnerAddr string, amount uint64) error {
-	success, err := this.Channel.Withdraw(partnerAddr, amount)
-	if err != nil {
-		return err
-	}
-	if !success {
-		return errors.New("withdraw failed but no error")
-	}
-	return nil
 }
 
 func (this *Node) QueryHostInfo(partnerAddr string) (string, error) {

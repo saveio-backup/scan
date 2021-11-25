@@ -28,6 +28,7 @@ import (
 	"github.com/saveio/pylons/transfer"
 	"github.com/saveio/scan/service"
 	"github.com/saveio/scan/tracker"
+	"github.com/saveio/themis/cmd/utils"
 
 	httpComm "github.com/saveio/scan/http/base/common"
 	berr "github.com/saveio/scan/http/base/error"
@@ -960,32 +961,37 @@ func CloseChannel(params []interface{}) map[string]interface{} {
 }
 
 func DepositToChannel(params []interface{}) map[string]interface{} {
-	var partnerAddrstr string
-	var totalDeposituint64 uint64
+	var partnerAddress string
+	var deposit uint64
 	switch (params[0]).(type) {
 	case string:
-		partnerAddrstr = params[0].(string)
+		partnerAddress = params[0].(string)
 	default:
 		return responsePack(berr.INVALID_PARAMS, "")
 	}
 
 	switch (params[1]).(type) {
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
-		totalDeposituint64 = params[1].(uint64)
+		deposit = params[1].(uint64)
 	case float32, float64:
-		// may be bugs
-		totalDeposituint64 = uint64(params[1].(float64))
-		fmt.Println(totalDeposituint64)
+		deposit = uint64(params[1].(float64))
 	default:
 		return responsePack(berr.INVALID_PARAMS, "")
 	}
 
-	err := service.ScanNode.DepositToChannel(partnerAddrstr, totalDeposituint64)
+	balance, err := service.ScanNode.QueryChannelDeposit(partnerAddress)
 	if err != nil {
 		log.Errorf("DepositToChannel error: %s", err)
 		return responsePack(berr.INTERNAL_ERROR, err.Error())
 	}
-	fmt.Printf("rpc/interface/depositchannel partneraddr:%s totaldeposit:%d \n", partnerAddrstr, totalDeposituint64)
+
+	deposit += balance
+	err = service.ScanNode.DepositToChannel(partnerAddress, deposit)
+	if err != nil {
+		log.Errorf("DepositToChannel error: %s", err)
+		return responsePack(berr.INTERNAL_ERROR, err.Error())
+	}
+	fmt.Printf("rpc/interface/depositchannel partneraddr:%s totaldeposit:%d \n", partnerAddress, deposit)
 	return responseSuccess(&httpComm.SuccessRsp{})
 }
 
@@ -1085,37 +1091,43 @@ func MediaTransferToSomebody(params []interface{}) map[string]interface{} {
 }
 
 func WithdrawChannel(params []interface{}) map[string]interface{} {
-	var partnerAddrstr string
-	var amountuint64 uint64
+	var partnerAddr string
+	var withdraw uint64
 	switch (params[0]).(type) {
 	case string:
-		partnerAddrstr = params[0].(string)
+		partnerAddr = params[0].(string)
 	default:
 		return responsePack(berr.INVALID_PARAMS, "")
 	}
 
 	switch (params[1]).(type) {
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
-		amountuint64 = params[1].(uint64)
+		withdraw = params[1].(uint64)
 	case float32, float64:
-		// may be bugs
-		amountuint64 = uint64(params[1].(float64))
+		withdraw = uint64(params[1].(float64))
 	default:
 		return responsePack(berr.INVALID_PARAMS, "")
 	}
 
-	host, err := service.ScanNode.QueryHostInfo(partnerAddrstr)
+	host, err := service.ScanNode.QueryHostInfo(partnerAddr)
 	if host == "" {
 		log.Errorf("WithdrawChannel hostinfo is null, error: %s", err)
 		return responsePack(berr.CHANNEL_TARGET_HOST_INFO_NOT_FOUND, "")
 	}
 
-	err = service.ScanNode.ChannelWithdraw(partnerAddrstr, amountuint64)
+	balance, err := service.ScanNode.QueryChannelWithdraw(partnerAddr)
+	if err != nil {
+		log.Errorf("DepositToChannel error: %s", err)
+		return responsePack(berr.INTERNAL_ERROR, err.Error())
+	}
+
+	withdraw += balance
+	err = service.ScanNode.WithdrawFromChannel(partnerAddr, withdraw)
 	if err != nil {
 		log.Errorf("WithdrawChannel error: %s", err)
 		return responsePack(berr.INTERNAL_ERROR, err.Error())
 	}
-	fmt.Printf("rpc/interface/withdrawchannel partneraddr:%s amount:%d \n", partnerAddrstr, amountuint64)
+	fmt.Printf("rpc/interface/withdrawchannel partneraddr:%s amount:%d \n", partnerAddr, withdraw)
 	return responseSuccess(&httpComm.SuccessRsp{})
 }
 
@@ -1137,7 +1149,7 @@ func QueryChannelDeposit(params []interface{}) map[string]interface{} {
 		return responsePack(berr.INVALID_PARAMS, "")
 	}
 
-	balance, err := service.ScanNode.QuerySpecialChannelDeposit(partnerAddrstr)
+	balance, err := service.ScanNode.QueryChannelDeposit(partnerAddrstr)
 	if err != nil {
 		log.Errorf("QueryChannelDeposit error: %s", err)
 		return responsePack(berr.INTERNAL_ERROR, err.Error())
@@ -1145,6 +1157,7 @@ func QueryChannelDeposit(params []interface{}) map[string]interface{} {
 	fmt.Printf("rpc/interface/openchanneldeposit partneraddr:%s\n", partnerAddrstr)
 	curBalanceRsp := httpComm.ChannelTotalDepositBalanceRsp{
 		TotalDepositBalance: balance,
+		TotalDepositBalanceFormat: utils.FormatUsdt(balance),
 	}
 	return responseSuccess(&curBalanceRsp)
 }
@@ -1210,8 +1223,10 @@ func GetFee(params []interface{}) map[string]interface{} {
 	}
 	fmt.Printf("rpc/interface/getfee\n")
 	curBalanceRsp := httpComm.ChannelFeeRsp{
-		Flat:         uint64(fee.Flat),
-		Proportional: uint64(fee.Proportional),
+		Flat:               uint64(fee.Flat),
+		Proportional:       uint64(fee.Proportional),
+		FlatFormat:         utils.FormatUsdt(uint64(fee.Flat)),
+		ProportionalFormat: utils.FormatUsdt(uint64(fee.Proportional)),
 	}
 	return responseSuccess(&curBalanceRsp)
 }

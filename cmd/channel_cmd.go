@@ -60,7 +60,7 @@ var ChannelCommand = cli.Command{
 			ArgsUsage: " ",
 			Flags: []cli.Flag{
 				flags.PartnerAddressFlag,
-				flags.TotalDepositFlag,
+				flags.DepositFlag,
 			},
 			Description: "Deposit token to channel with specified partner",
 		},
@@ -102,7 +102,7 @@ var ChannelCommand = cli.Command{
 		},
 		{
 			Action:    getAllChannels,
-			Name:      "show",
+			Name:      "list",
 			Usage:     "Show channels by paging, or target by address",
 			ArgsUsage: " ",
 			Flags: []cli.Flag{
@@ -147,6 +147,7 @@ var ChannelCommand = cli.Command{
 			Usage:     "Get fee schedule in mediation",
 			ArgsUsage: " ",
 			Flags: []cli.Flag{
+				flags.ChannelIdFlag,
 			},
 			Description: "Query fee schedule in mediation",
 		},
@@ -236,7 +237,7 @@ func depositToChannel(ctx *cli.Context) error {
 	}
 
 	partnerAddr := ctx.String(flags.GetFlagName(flags.PartnerAddressFlag))
-	taStr := ctx.String(flags.GetFlagName(flags.TotalDepositFlag))
+	taStr := ctx.String(flags.GetFlagName(flags.DepositFlag))
 
 	ta, err := strconv.ParseFloat(taStr, 10)
 	if err != nil || ta < 0 {

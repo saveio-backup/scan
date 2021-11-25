@@ -76,10 +76,7 @@ type ChannelRsp struct {
 
 type ChannelTotalDepositBalanceRsp struct {
 	TotalDepositBalance uint64
-}
-
-type ChannelCurrentBalanceRsp struct {
-	CurrentBalance uint64
+	TotalDepositBalanceFormat string
 }
 
 type ChannelFeeRsp struct {

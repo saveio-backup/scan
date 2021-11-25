@@ -114,9 +114,9 @@ var (
 		Usage: "Channel transfer media `<address>`",
 		Value: "AFmseVrdL9f9oyCzZefL9tG6UbvhPbdYzM",
 	}
-	TotalDepositFlag = cli.StringFlag{
-		Name:  "totalDeposit",
-		Usage: "Channel total `<deposit>`",
+	DepositFlag = cli.StringFlag{
+		Name:  "deposit",
+		Usage: "Deposit amount",
 	}
 	AmountFlag = cli.StringFlag{
 		Name:  "amount",
