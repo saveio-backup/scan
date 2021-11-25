@@ -23,6 +23,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"fmt"
 	Err "github.com/saveio/scan/http/base/error"
 	berr "github.com/saveio/themis/http/base/error"
 	"io/ioutil"
@@ -320,7 +321,17 @@ func (this *restServer) write(w http.ResponseWriter, data []byte) {
 
 //response
 func (this *restServer) response(w http.ResponseWriter, resp map[string]interface{}) {
-	resp["Desc"] = Err.ErrMap[resp["Error"].(int64)]
+	var desc string
+	if resp["Desc"] != nil {
+		switch resp["Desc"].(type) {
+		case string:
+			desc = resp["Desc"].(string)
+		case error:
+			desc = resp["Desc"].(error).Error()
+		}
+	}
+	desc = fmt.Sprintf("[%s] %s", Err.ErrMap[resp["Error"].(int64)], desc)
+	resp["Desc"] =  desc
 	data, err := json.Marshal(resp)
 	if err != nil {
 		log.Fatal("HTTP Handle - json.Marshal: %v", err)

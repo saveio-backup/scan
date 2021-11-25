@@ -105,6 +105,7 @@ func PostFee(params map[string]interface{}) map[string]interface{} {
 
 	flat, err := strconv.ParseFloat(flatStr, 10)
 	if err != nil || flat < 0 || flat > 100000 {
+		res["Desc"] = "FlatFormat range [0, 100000] "
 		res["Error"] = error.INVALID_PARAMS
 		return res
 	}
@@ -112,6 +113,7 @@ func PostFee(params map[string]interface{}) map[string]interface{} {
 
 	pro, err := strconv.ParseFloat(proStr, 10)
 	if err != nil || pro < 0 || pro > 1 {
+		res["Desc"] = "ProportionalFormat range [0, 1] "
 		res["Error"] = error.INVALID_PARAMS
 		return res
 	}
@@ -290,12 +292,14 @@ func PostWithdraw(params map[string]interface{}) map[string]interface{} {
 
 	_, err := service.ScanNode.QueryHostInfo(partnerAddrstr)
 	if err != nil {
+		res["Desc"] = err
 		res["Error"] = error.CHANNEL_ERROR
 		return res
 	}
 
 	amount, err := strconv.ParseFloat(amountStr, 10)
 	if err != nil || amount < 0 {
+		res["Desc"] = "Amount range [0, Infinity) "
 		res["Error"] = error.INVALID_PARAMS
 		return res
 	}
@@ -303,6 +307,7 @@ func PostWithdraw(params map[string]interface{}) map[string]interface{} {
 
 	err = service.ScanNode.ChannelWithdraw(partnerAddrstr, realAmount)
 	if err != nil {
+		res["Desc"] = err
 		res["Error"] = error.CHANNEL_ERROR
 		return res
 	}
