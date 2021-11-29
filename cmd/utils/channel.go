@@ -355,8 +355,8 @@ func QueryHostInfo(partnerAddr string) (*httpComm.EndPointRsp, *httpComm.FailedR
 }
 
 
-func GetFee() (*httpComm.ChannelFeeRsp, *httpComm.FailedRsp) {
-	result, ontErr := sendRpcRequest("getfee", []interface{}{})
+func GetFee(channelID uint64) (*httpComm.ChannelFeeRsp, *httpComm.FailedRsp) {
+	result, ontErr := sendRpcRequest("getfee", []interface{}{channelID})
 	if ontErr != nil {
 		switch ontErr.ErrorCode {
 		case ERROR_INVALID_PARAMS:
@@ -378,8 +378,8 @@ func GetFee() (*httpComm.ChannelFeeRsp, *httpComm.FailedRsp) {
 			FailedMsg: ontErr.Error.Error(),
 		}
 	}
-	chanHostRsp := &httpComm.ChannelFeeRsp{}
-	err := json.Unmarshal(result, chanHostRsp)
+	rsp := &httpComm.ChannelFeeRsp{}
+	err := json.Unmarshal(result, rsp)
 	if err != nil {
 		return nil, &httpComm.FailedRsp{
 			ErrCode:   berr.JSON_UNMARSHAL_ERROR,
@@ -389,7 +389,7 @@ func GetFee() (*httpComm.ChannelFeeRsp, *httpComm.FailedRsp) {
 	}
 	log.Debugf("Get fee success")
 	log.Debugf("Get fee result :%s", result)
-	return chanHostRsp, nil
+	return rsp, nil
 }
 
 func SetFee(flat uint64, pro uint64) (*httpComm.FailedRsp) {

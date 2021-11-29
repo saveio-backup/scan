@@ -1216,7 +1216,18 @@ func JoinDnsNodesChannels(params []interface{}) map[string]interface{} {
 }
 
 func GetFee(params []interface{}) map[string]interface{} {
-	fee, err := service.ScanNode.GetFee()
+	var channelID uint64
+
+	switch (params[0]).(type) {
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+		channelID = params[0].(uint64)
+	case float32, float64:
+		channelID = uint64(params[0].(float64))
+	default:
+		return responsePack(berr.INVALID_PARAMS, "")
+	}
+
+	fee, err := service.ScanNode.GetFee(channelID)
 	if err != nil {
 		log.Errorf("QueryChannelDeposit error: %s", err)
 		return responsePack(berr.INTERNAL_ERROR, err.Error())

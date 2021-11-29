@@ -428,7 +428,9 @@ func getFee(ctx *cli.Context) error {
 		return nil
 	}
 
-	fee, failedRsp := utils.GetFee()
+	channelID := ctx.Uint64(flags.GetFlagName(flags.ChannelIdFlag))
+
+	fee, failedRsp := utils.GetFee(channelID)
 	if failedRsp != nil {
 		PrintErrorMsg("%v\n", failedRsp.FailedMsg)
 		return nil

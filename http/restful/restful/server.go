@@ -77,6 +77,7 @@ const (
 	GET_VERSION           = "/api/v1/version"
 	GET_NETWORKID         = "/api/v1/networkid"
 	GET_FEE               = "/api/v1/channel/fee"
+	GET_FEE_BYCID         = "/api/v1/channel/fee/:cid"
 	GET_CHANNEL_LIST      = "/api/v1/channel/list"
 	GET_DEPOSIT           = "/api/v1/channel/deposit/:addr"
 
@@ -159,6 +160,7 @@ func (this *restServer) registryMethod() {
 		GET_MEMPOOL_TXSTATE:   {name: "getmempooltxstate", handler: rest.GetMemPoolTxState},
 		GET_VERSION:           {name: "getversion", handler: rest.GetNodeVersion},
 		GET_NETWORKID:         {name: "getnetworkid", handler: rest.GetNetworkId},
+		GET_FEE_BYCID:         {name: "getfee", handler: GetFee},
 		GET_FEE:               {name: "getfee", handler: GetFee},
 		GET_CHANNEL_LIST:      {name: "getchannellist", handler: GetChannelList},
 		GET_DEPOSIT:           {name: "getdeposit", handler: GetDeposit},
@@ -205,7 +207,11 @@ func (this *restServer) getPath(url string) string {
 		return GET_ALLOWANCE
 	} else if strings.Contains(url, strings.TrimRight(GET_MEMPOOL_TXSTATE, ":hash")) {
 		return GET_MEMPOOL_TXSTATE
-	} else if strings.Contains(url, strings.TrimRight(GET_DEPOSIT, ":addr")) {
+	}
+	if strings.Contains(url, strings.TrimRight(GET_FEE_BYCID, ":cid")) {
+		return GET_FEE_BYCID
+	}
+	if strings.Contains(url, strings.TrimRight(GET_DEPOSIT, ":addr")) {
 		return GET_DEPOSIT
 	}
 	return url
@@ -249,6 +255,8 @@ func (this *restServer) getParams(r *http.Request, url string, req map[string]in
 		req["From"], req["To"] = getParam(r, "from"), getParam(r, "to")
 	case GET_MEMPOOL_TXSTATE:
 		req["Hash"] = getParam(r, "hash")
+	case GET_FEE_BYCID:
+		req["ChannelID"] = getParam(r, "cid")
 	case GET_DEPOSIT:
 		req["PartnerAddr"] = getParam(r, "addr")
 	default:

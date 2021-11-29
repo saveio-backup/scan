@@ -3,6 +3,7 @@ package restful
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"github.com/saveio/themis/common/log"
 	"math"
 	"strconv"
 
@@ -18,8 +19,21 @@ import (
 
 func GetFee(params map[string]interface{}) map[string]interface{} {
 	res := rest.ResponsePack(error.SUCCESS)
-	fee, err := service.ScanNode.GetFee()
+
+	var cidStr string
+	switch (params["ChannelID"]).(type) {
+	case string:
+		cidStr = params["ChannelID"].(string)
+	}
+	cid, err := strconv.Atoi(cidStr)
 	if err != nil {
+		cid = 0
+		log.Error("get wrong channel id:", err)
+	}
+
+	fee, err := service.ScanNode.GetFee(uint64(cid))
+	if err != nil {
+		res["Desc"] = err
 		res["Error"] = error.CHANNEL_ERROR
 		return res
 	}
