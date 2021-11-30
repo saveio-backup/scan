@@ -86,6 +86,11 @@ type ChannelFeeRsp struct {
 	ProportionalFormat string
 }
 
+type ChannelPenaltyRsp struct {
+	FeePenalty uint64
+	DiversityPenalty uint64
+}
+
 type DnsRsp struct {
 	Tx string
 }

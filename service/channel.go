@@ -159,7 +159,14 @@ func (this *Node) WithdrawFromChannel(partnerAddr string, amount uint64) error {
 }
 
 func (this *Node) GetAllChannels() (*ch_actor.ChannelsInfoResp, error) {
-	return this.Channel.AllChannels()
+	channels, err := this.Channel.AllChannels()
+	if err != nil {
+		return nil, err
+	}
+	for _, v := range channels.Channels {
+		v.HostAddr, _ = this.QueryHostInfo(v.Address)
+	}
+	return channels, nil
 }
 
 func (this *Node) Transfer(paymentId int32, amount uint64, to string) error {
@@ -184,7 +191,7 @@ func (this *Node) QueryHostInfo(partnerAddr string) (string, error) {
 		return "", err
 	}
 	if peer == nil {
-		return "", errors.New("endpoint not registed")
+		return "", errors.New("endpoint not registered")
 	}
 	return peer.NodeAddr.String(), nil
 }
@@ -198,8 +205,8 @@ func (this *Node) channelExists(ci []*ch_actor.ChannelInfo, w string) bool {
 	return false
 }
 
-func (n *Node) GetFee(channelID uint64) (*transfer.FeeScheduleState, error) {
-	fee, err := n.Channel.GetFee(channelID)
+func (this *Node) GetFee(channelID uint64) (*transfer.FeeScheduleState, error) {
+	fee, err := this.Channel.GetFee(channelID)
 	if err != nil {
 		log.Errorf("GetFee err %v", err)
 		return nil, err
@@ -207,10 +214,28 @@ func (n *Node) GetFee(channelID uint64) (*transfer.FeeScheduleState, error) {
 	return fee, nil
 }
 
-func (n *Node) SetFee(fee *transfer.FeeScheduleState) error {
-	err := n.Channel.SetFee(fee)
+func (this *Node) SetFee(fee *transfer.FeeScheduleState) error {
+	err := this.Channel.SetFee(fee)
 	if err != nil {
 		log.Errorf("SetFee err %v", err)
+		return err
+	}
+	return nil
+}
+
+func (this *Node) GetPenalty() (*chanCom.RoutePenaltyConfig, error) {
+	fee, err := this.Channel.GetPenalty()
+	if err != nil {
+		log.Errorf("GetPenalty err %v", err)
+		return nil, err
+	}
+	return fee, nil
+}
+
+func (this *Node) SetPenalty(penalty *chanCom.RoutePenaltyConfig) error {
+	err := this.Channel.SetPenalty(penalty)
+	if err != nil {
+		log.Errorf("SetPenalty err %v", err)
 		return err
 	}
 	return nil

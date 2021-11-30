@@ -354,7 +354,6 @@ func QueryHostInfo(partnerAddr string) (*httpComm.EndPointRsp, *httpComm.FailedR
 	return chanHostRsp, nil
 }
 
-
 func GetFee(channelID uint64) (*httpComm.ChannelFeeRsp, *httpComm.FailedRsp) {
 	result, ontErr := sendRpcRequest("getfee", []interface{}{channelID})
 	if ontErr != nil {
@@ -417,5 +416,70 @@ func SetFee(flat uint64, pro uint64) (*httpComm.FailedRsp) {
 	}
 	log.Debugf("Set fee success")
 	log.Debugf("Set fee result :%s", result)
+	return nil
+}
+
+func GetPenalty() (*httpComm.ChannelPenaltyRsp, *httpComm.FailedRsp) {
+	result, ontErr := sendRpcRequest("getPenalty", []interface{}{})
+	if ontErr != nil {
+		switch ontErr.ErrorCode {
+		case ERROR_INVALID_PARAMS:
+			return nil, &httpComm.FailedRsp{
+				ErrCode:   berr.INVALID_PARAMS,
+				ErrMsg:    berr.ErrMap[berr.INVALID_PARAMS],
+				FailedMsg: fmt.Sprintf("Invalid channelId"),
+			}
+		case berr.INTERNAL_ERROR:
+			return nil, &httpComm.FailedRsp{
+				ErrCode:   berr.INTERNAL_ERROR,
+				ErrMsg:    berr.ErrMap[berr.INTERNAL_ERROR],
+				FailedMsg: ontErr.Error.Error(),
+			}
+		}
+		return nil, &httpComm.FailedRsp{
+			ErrCode:   ontErr.ErrorCode,
+			ErrMsg:    "",
+			FailedMsg: ontErr.Error.Error(),
+		}
+	}
+	rsp := &httpComm.ChannelPenaltyRsp{}
+	err := json.Unmarshal(result, rsp)
+	if err != nil {
+		return nil, &httpComm.FailedRsp{
+			ErrCode:   berr.JSON_UNMARSHAL_ERROR,
+			ErrMsg:    berr.ErrMap[berr.JSON_UNMARSHAL_ERROR],
+			FailedMsg: err.Error(),
+		}
+	}
+	log.Debugf("Get penalty success")
+	log.Debugf("Get penalty result :%s", result)
+	return rsp, nil
+}
+
+func SetPenalty(fp float64, dp float64) (*httpComm.FailedRsp) {
+	result, err := sendRpcRequest("setPenalty", []interface{}{fp, dp})
+	if err != nil {
+		switch err.ErrorCode {
+		case ERROR_INVALID_PARAMS:
+			return &httpComm.FailedRsp{
+				ErrCode:   berr.INVALID_PARAMS,
+				ErrMsg:    berr.ErrMap[berr.INVALID_PARAMS],
+				FailedMsg: fmt.Sprintf("Invalid params"),
+			}
+		case berr.INTERNAL_ERROR:
+			return &httpComm.FailedRsp{
+				ErrCode:   berr.INTERNAL_ERROR,
+				ErrMsg:    berr.ErrMap[berr.INTERNAL_ERROR],
+				FailedMsg: err.Error.Error(),
+			}
+		}
+		return &httpComm.FailedRsp{
+			ErrCode:   err.ErrorCode,
+			ErrMsg:    "",
+			FailedMsg: err.Error.Error(),
+		}
+	}
+	log.Debugf("Set penalty success")
+	log.Debugf("Set penalty result :%s", result)
 	return nil
 }

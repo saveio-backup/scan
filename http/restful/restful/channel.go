@@ -327,7 +327,7 @@ func PostWithdraw(params map[string]interface{}) map[string]interface{} {
 
 	amount, err := strconv.ParseFloat(amountStr, 10)
 	if err != nil || amount < 0 {
-		res["Desc"] = "Amount range [0, Infinity) "
+		res["Desc"] = "Amount range [0, TotalDeposit] "
 		res["Error"] = error.INVALID_PARAMS
 		return res
 	}

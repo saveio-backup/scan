@@ -11,7 +11,7 @@ var (
 		Name:  "scanconfig",
 		Usage: "Use `<filename>` to specifies the config file to connect to cunstomize network.",
 	}
-	//commmon
+	// commmon
 	LogStderrFlag = cli.BoolFlag{
 		Name:  "logstderr",
 		Usage: "log to standard error instead of files,default false",
@@ -52,7 +52,7 @@ var (
 		Usage: "P2P network seedlist `<protocol://ip:port>`",
 	}
 
-	//tracker command setting
+	// tracker command setting
 	TrackerServerPortFlag = cli.UintFlag{
 		Name:  "trackerport",
 		Usage: "tracker server listen udp port `<number>`",
@@ -83,7 +83,7 @@ var (
 		Usage: "file hash `<string>`",
 	}
 
-	//ddns command setting
+	// ddns command setting
 	DnsIpFlag = cli.StringFlag{
 		Name:  "dnsIp",
 		Usage: "Dns `<ip>`",
@@ -143,8 +143,18 @@ var (
 		Name:  "proportionalFormat",
 		Usage: "String after format",
 	}
+	FeePenaltyFlag = cli.Uint64Flag{
+		Name:        "feePenalty, fp",
+		Usage:       "",
+		Value:       1,
+	}
+	DiversityPenaltyFlag = cli.Uint64Flag{
+		Name:        "diversityPenalty, dp",
+		Usage:       "",
+		Value:       1,
+	}
 
-	//ddns govern command setting
+	// ddns govern command setting
 	PeerPubkeyFlag = cli.StringFlag{
 		Name:  "peerPubkey",
 		Usage: "candidate pubkey",
@@ -183,7 +193,7 @@ var (
 		Usage: "Json rpc local server listening port `<number>`",
 	}
 
-	//Restful setting
+	// Restful setting
 	RestfulEnableFlag = cli.BoolFlag{
 		Name:  "rest",
 		Usage: "Enable restful api server",
@@ -194,7 +204,7 @@ var (
 	}
 )
 
-//GetFlagName deal with short flag, and return the flag name whether flag name have short name
+// GetFlagName deal with short flag, and return the flag name whether flag name have short name
 func GetFlagName(flag cli.Flag) string {
 	name := flag.GetName()
 	if name == "" {

@@ -338,8 +338,11 @@ func (this *restServer) response(w http.ResponseWriter, resp map[string]interfac
 			desc = resp["Desc"].(error).Error()
 		}
 	}
-	desc = fmt.Sprintf("[%s] %s", Err.ErrMap[resp["Error"].(int64)], desc)
-	resp["Desc"] =  desc
+	msg := Err.ErrMap[resp["Error"].(int64)]
+	if desc != "" {
+		msg += fmt.Sprintf("%s, %s", msg, desc)
+	}
+	resp["Desc"] =  msg
 	data, err := json.Marshal(resp)
 	if err != nil {
 		log.Fatal("HTTP Handle - json.Marshal: %v", err)

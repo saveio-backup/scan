@@ -162,6 +162,26 @@ var ChannelCommand = cli.Command{
 			},
 			Description: "Setup fee schedule in mediation",
 		},
+		{
+			Action:    getPenalty,
+			Name:      "getPenalty",
+			Usage:     "Get penalty setup",
+			ArgsUsage: " ",
+			Flags: []cli.Flag{
+			},
+			Description: "Get penalty setup",
+		},
+		{
+			Action:    setPenalty,
+			Name:      "setPenalty",
+			Usage:     "Set penalty setup",
+			ArgsUsage: " ",
+			Flags: []cli.Flag{
+				flags.FeePenaltyFlag,
+				flags.DiversityPenaltyFlag,
+			},
+			Description: "Set penalty setup",
+		},
 	},
 }
 
@@ -469,5 +489,44 @@ func setFee(ctx *cli.Context) error {
 		return nil
 	}
 	PrintInfoMsg("\nSetup fee schedule success.")
+	return nil
+}
+
+
+func getPenalty(ctx *cli.Context) error {
+	SetRpcPort(ctx)
+
+	if ctx.NumFlags() < 0 {
+		PrintErrorMsg("Missing argument.")
+		cli.ShowSubcommandHelp(ctx)
+		return nil
+	}
+
+	res, failedRsp := utils.GetPenalty()
+	if failedRsp != nil {
+		PrintErrorMsg("%v\n", failedRsp.FailedMsg)
+		return nil
+	}
+	PrintJsonObject(res)
+	return nil
+}
+
+func setPenalty(ctx *cli.Context) error {
+	SetRpcPort(ctx)
+
+	if ctx.NumFlags() < 2 {
+		PrintErrorMsg("Missing argument.")
+		cli.ShowSubcommandHelp(ctx)
+		return nil
+	}
+
+	fp := ctx.Float64(flags.GetFlagName(flags.FeePenaltyFlag))
+	dp := ctx.Float64(flags.GetFlagName(flags.DiversityPenaltyFlag))
+
+	failedRsp := utils.SetPenalty(fp, dp)
+	if failedRsp != nil {
+		PrintErrorMsg("%v\n", failedRsp.FailedMsg)
+		return nil
+	}
 	return nil
 }

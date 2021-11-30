@@ -26,12 +26,11 @@ import (
 	"github.com/saveio/dsp-go-sdk/consts"
 	chanCom "github.com/saveio/pylons/common"
 	"github.com/saveio/pylons/transfer"
+	httpComm "github.com/saveio/scan/http/base/common"
+	berr "github.com/saveio/scan/http/base/error"
 	"github.com/saveio/scan/service"
 	"github.com/saveio/scan/tracker"
 	"github.com/saveio/themis/cmd/utils"
-
-	httpComm "github.com/saveio/scan/http/base/common"
-	berr "github.com/saveio/scan/http/base/error"
 	"github.com/saveio/themis/common"
 	"github.com/saveio/themis/common/config"
 	"github.com/saveio/themis/common/log"
@@ -1229,7 +1228,7 @@ func GetFee(params []interface{}) map[string]interface{} {
 
 	fee, err := service.ScanNode.GetFee(channelID)
 	if err != nil {
-		log.Errorf("QueryChannelDeposit error: %s", err)
+		log.Errorf("GetFee error: %s", err)
 		return responsePack(berr.INTERNAL_ERROR, err.Error())
 	}
 	fmt.Printf("rpc/interface/getfee\n")
@@ -1265,6 +1264,46 @@ func SetFee(params []interface{}) map[string]interface{} {
 		Proportional: chanCom.ProportionalFeeAmount(pro),
 	}
 	err := service.ScanNode.SetFee(fee)
+	if err != nil {
+		return responsePack(berr.INTERNAL_ERROR, "")
+	}
+
+	return nil
+}
+
+func GetPenalty(params []interface{}) map[string]interface{} {
+	res, err := service.ScanNode.GetPenalty()
+	if err != nil {
+		log.Errorf("GetPenalty error: %s", err)
+		return responsePack(berr.INTERNAL_ERROR, err.Error())
+	}
+	fmt.Printf("rpc/interface/GetPenalty\n")
+	return responseSuccess(&res)
+}
+
+func SetPenalty(params []interface{}) map[string]interface{} {
+	var feePenalty float64
+	var diversityPenalty float64
+
+	switch (params[0]).(type) {
+	case float64:
+		feePenalty = params[0].(float64)
+	default:
+		return responsePack(berr.INVALID_PARAMS, "")
+	}
+
+	switch (params[1]).(type) {
+	case float64:
+		diversityPenalty = params[1].(float64)
+	default:
+		return responsePack(berr.INVALID_PARAMS, "")
+	}
+
+	penalty := &chanCom.RoutePenaltyConfig{
+		FeePenalty:       feePenalty,
+		DiversityPenalty: diversityPenalty,
+	}
+	err := service.ScanNode.SetPenalty(penalty)
 	if err != nil {
 		return responsePack(berr.INTERNAL_ERROR, "")
 	}

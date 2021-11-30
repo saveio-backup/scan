@@ -91,6 +91,8 @@ func StartRPCServer() error {
 	rpc.HandleFunc("queryhostinfo", rpc.QueryHostInfo)
 	rpc.HandleFunc("getfee", rpc.GetFee)
 	rpc.HandleFunc("setfee", rpc.SetFee)
+	rpc.HandleFunc("getPenalty", rpc.GetPenalty)
+	rpc.HandleFunc("setPenalty", rpc.SetPenalty)
 
 	err := http.ListenAndServe(":"+strconv.Itoa(int(cfg.Parameters.Base.PortBase+cfg.Parameters.Base.JsonRpcPortOffset)), nil)
 	if err != nil {
