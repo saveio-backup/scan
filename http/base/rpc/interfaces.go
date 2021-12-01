@@ -928,6 +928,12 @@ func OpenChannel(params []interface{}) map[string]interface{} {
 		return responsePack(berr.INVALID_PARAMS, "")
 	}
 
+	host, err := service.ScanNode.QueryHostInfo(partnerAddrstr)
+	if host == "" {
+		log.Errorf("OpenChannel hostInfo is null, error: %s", err)
+		return responsePack(berr.CHANNEL_TARGET_HOST_INFO_NOT_FOUND, "")
+	}
+
 	id, err := service.ScanNode.OpenChannel(partnerAddrstr, 0)
 	if err != nil {
 		log.Errorf("OpenChannel error: %s", err)
@@ -949,9 +955,15 @@ func CloseChannel(params []interface{}) map[string]interface{} {
 		return responsePack(berr.INVALID_PARAMS, "")
 	}
 
-	err := service.ScanNode.CloseChannel(partnerAddrstr)
+	host, err := service.ScanNode.QueryHostInfo(partnerAddrstr)
+	if host == "" {
+		log.Errorf("CloseChannel hostInfo is null, error: %s", err)
+		return responsePack(berr.CHANNEL_TARGET_HOST_INFO_NOT_FOUND, "")
+	}
+
+	err = service.ScanNode.CloseChannel(partnerAddrstr)
 	if err != nil {
-		log.Errorf("OpenChannel error: %s", err)
+		log.Errorf("CloseChannel error: %s", err)
 		return responsePack(berr.INTERNAL_ERROR, err.Error())
 	}
 	fmt.Printf("rpc/interface/closechannel partneraddr:%s\n", partnerAddrstr)
@@ -976,6 +988,12 @@ func DepositToChannel(params []interface{}) map[string]interface{} {
 		deposit = uint64(params[1].(float64))
 	default:
 		return responsePack(berr.INVALID_PARAMS, "")
+	}
+
+	host, err := service.ScanNode.QueryHostInfo(partnerAddress)
+	if host == "" {
+		log.Errorf("DepositToChannel hostInfo is null, error: %s", err)
+		return responsePack(berr.CHANNEL_TARGET_HOST_INFO_NOT_FOUND, "")
 	}
 
 	balance, err := service.ScanNode.QueryChannelDeposit(partnerAddress)
@@ -1054,6 +1072,7 @@ func MediaTransferToSomebody(params []interface{}) map[string]interface{} {
 	default:
 		return responsePack(berr.INVALID_PARAMS, "")
 	}
+
 	switch (params[1]).(type) {
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
 		amountuint64 = params[1].(uint64)
@@ -1063,23 +1082,27 @@ func MediaTransferToSomebody(params []interface{}) map[string]interface{} {
 	default:
 		return responsePack(berr.INVALID_PARAMS, "")
 	}
+
 	switch (params[2]).(type) {
 	case string:
 		mediaAddrStr = params[2].(string)
 	default:
 		return responsePack(berr.INVALID_PARAMS, "")
 	}
+
 	switch (params[3]).(type) {
 	case string:
 		partnerAddrstr = params[3].(string)
 	default:
 		return responsePack(berr.INVALID_PARAMS, "")
 	}
+
 	host, err := service.ScanNode.QueryHostInfo(partnerAddrstr)
 	if host == "" {
 		log.Errorf("MediaTransferToSomebody hostinfo is null, error: %s", err)
 		return responsePack(berr.CHANNEL_TARGET_HOST_INFO_NOT_FOUND, "")
 	}
+
 	err = service.ScanNode.MediaTransfer(paymentIduint, amountuint64, mediaAddrStr, partnerAddrstr)
 	if err != nil {
 		log.Errorf("MediaTransferToSomebody error: %s", err)
@@ -1110,7 +1133,7 @@ func WithdrawChannel(params []interface{}) map[string]interface{} {
 
 	host, err := service.ScanNode.QueryHostInfo(partnerAddr)
 	if host == "" {
-		log.Errorf("WithdrawChannel hostinfo is null, error: %s", err)
+		log.Errorf("WithdrawChannel hostInfo is null, error: %s", err)
 		return responsePack(berr.CHANNEL_TARGET_HOST_INFO_NOT_FOUND, "")
 	}
 

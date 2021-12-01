@@ -79,6 +79,7 @@ const (
 	GET_FEE               = "/api/v1/channel/fee"
 	GET_FEE_BYCID         = "/api/v1/channel/fee/:cid"
 	GET_CHANNEL_LIST      = "/api/v1/channel/list"
+	GET_CHANNEL_LIST_BYPA = "/api/v1/channel/list/:pa"
 	GET_DEPOSIT           = "/api/v1/channel/deposit/:addr"
 
 	POST_RAW_TX        = "/api/v1/transaction"
@@ -163,6 +164,7 @@ func (this *restServer) registryMethod() {
 		GET_FEE_BYCID:         {name: "getfee", handler: GetFee},
 		GET_FEE:               {name: "getfee", handler: GetFee},
 		GET_CHANNEL_LIST:      {name: "getchannellist", handler: GetChannelList},
+		GET_CHANNEL_LIST_BYPA: {name: "getchannellist", handler: GetChannelList},
 		GET_DEPOSIT:           {name: "getdeposit", handler: GetDeposit},
 	}
 	postMethodMap := map[string]Action{
@@ -214,6 +216,9 @@ func (this *restServer) getPath(url string) string {
 	if strings.Contains(url, strings.TrimRight(GET_DEPOSIT, ":addr")) {
 		return GET_DEPOSIT
 	}
+	if strings.Contains(url, strings.TrimRight(GET_CHANNEL_LIST_BYPA, ":pa")) {
+		return GET_CHANNEL_LIST_BYPA
+	}
 	return url
 }
 
@@ -259,6 +264,8 @@ func (this *restServer) getParams(r *http.Request, url string, req map[string]in
 		req["ChannelID"] = getParam(r, "cid")
 	case GET_DEPOSIT:
 		req["PartnerAddr"] = getParam(r, "addr")
+	case GET_CHANNEL_LIST_BYPA:
+		req["PartnerAddr"] = getParam(r, "pa")
 	default:
 	}
 	return req
@@ -339,8 +346,9 @@ func (this *restServer) response(w http.ResponseWriter, resp map[string]interfac
 		}
 	}
 	msg := Err.ErrMap[resp["Error"].(int64)]
+
 	if desc != "" {
-		msg += fmt.Sprintf("%s, %s", msg, desc)
+		msg = fmt.Sprintf("%s, %s", msg, desc)
 	}
 	resp["Desc"] =  msg
 	data, err := json.Marshal(resp)
