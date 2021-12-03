@@ -163,8 +163,10 @@ func (this *Node) GetAllChannels() (*ch_actor.ChannelsInfoResp, error) {
 	if err != nil {
 		return nil, err
 	}
-	for _, v := range channels.Channels {
-		v.HostAddr, _ = this.QueryHostInfo(v.Address)
+	if channels != nil {
+		for _, v := range channels.Channels {
+			v.HostAddr, _ = this.QueryHostInfo(v.Address)
+		}
 	}
 	return channels, nil
 }
@@ -203,6 +205,14 @@ func (this *Node) channelExists(ci []*ch_actor.ChannelInfo, w string) bool {
 		}
 	}
 	return false
+}
+
+func (this *Node) CooperativeSettle(targetAddress string) error {
+	err := this.Channel.CooperativeSettle(targetAddress)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (this *Node) GetFee(channelID uint64) (*transfer.FeeScheduleState, error) {
