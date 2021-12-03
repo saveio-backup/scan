@@ -416,10 +416,6 @@ func queryChannelDeposit(ctx *cli.Context) error {
 	return nil
 }
 
-func cooperativeSettle(ctx *cli.Context) error {
-	return nil
-}
-
 func queryHostInfo(ctx *cli.Context) error {
 	SetRpcPort(ctx)
 
@@ -436,6 +432,26 @@ func queryHostInfo(ctx *cli.Context) error {
 		return nil
 	}
 	PrintJsonObject(chanHostRsp)
+	return nil
+}
+
+func cooperativeSettle(ctx *cli.Context) error {
+	SetRpcPort(ctx)
+
+	if ctx.NumFlags() < 2 {
+		PrintErrorMsg("Missing argument.")
+		cli.ShowSubcommandHelp(ctx)
+		return nil
+	}
+
+	addr := ctx.String(flags.GetFlagName(flags.PartnerAddressFlag))
+
+	failMsg := utils.CooperativeSettle(addr)
+	if failMsg != nil {
+		PrintErrorMsg("%v\n", failMsg.FailedMsg)
+		return nil
+	}
+	PrintInfoMsg("\nCooperativeSettlee success.")
 	return nil
 }
 

@@ -89,6 +89,7 @@ func StartRPCServer() error {
 	rpc.HandleFunc("getallchannels", rpc.GetAllChannels)
 	rpc.HandleFunc("querychanneldeposit", rpc.QueryChannelDeposit)
 	rpc.HandleFunc("queryhostinfo", rpc.QueryHostInfo)
+	rpc.HandleFunc("cooperativeSettle", rpc.CooperativeSettle)
 	rpc.HandleFunc("getfee", rpc.GetFee)
 	rpc.HandleFunc("setfee", rpc.SetFee)
 	rpc.HandleFunc("getPenalty", rpc.GetPenalty)

@@ -3,6 +3,7 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
+
 	ch_actor "github.com/saveio/pylons/actor/server"
 	httpComm "github.com/saveio/scan/http/base/common"
 	berr "github.com/saveio/scan/http/base/error"
@@ -181,27 +182,27 @@ func TransferToSomebody(partnerAddr string, amount uint64, paymentid uint) (*htt
 func MediaTransferToSomebody(paymentId uint, amount uint64, mediaAddr string, partnerAddr string) (*httpComm.SuccessRsp, *httpComm.FailedRsp) {
 	result, ontErr := sendRpcRequest("mediatransferchannel", []interface{}{paymentId, amount, mediaAddr, partnerAddr})
 	if ontErr != nil {
-	switch ontErr.ErrorCode {
+		switch ontErr.ErrorCode {
 		case ERROR_INVALID_PARAMS:
 			return nil, &httpComm.FailedRsp{
-					ErrCode:   berr.INVALID_PARAMS,
-					ErrMsg:    berr.ErrMap[berr.INVALID_PARAMS],
-					FailedMsg: fmt.Sprintf("Invalid partnerAddr: %s, amount: %d, paymentid: %d", partnerAddr, amount, paymentId),
-				}
+				ErrCode:   berr.INVALID_PARAMS,
+				ErrMsg:    berr.ErrMap[berr.INVALID_PARAMS],
+				FailedMsg: fmt.Sprintf("Invalid partnerAddr: %s, amount: %d, paymentid: %d", partnerAddr, amount, paymentId),
+			}
 		case berr.CHANNEL_TARGET_HOST_INFO_NOT_FOUND:
 			return nil, &httpComm.FailedRsp{
-					ErrCode:   berr.CHANNEL_TARGET_HOST_INFO_NOT_FOUND,
-					ErrMsg:    berr.ErrMap[berr.CHANNEL_TARGET_HOST_INFO_NOT_FOUND],
-					FailedMsg: fmt.Sprintf("Address: %s hostinfo not found", partnerAddr),
-				}
+				ErrCode:   berr.CHANNEL_TARGET_HOST_INFO_NOT_FOUND,
+				ErrMsg:    berr.ErrMap[berr.CHANNEL_TARGET_HOST_INFO_NOT_FOUND],
+				FailedMsg: fmt.Sprintf("Address: %s hostinfo not found", partnerAddr),
+			}
 		case berr.INTERNAL_ERROR:
 			return nil, &httpComm.FailedRsp{
-					ErrCode:   berr.INTERNAL_ERROR,
-					ErrMsg:    berr.ErrMap[berr.INTERNAL_ERROR],
-					FailedMsg: ontErr.Error.Error(),
-				}
+				ErrCode:   berr.INTERNAL_ERROR,
+				ErrMsg:    berr.ErrMap[berr.INTERNAL_ERROR],
+				FailedMsg: ontErr.Error.Error(),
+			}
 		}
-	return nil, &httpComm.FailedRsp{
+		return nil, &httpComm.FailedRsp{
 			ErrCode:   ontErr.ErrorCode,
 			ErrMsg:    "",
 			FailedMsg: ontErr.Error.Error(),
@@ -354,6 +355,43 @@ func QueryHostInfo(partnerAddr string) (*httpComm.EndPointRsp, *httpComm.FailedR
 	return chanHostRsp, nil
 }
 
+func CooperativeSettle(partnerAddress string) *httpComm.FailedRsp {
+	result, ontErr := sendRpcRequest("cooperativeSettle", []interface{}{partnerAddress})
+	if ontErr != nil {
+		switch ontErr.ErrorCode {
+		case ERROR_INVALID_PARAMS:
+			return &httpComm.FailedRsp{
+				ErrCode:   berr.INVALID_PARAMS,
+				ErrMsg:    berr.ErrMap[berr.INVALID_PARAMS],
+				FailedMsg: fmt.Sprintf("Invalid params"),
+			}
+		case berr.INTERNAL_ERROR:
+			return &httpComm.FailedRsp{
+				ErrCode:   berr.INTERNAL_ERROR,
+				ErrMsg:    berr.ErrMap[berr.INTERNAL_ERROR],
+				FailedMsg: ontErr.Error.Error(),
+			}
+		}
+		return &httpComm.FailedRsp{
+			ErrCode:   ontErr.ErrorCode,
+			ErrMsg:    "",
+			FailedMsg: ontErr.Error.Error(),
+		}
+	}
+	rsp := &httpComm.ChannelFeeRsp{}
+	err := json.Unmarshal(result, rsp)
+	if err != nil {
+		return &httpComm.FailedRsp{
+			ErrCode:   berr.JSON_UNMARSHAL_ERROR,
+			ErrMsg:    berr.ErrMap[berr.JSON_UNMARSHAL_ERROR],
+			FailedMsg: err.Error(),
+		}
+	}
+	log.Debugf("CooperativeSettle fee success")
+	log.Debugf("CooperativeSettle fee result :%s", result)
+	return nil
+}
+
 func GetFee(channelID uint64) (*httpComm.ChannelFeeRsp, *httpComm.FailedRsp) {
 	result, ontErr := sendRpcRequest("getfee", []interface{}{channelID})
 	if ontErr != nil {
@@ -391,7 +429,7 @@ func GetFee(channelID uint64) (*httpComm.ChannelFeeRsp, *httpComm.FailedRsp) {
 	return rsp, nil
 }
 
-func SetFee(flat uint64, pro uint64) (*httpComm.FailedRsp) {
+func SetFee(flat uint64, pro uint64) *httpComm.FailedRsp {
 	result, err := sendRpcRequest("setfee", []interface{}{flat, pro})
 	if err != nil {
 		switch err.ErrorCode {
@@ -456,7 +494,7 @@ func GetPenalty() (*httpComm.ChannelPenaltyRsp, *httpComm.FailedRsp) {
 	return rsp, nil
 }
 
-func SetPenalty(fp float64, dp float64) (*httpComm.FailedRsp) {
+func SetPenalty(fp float64, dp float64) *httpComm.FailedRsp {
 	result, err := sendRpcRequest("setPenalty", []interface{}{fp, dp})
 	if err != nil {
 		switch err.ErrorCode {

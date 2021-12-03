@@ -1237,6 +1237,24 @@ func JoinDnsNodesChannels(params []interface{}) map[string]interface{} {
 	return responseSuccess(nil)
 }
 
+func CooperativeSettle(params []interface{}) map[string]interface{} {
+	var partnerAddress string
+	switch (params[0]).(type) {
+	case string:
+		partnerAddress = params[0].(string)
+	default:
+		return responsePack(berr.INVALID_PARAMS, "")
+	}
+
+	err := service.ScanNode.CooperativeSettle(partnerAddress)
+	if err != nil {
+		log.Errorf("CooperativeSettle error: %s", err)
+		return responsePack(berr.INTERNAL_ERROR, err.Error())
+	}
+	fmt.Printf("rpc/interface/CooperativeSettle\n")
+	return nil
+}
+
 func GetFee(params []interface{}) map[string]interface{} {
 	var channelID uint64
 
