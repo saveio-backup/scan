@@ -171,7 +171,7 @@ func (this *restServer) registryMethod() {
 		POST_RAW_TX:        {name: "sendrawtransaction", handler: rest.SendRawTransaction},
 		POST_FEE:           {name: "postfee", handler: PostFee},
 		POST_CHANNEL_OPEN:  {name: "postchannelopen", handler: PostChannelOpen},
-		POST_CHANNEL_CLOSE: {name: "postchannelclose", handler: Postchannelclose},
+		POST_CHANNEL_CLOSE: {name: "postchannelclose", handler: PostChannelclose},
 		POST_DEPOSIT:       {name: "postdeposit", handler: PostDeposit},
 		POST_WITHDRAW:      {name: "postwithdraw", handler: PostWithdraw},
 	}

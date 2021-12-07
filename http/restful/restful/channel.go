@@ -6,6 +6,7 @@ import (
 	"github.com/saveio/themis/common/log"
 	"math"
 	"strconv"
+	"strings"
 
 	chanCom "github.com/saveio/pylons/common"
 	"github.com/saveio/pylons/transfer"
@@ -63,13 +64,20 @@ func GetChannelList(params map[string]interface{}) map[string]interface{} {
 		return res
 	}
 
+	exist := false
 	if partnerAddress != "" {
 		for _, v := range channels.Channels {
 			if v.Address == partnerAddress {
+				exist = true
 				channels.Balance = v.Balance
 				channels.BalanceFormat = v.BalanceFormat
 				channels.Channels = append(channels.Channels[:0], v)
 			}
+		}
+		if !exist {
+			channels.Balance = 0
+			channels.BalanceFormat = "0"
+			channels.Channels = channels.Channels[:0]
 		}
 	}
 	res["Result"] = channels
@@ -137,9 +145,15 @@ func PostFee(params map[string]interface{}) map[string]interface{} {
 		return res
 	}
 
+	if decimalPortion(flatStr) > 9 {
+		res["Desc"] = "FlatFormat maximum precision 10^-9"
+		res["Error"] = error.INVALID_PARAMS
+		return res
+	}
+	
 	flat, err := strconv.ParseFloat(flatStr, 10)
 	if err != nil || flat < 0 || flat > 100000 {
-		res["Desc"] = "FlatFormat range [0, 100000] "
+		res["Desc"] = "FlatFormat range [0, 100000]"
 		res["Error"] = error.INVALID_PARAMS
 		return res
 	}
@@ -163,6 +177,14 @@ func PostFee(params map[string]interface{}) map[string]interface{} {
 		return res
 	}
 	return res
+}
+
+func decimalPortion(numstr string) int {
+	tmp := strings.Split(numstr, ".")
+	if len(tmp) <= 1 {
+		return 0
+	}
+	return len(tmp[1])
 }
 
 func PostChannelOpen(params map[string]interface{}) map[string]interface{} {
@@ -211,7 +233,7 @@ func PostChannelOpen(params map[string]interface{}) map[string]interface{} {
 	return res
 }
 
-func Postchannelclose(params map[string]interface{}) map[string]interface{} {
+func PostChannelclose(params map[string]interface{}) map[string]interface{} {
 	res := rest.ResponsePack(error.SUCCESS)
 
 	var pwd string
