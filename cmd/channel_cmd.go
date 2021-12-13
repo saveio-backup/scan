@@ -260,7 +260,8 @@ func depositToChannel(ctx *cli.Context) error {
 	taStr := ctx.String(flags.GetFlagName(flags.DepositFlag))
 
 	ta, err := strconv.ParseFloat(taStr, 10)
-	if err != nil || ta < 0 {
+	if err != nil || ta <= 0 {
+		PrintErrorMsg("Deposit amount must larger than 0")
 		return nil
 	}
 	totalDeposit := uint64(ta * math.Pow10(constants.USDT_DECIMALS))
@@ -287,11 +288,12 @@ func withdrawChannel(ctx *cli.Context) error {
 	amountStr := ctx.String(flags.GetFlagName(flags.AmountFlag))
 
 	amount, err := strconv.ParseFloat(amountStr, 10)
-	if err != nil || amount < 0 {
+	if err != nil || amount <= 0 {
+		PrintErrorMsg("Withdraw amount must larger than 0")
 		return nil
 	}
-	realAmount := uint64(amount * math.Pow10(constants.USDT_DECIMALS))
 
+	realAmount := uint64(amount * math.Pow10(constants.USDT_DECIMALS))
 	_, failed := utils.WithdrawChannel(partnerAddr, realAmount)
 	if failed != nil {
 		PrintErrorMsg("%v\n", failed.FailedMsg)

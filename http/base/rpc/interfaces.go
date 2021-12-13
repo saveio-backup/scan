@@ -26,11 +26,11 @@ import (
 	"github.com/saveio/dsp-go-sdk/consts"
 	chanCom "github.com/saveio/pylons/common"
 	"github.com/saveio/pylons/transfer"
+	"github.com/saveio/pylons/utils"
 	httpComm "github.com/saveio/scan/http/base/common"
 	berr "github.com/saveio/scan/http/base/error"
 	"github.com/saveio/scan/service"
 	"github.com/saveio/scan/tracker"
-	"github.com/saveio/themis/cmd/utils"
 	"github.com/saveio/themis/common"
 	"github.com/saveio/themis/common/config"
 	"github.com/saveio/themis/common/log"
@@ -40,6 +40,7 @@ import (
 	ontErrors "github.com/saveio/themis/errors"
 	bactor "github.com/saveio/themis/http/base/actor"
 	bcomn "github.com/saveio/themis/http/base/common"
+	"math"
 )
 
 //get best block hash
@@ -1143,7 +1144,16 @@ func WithdrawChannel(params []interface{}) map[string]interface{} {
 		return responsePack(berr.INTERNAL_ERROR, err.Error())
 	}
 
+	if withdraw >= uint64(math.Pow(2, 64)) {
+		return responsePack(berr.INVALID_PARAMS, "withdraw amount range (0, 2^64)")
+	}
+
 	withdraw += balance
+
+	if withdraw >= uint64(math.Pow(2, 64)) {
+		return responsePack(berr.INVALID_PARAMS, "withdraw amount range (0, 2^64)")
+	}
+
 	err = service.ScanNode.WithdrawFromChannel(partnerAddr, withdraw)
 	if err != nil {
 		log.Errorf("WithdrawChannel error: %s", err)
@@ -1179,7 +1189,7 @@ func QueryChannelDeposit(params []interface{}) map[string]interface{} {
 	fmt.Printf("rpc/interface/openchanneldeposit partneraddr:%s\n", partnerAddrstr)
 	curBalanceRsp := httpComm.ChannelTotalDepositBalanceRsp{
 		TotalDepositBalance: balance,
-		TotalDepositBalanceFormat: utils.FormatUsdt(balance),
+		TotalDepositBalanceFormat: utils.FormatUSDT(balance),
 	}
 	return responseSuccess(&curBalanceRsp)
 }
@@ -1276,8 +1286,8 @@ func GetFee(params []interface{}) map[string]interface{} {
 	curBalanceRsp := httpComm.ChannelFeeRsp{
 		Flat:               uint64(fee.Flat),
 		Proportional:       uint64(fee.Proportional),
-		FlatFormat:         utils.FormatUsdt(uint64(fee.Flat)),
-		ProportionalFormat: utils.FormatUsdt(uint64(fee.Proportional)),
+		FlatFormat:         utils.FormatUSDT(uint64(fee.Flat)),
+		ProportionalFormat: utils.FormatUSDT(uint64(fee.Proportional)),
 	}
 	return responseSuccess(&curBalanceRsp)
 }

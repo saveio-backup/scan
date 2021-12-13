@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/saveio/scan/service/tk"
 	"net"
 	"strconv"
 	"strings"
@@ -11,17 +12,16 @@ import (
 	dspCfg "github.com/saveio/dsp-go-sdk/config"
 	"github.com/saveio/dsp-go-sdk/core/channel"
 	"github.com/saveio/dsp-go-sdk/utils/crypto"
+	putils "github.com/saveio/pylons/utils"
 	"github.com/saveio/scan/common/config"
 	ch_actor_server "github.com/saveio/scan/p2p/actor/channel/server"
 	dns_actor_server "github.com/saveio/scan/p2p/actor/dns/server"
 	tk_actor_client "github.com/saveio/scan/p2p/actor/tracker/client"
 	tk_actor_server "github.com/saveio/scan/p2p/actor/tracker/server"
 	"github.com/saveio/scan/p2p/network"
-	tk "github.com/saveio/scan/service/tk"
 	themisSdk "github.com/saveio/themis-go-sdk"
 	chainsdk "github.com/saveio/themis-go-sdk/utils"
 	"github.com/saveio/themis/account"
-	cutils "github.com/saveio/themis/cmd/utils"
 	"github.com/saveio/themis/common"
 	"github.com/saveio/themis/common/log"
 	"github.com/saveio/themis/crypto/keypair"
@@ -242,7 +242,7 @@ func (this *Node) autoRegisterDns() error {
 	}
 	balance, err := this.Chain.Native.Usdt.BalanceOf(this.Account.Address)
 	if err != nil || balance < config.Parameters.Base.DnsGovernDeposit {
-		log.Errorf("get dns balance: %s, governdeposit: %s, needs err: %v", cutils.FormatUsdt(balance), cutils.FormatUsdt(config.Parameters.Base.DnsGovernDeposit), err)
+		log.Errorf("get dns balance: %s, governdeposit: %s, needs err: %v", putils.FormatUSDT(balance), putils.FormatUSDT(config.Parameters.Base.DnsGovernDeposit), err)
 		return nil
 	}
 	ownNode, err := this.GetDnsNodeByAddr(this.Account.Address)

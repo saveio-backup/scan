@@ -3,19 +3,17 @@ package restful
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"github.com/saveio/themis/common/log"
-	"math"
-	"strconv"
-	"strings"
-
 	chanCom "github.com/saveio/pylons/common"
 	"github.com/saveio/pylons/transfer"
+	"github.com/saveio/pylons/utils"
 	httpComm "github.com/saveio/scan/http/base/common"
 	"github.com/saveio/scan/http/base/error"
 	"github.com/saveio/scan/http/base/rest"
 	"github.com/saveio/scan/service"
-	"github.com/saveio/themis/cmd/utils"
 	"github.com/saveio/themis/common/constants"
+	"github.com/saveio/themis/common/log"
+	"math"
+	"strconv"
 )
 
 func GetFee(params map[string]interface{}) map[string]interface{} {
@@ -41,8 +39,8 @@ func GetFee(params map[string]interface{}) map[string]interface{} {
 	rsp := httpComm.ChannelFeeRsp{
 		Flat:               uint64(fee.Flat),
 		Proportional:       uint64(fee.Proportional),
-		FlatFormat:         utils.FormatUsdt(uint64(fee.Flat)),
-		ProportionalFormat: utils.FormatUsdt(uint64(fee.Proportional)),
+		FlatFormat:         utils.FormatUSDT(uint64(fee.Flat)),
+		ProportionalFormat: utils.FormatUSDT(uint64(fee.Proportional)),
 	}
 	res["Result"] = rsp
 	return res
@@ -103,7 +101,7 @@ func GetDeposit(params map[string]interface{}) map[string]interface{} {
 	}
 	rsp := httpComm.ChannelTotalDepositBalanceRsp{
 		TotalDepositBalance: balance,
-		TotalDepositBalanceFormat: utils.FormatUsdt(balance),
+		TotalDepositBalanceFormat: utils.FormatUSDT(balance),
 	}
 	res["Result"] = rsp
 	return res
@@ -127,8 +125,6 @@ func PostFee(params map[string]interface{}) map[string]interface{} {
 	}
 
 	var flatStr string
-	var proStr string
-
 	switch (params["FlatFormat"]).(type) {
 	case string:
 		flatStr = params["FlatFormat"].(string)
@@ -136,7 +132,9 @@ func PostFee(params map[string]interface{}) map[string]interface{} {
 		res["Error"] = error.INVALID_PARAMS
 		return res
 	}
+	flatStr = utils.CutPrecision(flatStr)
 
+	var proStr string
 	switch (params["ProportionalFormat"]).(type) {
 	case string:
 		proStr = params["ProportionalFormat"].(string)
@@ -144,13 +142,8 @@ func PostFee(params map[string]interface{}) map[string]interface{} {
 		res["Error"] = error.INVALID_PARAMS
 		return res
 	}
+	proStr = utils.CutPrecision(proStr)
 
-	if decimalPortion(flatStr) > 9 {
-		res["Desc"] = "FlatFormat maximum precision 10^-9"
-		res["Error"] = error.INVALID_PARAMS
-		return res
-	}
-	
 	flat, err := strconv.ParseFloat(flatStr, 10)
 	if err != nil || flat < 0 || flat > 100000 {
 		res["Desc"] = "FlatFormat range [0, 100000]"
@@ -166,6 +159,7 @@ func PostFee(params map[string]interface{}) map[string]interface{} {
 		return res
 	}
 	realPro := uint64(pro * math.Pow10(constants.USDT_DECIMALS))
+
 	fee := &transfer.FeeScheduleState{
 		Flat:         chanCom.FeeAmount(realFlat),
 		Proportional: chanCom.ProportionalFeeAmount(realPro),
@@ -177,14 +171,6 @@ func PostFee(params map[string]interface{}) map[string]interface{} {
 		return res
 	}
 	return res
-}
-
-func decimalPortion(numstr string) int {
-	tmp := strings.Split(numstr, ".")
-	if len(tmp) <= 1 {
-		return 0
-	}
-	return len(tmp[1])
 }
 
 func PostChannelOpen(params map[string]interface{}) map[string]interface{} {
@@ -233,7 +219,7 @@ func PostChannelOpen(params map[string]interface{}) map[string]interface{} {
 	return res
 }
 
-func PostChannelclose(params map[string]interface{}) map[string]interface{} {
+func PostChannelClose(params map[string]interface{}) map[string]interface{} {
 	res := rest.ResponsePack(error.SUCCESS)
 
 	var pwd string
@@ -312,7 +298,8 @@ func PostDeposit(params map[string]interface{}) map[string]interface{} {
 	}
 
 	deposit, err := strconv.ParseFloat(depositStr, 10)
-	if err != nil || deposit < 0 {
+	if err != nil || deposit <= 0 {
+		res["Desc"] = "Deposit amount must larger than 0"
 		res["Error"] = error.INVALID_PARAMS
 		return res
 	}
@@ -386,12 +373,18 @@ func PostWithdraw(params map[string]interface{}) map[string]interface{} {
 	}
 
 	amount, err := strconv.ParseFloat(amountStr, 10)
-	if err != nil || amount < 0 {
-		res["Desc"] = "Amount range [0, TotalDeposit] "
+	if err != nil || amount <= 0 {
+		res["Desc"] = "Withdraw amount must larger than 0"
 		res["Error"] = error.INVALID_PARAMS
 		return res
 	}
+
 	realAmount := uint64(amount * math.Pow10(constants.USDT_DECIMALS))
+	if realAmount >= uint64(math.Pow(2, 64)) {
+		res["Desc"] = "Amount parameter can't large than 2^64/10^9"
+		res["Error"] = error.INVALID_PARAMS
+		return res
+	}
 
 	balance, err := service.ScanNode.QueryChannelWithdraw(partnerAddrstr)
 	if err != nil {
@@ -401,6 +394,12 @@ func PostWithdraw(params map[string]interface{}) map[string]interface{} {
 	}
 
 	realAmount += balance
+	if realAmount >= uint64(math.Pow(2, 64)) {
+		res["Desc"] = "Total withdraw can't large than 2^64/10^9"
+		res["Error"] = error.INVALID_PARAMS
+		return res
+	}
+
 	err = service.ScanNode.WithdrawFromChannel(partnerAddrstr, realAmount)
 	if err != nil {
 		res["Desc"] = err

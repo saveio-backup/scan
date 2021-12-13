@@ -123,7 +123,7 @@ func DepositToChannel(partnerAddr string, totalDeposit uint64) (*httpComm.Succes
 			return nil, &httpComm.FailedRsp{
 				ErrCode:   berr.INVALID_PARAMS,
 				ErrMsg:    berr.ErrMap[berr.INVALID_PARAMS],
-				FailedMsg: fmt.Sprintf("Invalid partnerAddr: %s, totalDeposit: %d", partnerAddr, totalDeposit),
+				FailedMsg: fmt.Sprintf("Invalid params: %s, totalDeposit: %d", partnerAddr, totalDeposit),
 			}
 		case berr.INTERNAL_ERROR:
 			return nil, &httpComm.FailedRsp{
@@ -258,7 +258,7 @@ func WithdrawChannel(partnerAddr string, totalDeposit uint64) (*httpComm.Success
 			return nil, &httpComm.FailedRsp{
 				ErrCode:   berr.INVALID_PARAMS,
 				ErrMsg:    berr.ErrMap[berr.INVALID_PARAMS],
-				FailedMsg: fmt.Sprintf("Invalid partnerAddr: %s, totalDeposit: %d", partnerAddr, totalDeposit),
+				FailedMsg: fmt.Sprintf("Invalid params: %s", ontErr),
 			}
 		case berr.CHANNEL_TARGET_HOST_INFO_NOT_FOUND:
 			return nil, &httpComm.FailedRsp{
