@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/saveio/dsp-go-sdk/consts"
 	"github.com/saveio/scan/service/tk"
 	"net"
 	"strconv"
@@ -40,7 +41,7 @@ type Node struct {
 	TkNet      *network.Network
 	Channel    *channel.Channel
 	// Db         *storage.LevelDBStore
-	PublicIp string
+	PublicIp        string
 	AccountPassword string
 }
 
@@ -68,10 +69,16 @@ func (this *Node) StartScanNode(startChannelNetwork, startDnsNetwork, startTkNet
 		ChannelRevealTimeout: config.Parameters.Base.ChannelRevealTimeout,
 		ChannelSettleTimeout: config.Parameters.Base.ChannelSettleTimeout,
 		ChannelDBPath:        config.ChannelDBPath(),
+		Mode:                 config.Parameters.Base.Mode,
 	}
 
 	this.Chain = themisSdk.NewChain()
-	this.Chain.NewRpcClient().SetAddress([]string{config.Parameters.Base.ChainRpcAddr})
+	switch this.Config.Mode {
+	case consts.DspModeOp:
+		this.Chain.NewEthClient().SetAddress([]string{config.Parameters.Base.ChainRpcAddr})
+	default:
+		this.Chain.NewRpcClient().SetAddress([]string{config.Parameters.Base.ChainRpcAddr})
+	}
 	this.Chain.SetDefaultAccount(this.Account)
 
 	if startChannelNetwork {
@@ -240,7 +247,13 @@ func (this *Node) autoRegisterDns() error {
 	if err != nil {
 		return err
 	}
-	balance, err := this.Chain.Native.Usdt.BalanceOf(this.Account.Address)
+	var balance uint64
+	switch this.Config.Mode {
+	case consts.DspModeOp:
+		balance, err = this.Chain.EVM.ERC20.BalanceOf(this.Account.EthAddress)
+	default:
+		balance, err = this.Chain.Native.Usdt.BalanceOf(this.Account.Address)
+	}
 	if err != nil || balance < config.Parameters.Base.DnsGovernDeposit {
 		log.Errorf("get dns balance: %s, governdeposit: %s, needs err: %v", putils.FormatUSDT(balance), putils.FormatUSDT(config.Parameters.Base.DnsGovernDeposit), err)
 		return nil

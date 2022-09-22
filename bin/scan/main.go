@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/saveio/dsp-go-sdk/consts"
 	"os"
 	"os/signal"
 	"runtime"
@@ -28,7 +29,6 @@ import (
 	themisCfg "github.com/saveio/themis/common/config"
 	"github.com/saveio/themis/common/log"
 	thms "github.com/saveio/themis/start"
-
 	"github.com/urfave/cli"
 )
 
@@ -57,6 +57,7 @@ func initAPP() *cli.App {
 	}
 	app.Flags = []cli.Flag{
 		flags.ScanConfigFlag,
+		flags.ModeFlag,
 
 		//common setting
 		flags.LogStderrFlag,
@@ -246,6 +247,9 @@ func startScan(ctx *cli.Context, acc *account.Account) {
 	storage.TDB = storage.NewTorrentDB(tdb)
 
 	startChannelNetwork, startDnsNetwork, startTkNetwork := true, true, true
+	if config.Parameters.Base.Mode == consts.DspModeOp {
+		startChannelNetwork = false
+	}
 	err = service.ScanNode.StartScanNode(startChannelNetwork, startDnsNetwork, startTkNetwork)
 	if err != nil {
 		log.Fatal(err)
@@ -267,9 +271,11 @@ func startScan(ctx *cli.Context, acc *account.Account) {
 	initRestful(ctx)
 	log.Info("restful start success.")
 
-	err = service.ScanNode.StartChannelService()
-	if err != nil {
-		log.Fatalf("channel service start err : %v", err)
+	if startChannelNetwork {
+		err = service.ScanNode.StartChannelService()
+		if err != nil {
+			log.Fatalf("channel service start err : %v", err)
+		}
 	}
 	log.Info("channel service started.")
 	log.Infof("scan version: %s", config.VERSION)

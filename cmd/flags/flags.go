@@ -11,6 +11,10 @@ var (
 		Name:  "scanconfig",
 		Usage: "Use `<filename>` to specifies the config file to connect to cunstomize network.",
 	}
+	ModeFlag = cli.StringFlag{
+		Name:  "mode",
+		Usage: "Use `<mode>` to specifies the mode of network. [string]",
+	}
 	// commmon
 	LogStderrFlag = cli.BoolFlag{
 		Name:  "logstderr",
@@ -144,14 +148,14 @@ var (
 		Usage: "String after format",
 	}
 	FeePenaltyFlag = cli.Uint64Flag{
-		Name:        "feePenalty, fp",
-		Usage:       "",
-		Value:       1,
+		Name:  "feePenalty, fp",
+		Usage: "",
+		Value: 1,
 	}
 	DiversityPenaltyFlag = cli.Uint64Flag{
-		Name:        "diversityPenalty, dp",
-		Usage:       "",
-		Value:       1,
+		Name:  "diversityPenalty, dp",
+		Usage: "",
+		Value: 1,
 	}
 
 	// ddns govern command setting

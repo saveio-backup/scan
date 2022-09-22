@@ -53,7 +53,7 @@ func (this *Node) RegOtherDnsEndpointsToSelf() error {
 
 func (this *Node) RegSelfEndpointToOtherDns() error {
 	endpointAddr := this.ChannelNet.PublicAddr()
-	ns, err := this.Chain.Native.Dns.GetAllDnsNodes()
+	ns, err := this.GetDns().GetAllDnsNodes()
 	if err != nil {
 		return err
 	}

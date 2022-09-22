@@ -109,6 +109,8 @@ type BaseConfig struct {
 	IgnoreConnectDNSAddrs []string `json:"IgnoreConnectDNSAddrs"`
 
 	DumpMemory bool `json:"DumpMemory"`
+
+	Mode string `json:"Mode"`
 }
 
 type FsConfig struct {
@@ -189,6 +191,8 @@ func SetScanConfig(ctx *cli.Context) {
 }
 
 func Init(ctx *cli.Context) {
+	Parameters.Base.Mode = ctx.String(flags.GetFlagName(flags.ModeFlag))
+
 	if ctx.GlobalIsSet(flags.GetFlagName(flags.ScanConfigFlag)) {
 		scanConfigStr := ctx.String(flags.GetFlagName(flags.ScanConfigFlag))
 		f, err := os.Stat(scanConfigStr)
