@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
-	"github.com/saveio/dsp-go-sdk/consts"
 	"os"
 	"os/signal"
 	"runtime"
 	"runtime/pprof"
 	"syscall"
 	"time"
+
+	"github.com/saveio/dsp-go-sdk/consts"
 
 	"github.com/saveio/carrier/network"
 	"github.com/saveio/dsp-go-sdk/dsp"
@@ -298,7 +299,7 @@ func getDefaultAccount(ctx *cli.Context) (*account.Account, error) {
 	if err != nil {
 		return nil, fmt.Errorf("get account error:%s", err)
 	}
-	fmt.Printf("\nUsing account: %s\n", acc.Address.ToBase58())
+	fmt.Printf("\nUsing account: %s, eth addr %s\n", acc.Address.ToBase58(), acc.EthAddress)
 	return acc, nil
 }
 

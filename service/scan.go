@@ -3,12 +3,13 @@ package service
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/saveio/dsp-go-sdk/consts"
-	"github.com/saveio/scan/service/tk"
 	"net"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/saveio/dsp-go-sdk/consts"
+	"github.com/saveio/scan/service/tk"
 
 	dspCfg "github.com/saveio/dsp-go-sdk/config"
 	"github.com/saveio/dsp-go-sdk/core/channel"
@@ -76,6 +77,7 @@ func (this *Node) StartScanNode(startChannelNetwork, startDnsNetwork, startTkNet
 	switch this.Config.Mode {
 	case consts.DspModeOp:
 		this.Chain.NewEthClient().SetAddress([]string{config.Parameters.Base.ChainRpcAddr})
+		this.Chain.GetEthClient().DialClient()
 	default:
 		this.Chain.NewRpcClient().SetAddress([]string{config.Parameters.Base.ChainRpcAddr})
 	}
@@ -109,6 +111,11 @@ func (this *Node) StartScanNode(startChannelNetwork, startDnsNetwork, startTkNet
 			}
 		}
 		go this.connectAllDNSChannel()
+	} else {
+		// Auto register dns node as tracker even if channel network offline
+		if err := this.autoRegisterDns(); err != nil {
+			return err
+		}
 	}
 
 	if startDnsNetwork {
@@ -237,31 +244,50 @@ func (this *Node) SendConnectMsgToAllDns() error {
 }
 
 func (this *Node) autoRegisterDns() error {
-	publicAddr := this.ChannelNet.PublicAddr()
+
+	publicAddr := config.Parameters.Base.PublicIP
+	if len(publicAddr) == 0 {
+		publicAddr = this.ChannelNet.PublicAddr()
+	}
 	index := strings.Index(publicAddr, "://")
 	hostPort := publicAddr
 	if index != -1 {
 		hostPort = publicAddr[index+3:]
 	}
-	host, port, err := net.SplitHostPort(hostPort)
-	if err != nil {
-		return err
+	host := publicAddr
+	port := "10338"
+	var err error
+	if strings.Contains(hostPort, ":") {
+
+		host, port, err = net.SplitHostPort(hostPort)
+		if err != nil {
+			return err
+		}
 	}
+
+	queryWalletAddr := this.Account.Address
 	var balance uint64
 	switch this.Config.Mode {
 	case consts.DspModeOp:
 		balance, err = this.Chain.EVM.ERC20.BalanceOf(this.Account.EthAddress)
+		queryWalletAddr, _ = common.AddressParseFromBytes(this.Account.EthAddress.Bytes())
 	default:
 		balance, err = this.Chain.Native.Usdt.BalanceOf(this.Account.Address)
 	}
+	log.Infof("auto register dns mode %s, %v, deposit %d", this.Config.Mode, balance, config.Parameters.Base.DnsGovernDeposit)
 	if err != nil || balance < config.Parameters.Base.DnsGovernDeposit {
 		log.Errorf("get dns balance: %s, governdeposit: %s, needs err: %v", putils.FormatUSDT(balance), putils.FormatUSDT(config.Parameters.Base.DnsGovernDeposit), err)
 		return nil
 	}
-	ownNode, err := this.GetDnsNodeByAddr(this.Account.Address)
+
+	ownNode, err := this.GetDnsNodeByAddr(queryWalletAddr)
 	log.Debugf("ownNode: %v, err: %v\n", ownNode, err)
 
-	if ownNode != nil {
+	if ownNode != nil && ownNode.WalletAddr.ToBase58() == queryWalletAddr.ToBase58() {
+		if string(ownNode.IP) == host && string(ownNode.Port) == port {
+			log.Infof("scan node info addr %s:%s not changed.", host, port)
+			return nil
+		}
 		if _, err = this.DNSNodeUpdate(host, port); err != nil {
 			return err
 		}
