@@ -735,7 +735,7 @@ func RegisterDns(params []interface{}) map[string]interface{} {
 	}
 	fmt.Printf("rpc/interface/registerdns ip:%s port:%s initDeposit:%d\n", ipstr, portstr, initDeposituint64)
 	dspRsp := httpComm.DnsRsp{
-		Tx: hex.EncodeToString(common.ToArrayReverse(ret.ToArray())),
+		Tx: hex.EncodeToString(ret.ToArray()),
 	}
 	return responseSuccess(&dspRsp)
 }
@@ -748,7 +748,7 @@ func UnregisterDns(params []interface{}) map[string]interface{} {
 	}
 	fmt.Printf("rpc/interface/unregisterdns %s", "")
 	dspRsp := httpComm.DnsRsp{
-		Tx: hex.EncodeToString(common.ToArrayReverse(ret.ToArray())),
+		Tx: hex.EncodeToString(ret.ToArray()),
 	}
 	return responseSuccess(&dspRsp)
 }
@@ -761,7 +761,7 @@ func QuitDns(params []interface{}) map[string]interface{} {
 	}
 	fmt.Printf("rpc/interface/quitdns %s", "")
 	dspRsp := httpComm.DnsRsp{
-		Tx: hex.EncodeToString(common.ToArrayReverse(ret.ToArray())),
+		Tx: hex.EncodeToString(ret.ToArray()),
 	}
 	return responseSuccess(&dspRsp)
 }
@@ -785,7 +785,7 @@ func AddDnsPos(params []interface{}) map[string]interface{} {
 	}
 	fmt.Printf("rpc/interface/adddnspos deltaDeposit:%d\n", deltaDeposit)
 	dspRsp := httpComm.DnsRsp{
-		Tx: hex.EncodeToString(common.ToArrayReverse(ret.ToArray())),
+		Tx: hex.EncodeToString(ret.ToArray()),
 	}
 	return responseSuccess(&dspRsp)
 }
@@ -809,7 +809,7 @@ func ReduceDnsPos(params []interface{}) map[string]interface{} {
 	}
 	fmt.Printf("rpc/interface/reducednspos deltaDeposit:%d\n", deltaDeposit)
 	dspRsp := httpComm.DnsRsp{
-		Tx: hex.EncodeToString(common.ToArrayReverse(ret.ToArray())),
+		Tx: hex.EncodeToString(ret.ToArray()),
 	}
 	return responseSuccess(&dspRsp)
 }
